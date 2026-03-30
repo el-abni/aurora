@@ -1,6 +1,6 @@
 # 🌌 Aurora
 
-A Aurora é um produto **100% Python** para mediação honesta de `host_package` em Linux.
+Evolução da 💜 Aury, com foco em mediação honesta de `host_package` em Linux.
 
 Na `v0.1.0`, o contrato público é pequeno e real:
 
