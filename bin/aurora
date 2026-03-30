@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+
+def _candidate_share_dirs() -> list[Path]:
+    script_path = Path(__file__).resolve()
+    repo_root = script_path.parents[1]
+    candidates: list[Path] = []
+    env_share = os.environ.get("AURORA_SHARE_DIR")
+    if env_share:
+        candidates.append(Path(env_share).expanduser())
+    candidates.append(repo_root)
+    candidates.append(Path.home() / ".local" / "share" / "aurora")
+    return candidates
+
+
+def _resolve_share_dir() -> Path:
+    for candidate in _candidate_share_dirs():
+        if (candidate / "python" / "aurora").exists():
+            return candidate
+    return _candidate_share_dirs()[0]
+
+
+share_dir = _resolve_share_dir()
+os.environ.setdefault("AURORA_SHARE_DIR", str(share_dir))
+python_dir = share_dir / "python"
+if str(python_dir) not in sys.path:
+    sys.path.insert(0, str(python_dir))
+
+from aurora.cli import main
+
+raise SystemExit(main())

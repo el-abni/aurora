@@ -1,0 +1,41 @@
+🌌 Aurora {version}
+
+Comandos públicos:
+- aurora procurar <pacote>
+- aurora instalar <pacote>
+- aurora instalar <pacote> --confirm
+- aurora remover <pacote>
+- aurora remover <pacote> --confirm
+- aurora dev <frase>
+- aurora --help
+- aurora --version
+
+Contrato público da v0.1:
+- produto 100% Python;
+- launchers oficiais: aurora e auro;
+- domínio suportado de verdade: host_package;
+- ações reais: procurar, instalar e remover;
+- observabilidade: aurora dev com decision record proprio.
+
+Compatibilidade Linux da v0.1:
+- suportado agora: Arch/derivadas mutáveis, Debian/Ubuntu/derivadas mutáveis, Fedora mutável;
+- suportado contido: OpenSUSE mutável;
+- bloqueado por política: hosts Atomic/imutáveis.
+
+Política ativa:
+- source_type=host_package_manager;
+- trust_level=distribution_managed;
+- software_criticality participa do juizo;
+- policy_outcome pode permitir, bloquear ou exigir confirmação;
+- requires_confirmation e reversal_level afetam mutações sensíveis;
+- use --confirm no fim do comando quando a Aurora pedir confirmação explícita.
+
+Fora da v0.1:
+- flatpak como rota ativa;
+- AUR, COPR, PPA, AppImage, GitHub Releases;
+- rpm-ostree, toolbox, distrobox e ujust;
+- arquivos, rede e manutenção ampla do host.
+
+Ferramentas observadas não são promessa de suporte:
+- flatpak;
+- rpm-ostree.

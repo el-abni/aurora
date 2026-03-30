@@ -1,0 +1,431 @@
+from __future__ import annotations
+
+from dataclasses import replace
+import os
+import shutil
+import subprocess
+from collections.abc import Callable, Sequence
+
+from aurora.contracts.decisions import DecisionRecord
+from aurora.contracts.execution import ExecutionProbe, ExecutionResult
+from aurora.linux.host_package import mutation_reports_no_matching_package, search_has_no_results
+from aurora.presentation.messages import (
+    backend_failed_message,
+    backend_missing_message,
+    blocked_message,
+    confirmation_required_message,
+    mutation_success_message,
+    no_results_message,
+    package_not_found_message,
+    noop_message,
+    not_implemented_message,
+    out_of_scope_message,
+    search_results_message,
+    state_confirmation_failed_message,
+    state_probe_missing_message,
+)
+
+UNSUPPORTED_EXIT = 120
+Runner = Callable[[Sequence[str]], subprocess.CompletedProcess[str]]
+
+
+def _run_command(
+    args: Sequence[str],
+    *,
+    environ: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(args, text=True, capture_output=True, check=False, env=environ)
+
+
+def _required_backend_available(
+    route: tuple[str, ...],
+    required_commands: tuple[str, ...],
+    *,
+    environ: dict[str, str] | None = None,
+) -> bool:
+    path = None if environ is None else environ.get("PATH", os.environ.get("PATH"))
+    command_names = required_commands or route[:1]
+    return all(shutil.which(name, path=path) is not None for name in command_names)
+
+
+def _probe_state(
+    record: DecisionRecord,
+    *,
+    run: Runner,
+    environ: dict[str, str] | None = None,
+) -> ExecutionProbe:
+    route = record.execution_route
+    if route is None or not route.state_probe_command:
+        return ExecutionProbe(status="not_required", summary="esta rota nao exige state probe.")
+
+    if not _required_backend_available(
+        route.state_probe_command,
+        route.state_probe_required_commands,
+        environ=environ,
+    ):
+        probe_label = route.state_probe_command[0]
+        return ExecutionProbe(
+            status="probe_missing",
+            command=route.state_probe_command,
+            required_commands=route.state_probe_required_commands,
+            summary=state_probe_missing_message(route.backend_name, probe_label),
+        )
+
+    proc = run(route.state_probe_command)
+    package_present = proc.returncode == 0
+    summary = "pacote presente no host." if package_present else "pacote ausente no host."
+    return ExecutionProbe(
+        status="completed",
+        command=route.state_probe_command,
+        required_commands=route.state_probe_required_commands,
+        exit_code=proc.returncode,
+        package_present=package_present,
+        summary=summary,
+    )
+
+
+def _result(
+    record: DecisionRecord,
+    *,
+    exit_code: int,
+    outcome: str,
+    message: str,
+    execution: ExecutionResult,
+) -> tuple[int, DecisionRecord, str]:
+    return exit_code, replace(record, outcome=outcome, summary=message, execution=execution), message
+
+
+def _execute_search(
+    record: DecisionRecord,
+    *,
+    run: Runner,
+    environ: dict[str, str] | None = None,
+) -> tuple[int, DecisionRecord, str]:
+    route = record.execution_route
+    assert route is not None
+
+    if not _required_backend_available(route.command, route.required_commands, environ=environ):
+        message = backend_missing_message(route.backend_name)
+        return _result(
+            record,
+            exit_code=1,
+            outcome="operational_error",
+            message=message,
+            execution=ExecutionResult(
+                status="backend_missing",
+                attempted=False,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                command=route.command,
+                summary=message,
+            ),
+        )
+
+    proc = run(route.command)
+    if search_has_no_results(proc.stdout, proc.stderr, proc.returncode):
+        message = no_results_message(record.request.target, route.backend_name)
+        return _result(
+            record,
+            exit_code=0,
+            outcome="executed",
+            message=message,
+            execution=ExecutionResult(
+                status="no_results",
+                attempted=True,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                command=route.command,
+                exit_code=proc.returncode,
+                summary=message,
+            ),
+        )
+
+    if proc.returncode != 0:
+        message = backend_failed_message(route.backend_name)
+        return _result(
+            record,
+            exit_code=1,
+            outcome="operational_error",
+            message=message,
+            execution=ExecutionResult(
+                status="operational_error",
+                attempted=True,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                command=route.command,
+                exit_code=proc.returncode,
+                summary=message,
+            ),
+        )
+
+    output = proc.stdout.rstrip()
+    message = search_results_message(record.request.target, route.backend_name, output)
+    return _result(
+        record,
+        exit_code=0,
+        outcome="executed",
+        message=message,
+        execution=ExecutionResult(
+            status="executed",
+            attempted=True,
+            confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+            command=route.command,
+            exit_code=proc.returncode,
+            summary=message,
+        ),
+    )
+
+
+def _execute_mutation(
+    record: DecisionRecord,
+    *,
+    run: Runner,
+    environ: dict[str, str] | None = None,
+) -> tuple[int, DecisionRecord, str]:
+    route = record.execution_route
+    assert route is not None
+
+    pre_probe = _probe_state(record, run=run, environ=environ)
+    if pre_probe.status == "probe_missing":
+        return _result(
+            record,
+            exit_code=1,
+            outcome="operational_error",
+            message=pre_probe.summary,
+            execution=ExecutionResult(
+                status="probe_missing",
+                attempted=False,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                command=route.command,
+                pre_probe=pre_probe,
+                summary=pre_probe.summary,
+            ),
+        )
+
+    should_noop = (
+        route.action_name == "instalar" and pre_probe.package_present is True
+    ) or (
+        route.action_name == "remover" and pre_probe.package_present is False
+    )
+    if should_noop:
+        message = noop_message(route.action_name, record.request.target)
+        return _result(
+            record,
+            exit_code=0,
+            outcome="noop",
+            message=message,
+            execution=ExecutionResult(
+                status="noop",
+                attempted=False,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                command=route.command,
+                pre_probe=pre_probe,
+                summary=message,
+            ),
+        )
+
+    if not _required_backend_available(route.command, route.required_commands, environ=environ):
+        message = backend_missing_message(route.backend_name)
+        return _result(
+            record,
+            exit_code=1,
+            outcome="operational_error",
+            message=message,
+            execution=ExecutionResult(
+                status="backend_missing",
+                attempted=False,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                command=route.command,
+                pre_probe=pre_probe,
+                summary=message,
+            ),
+        )
+
+    proc = run(route.command)
+    if proc.returncode != 0:
+        if mutation_reports_no_matching_package(proc.stdout, proc.stderr):
+            message = package_not_found_message(route.action_name, record.request.target, route.backend_name)
+            return _result(
+                record,
+                exit_code=1,
+                outcome="operational_error",
+                message=message,
+                execution=ExecutionResult(
+                    status="package_not_found",
+                    attempted=True,
+                    confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                    command=route.command,
+                    exit_code=proc.returncode,
+                    pre_probe=pre_probe,
+                    summary=message,
+                ),
+            )
+
+        message = backend_failed_message(route.backend_name)
+        return _result(
+            record,
+            exit_code=1,
+            outcome="operational_error",
+            message=message,
+            execution=ExecutionResult(
+                status="operational_error",
+                attempted=True,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                command=route.command,
+                exit_code=proc.returncode,
+                pre_probe=pre_probe,
+                summary=message,
+            ),
+        )
+
+    post_probe = _probe_state(record, run=run, environ=environ)
+    if post_probe.status == "probe_missing":
+        return _result(
+            record,
+            exit_code=1,
+            outcome="operational_error",
+            message=post_probe.summary,
+            execution=ExecutionResult(
+                status="probe_missing",
+                attempted=True,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                command=route.command,
+                exit_code=proc.returncode,
+                pre_probe=pre_probe,
+                post_probe=post_probe,
+                summary=post_probe.summary,
+            ),
+        )
+
+    confirmed_state = (
+        route.action_name == "instalar" and post_probe.package_present is True
+    ) or (
+        route.action_name == "remover" and post_probe.package_present is False
+    )
+    if not confirmed_state:
+        message = state_confirmation_failed_message(route.action_name, record.request.target, route.backend_name)
+        return _result(
+            record,
+            exit_code=1,
+            outcome="operational_error",
+            message=message,
+            execution=ExecutionResult(
+                status="state_confirmation_failed",
+                attempted=True,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                command=route.command,
+                exit_code=proc.returncode,
+                pre_probe=pre_probe,
+                post_probe=post_probe,
+                summary=message,
+            ),
+        )
+
+    message = mutation_success_message(route.action_name, record.request.target)
+    return _result(
+        record,
+        exit_code=0,
+        outcome="executed",
+        message=message,
+        execution=ExecutionResult(
+            status="executed",
+            attempted=True,
+            confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+            command=route.command,
+            exit_code=proc.returncode,
+            pre_probe=pre_probe,
+            post_probe=post_probe,
+            summary=message,
+        ),
+    )
+
+
+def perform_execution(
+    record: DecisionRecord,
+    runner: Runner | None = None,
+    *,
+    environ: dict[str, str] | None = None,
+) -> tuple[int, DecisionRecord, str]:
+    def run(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
+        if runner is not None:
+            return runner(args)
+        return _run_command(args, environ=environ)
+
+    if record.outcome == "out_of_scope":
+        message = out_of_scope_message(record.request.reason)
+        return _result(
+            record,
+            exit_code=1,
+            outcome="blocked",
+            message=message,
+            execution=ExecutionResult(status="blocked", summary=message),
+        )
+
+    if record.policy is not None and record.policy.policy_outcome == "require_confirmation":
+        message = confirmation_required_message(
+            record.request.target,
+            record.policy.software_criticality,
+            record.policy.reversal_level,
+        )
+        return _result(
+            record,
+            exit_code=1,
+            outcome="blocked",
+            message=message,
+            execution=ExecutionResult(
+                status="confirmation_required",
+                attempted=False,
+                confirmation_supplied=record.policy.confirmation_supplied,
+                summary=message,
+            ),
+        )
+
+    if record.outcome == "blocked":
+        reason = record.policy.reason if record.policy is not None else record.request.reason
+        message = blocked_message(reason)
+        return _result(
+            record,
+            exit_code=1,
+            outcome="blocked",
+            message=message,
+            execution=ExecutionResult(
+                status="blocked",
+                attempted=False,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                summary=message,
+            ),
+        )
+
+    if record.execution_route is None:
+        message = out_of_scope_message("nao encontrei rota executavel para este pedido.")
+        return _result(
+            record,
+            exit_code=1,
+            outcome="blocked",
+            message=message,
+            execution=ExecutionResult(status="blocked", summary=message),
+        )
+
+    if not record.execution_route.can_execute_now:
+        message = not_implemented_message(record.request.intent, record.request.domain_kind)
+        return _result(
+            record,
+            exit_code=UNSUPPORTED_EXIT,
+            outcome="planned",
+            message=message,
+            execution=ExecutionResult(status="not_implemented", summary=message),
+        )
+
+    if record.execution_route.action_name == "procurar":
+        return _execute_search(record, run=run, environ=environ)
+
+    return _execute_mutation(record, run=run, environ=environ)
+
+
+def execute_decision(
+    record: DecisionRecord,
+    runner: Runner | None = None,
+    *,
+    environ: dict[str, str] | None = None,
+) -> int:
+    exit_code, _updated_record, message = perform_execution(record, runner, environ=environ)
+    if message:
+        print(message)
+    return exit_code
