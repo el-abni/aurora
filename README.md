@@ -1,8 +1,8 @@
-# Aurora v0.1.0
+# 🌌 Aurora
 
 Aurora e um produto **100% Python** para mediacao honesta de `host_package` em Linux.
 
-Na `v0.1`, o contrato publico e pequeno e real:
+Na `v0.1.0`, o contrato publico e pequeno e real:
 
 - launchers oficiais: `aurora` e `auro`;
 - dominio suportado de verdade: `host_package`;
@@ -10,7 +10,7 @@ Na `v0.1`, o contrato publico e pequeno e real:
 - observabilidade propria: `aurora dev <frase>`;
 - bloqueio explicito para hosts Atomic/imutaveis.
 
-## O que a v0.1 faz
+## O que a v0.1.0 faz
 
 Aurora classifica o pedido, detecta o host Linux, aplica politica e executa a rota do pacote do host quando isso cabe no contrato atual.
 
@@ -34,9 +34,9 @@ aurora remover sudo --confirm
 aurora dev "instalar firefox"
 ```
 
-## O que a v0.1 nao promete
+## O que a v0.1.0 nao promete
 
-Aurora `v0.1` nao abre:
+Aurora `v0.1.0` nao abre:
 
 - `flatpak` como rota ativa;
 - AUR, COPR, PPA, AppImage, GitHub Releases;
@@ -66,7 +66,7 @@ Remocao:
 
 ## Politica e honestidade
 
-Aurora decide com contratos estruturados. Na `v0.1`, os campos relevantes ja influenciam o runtime:
+Aurora decide com contratos estruturados. Na `v0.1.0`, os campos relevantes ja influenciam o runtime:
 
 - `domain_kind`
 - `source_type`
