@@ -8,6 +8,8 @@ from pathlib import Path
 
 from support import ROOT
 
+CURRENT_VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+
 
 class InstallerReleaseTests(unittest.TestCase):
     def test_install_and_uninstall_scripts_manage_local_layout(self) -> None:
@@ -28,7 +30,7 @@ class InstallerReleaseTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(install_proc.returncode, 0)
-            self.assertIn("Aurora v0.1.0 instalada", install_proc.stdout)
+            self.assertIn(f"Aurora {CURRENT_VERSION} instalada", install_proc.stdout)
             self.assertTrue((share_dir / "python" / "aurora" / "__main__.py").exists())
             self.assertTrue((bin_dir / "aurora").exists())
             self.assertTrue((bin_dir / "auro").exists())
@@ -44,7 +46,7 @@ class InstallerReleaseTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(version_proc.returncode, 0)
-            self.assertIn("Aurora v0.1.0", version_proc.stdout)
+            self.assertIn(f"Aurora {CURRENT_VERSION}", version_proc.stdout)
 
             uninstall_proc = subprocess.run(
                 ["bash", "uninstall.sh"],

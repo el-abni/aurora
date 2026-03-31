@@ -1,29 +1,49 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v0.1.0-6a5acd)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v0.2.0-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-**Aurora** é uma assistente de terminal para **Linux**, focada em mediação honesta de `host_package` com política explícita, observabilidade própria e execução real no recorte público da `v0.1.0`.
+**Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com política explícita, observabilidade própria e execução real sobre um contrato pequeno e auditável.
 
-Ela nasce como um produto **100% Python**, com launchers oficiais `aurora` e `auro`, e abre sua primeira release pública com um contrato pequeno, real e auditável.
+Na `v0.2.0`, a superfície pública passa a cobrir dois domínios reais:
 
-## O que é a Aurora
+- `host_package` para pacotes do host;
+- `user_software` para software do usuário via `flatpak`.
 
-A Aurora funciona como uma camada de decisão e execução sobre o domínio de `host_package`.
+Pedidos nus, como `aurora procurar firefox`, continuam no default seguro de `host_package`. Pedidos explicitamente marcados como `flatpak` ou `flathub`, como `aurora instalar firefox no flatpak`, entram em `user_software`.
 
-Em vez de tratar o terminal como uma coleção de comandos isolados, ela:
+## O que a Aurora faz
 
-- classifica o pedido;
+A Aurora funciona como uma camada de decisão e execução sobre Linux. Em vez de esconder escolha de rota atrás de heurística opaca, ela:
+
+- classifica a frase;
 - detecta o host Linux;
 - aplica política;
 - escolhe a rota cabível no contrato atual;
-- e expõe um `decision record` auditável com `aurora dev <frase>`.
+- executa com probe de estado quando a ação muda software;
+- e expõe um `decision_record` auditável com `aurora dev <frase>`.
 
-A ideia não é fingir suporte onde ele não existe, e sim abrir a Aurora com uma base pequena, forte e honesta.
+## Contrato público da v0.2.0
 
----
+Rotas reais abertas nesta release:
+
+- `host_package.procurar`
+- `host_package.instalar`
+- `host_package.remover`
+- `flatpak.procurar`
+- `flatpak.instalar`
+- `flatpak.remover`
+
+Comportamento garantido:
+
+- `host_package` continua sendo o default para pedidos nus;
+- `flatpak` só entra quando a frase marca `flatpak` ou `flathub`;
+- `flatpak.instalar` e `flatpak.remover` usam escopo explícito de usuário;
+- `flatpak.instalar` usa `flathub` como remote default nesta release;
+- mutações usam probe antes e depois, com `noop` honesto quando nada precisa mudar;
+- `--confirm` continua fazendo parte real da UX para mutações sensíveis.
 
 ## Exemplos rápidos
 
@@ -32,48 +52,43 @@ A ideia não é fingir suporte onde ele não existe, e sim abrir a Aurora com um
 ```bash
 aurora procurar firefox
 aurora instalar firefox
-aurora instalar firefox --confirm
+aurora instalar sudo --confirm
 aurora remover firefox
 aurora remover sudo --confirm
+```
+
+### Software do usuário via Flatpak
+
+```bash
+aurora procurar firefox no flatpak
+aurora instalar firefox no flatpak
+aurora remover firefox no flatpak --confirm
 ```
 
 ### Observabilidade
 
 ```bash
 aurora dev "procurar firefox"
-aurora dev "instalar obs-studio"
-aurora dev "remover obs-studio"
+aurora dev "instalar firefox no flatpak"
+aurora dev "remover sudo"
 ```
 
----
+## Compatibilidade Linux
 
-## Funcionalidades da v0.1.0
+### `host_package`
 
-A versão atual da **🌌 Aurora** já oferece:
+- suportado agora: Arch/derivadas mutáveis, Debian/Ubuntu/derivadas mutáveis e Fedora mutável;
+- suportado contido: OpenSUSE mutável;
+- bloqueado por política: hosts Atomic/imutáveis.
 
-- produto 100% Python;
-- launchers oficiais `aurora` e `auro`;
-- interpretação inicial de frases para `procurar`, `instalar` e `remover`;
-- normalização conservadora e proteção de tokens sensíveis;
-- `host_profile` estruturado para Linux;
-- suporte real de `host_package.procurar`, `host_package.instalar` e `host_package.remover`;
-- política operacional com `domain_kind`, `source_type`, `trust_level`, `software_criticality`, `trust_signals`, `trust_gaps`, `policy_outcome`, `requires_confirmation` e `reversal_level`;
-- `decision_record` próprio com `aurora dev <frase>`;
-- noop honesto, bloqueio explícito por política e confirmação real com `--confirm` quando necessário.
+### `user_software` via `flatpak`
 
----
+- depende do backend `flatpak` estar presente no host;
+- atua em escopo de usuário, sem mutação do pacote do host;
+- vale também em hosts Atomic/imutáveis quando o pedido explicita `flatpak`;
+- continua pequeno: não há seleção pública de remote além do default `flathub`.
 
-## Compatibilidade Linux da v0.1.0
-
-A matriz pública atual fica assim:
-
-- **suportado agora**: Arch/derivadas mutáveis, Debian/Ubuntu/derivadas mutáveis e Fedora mutável;
-- **suportado contido**: OpenSUSE mutável;
-- **bloqueado por política**: hosts Atomic/imutáveis.
-
-Ferramentas observadas no host **não** viram promessa de suporte automaticamente.
-
----
+Ferramenta observada no host não vira promessa de suporte automaticamente. A Aurora só abre rota onde já existe política, execução real e auditoria.
 
 ## Instalação
 
@@ -104,8 +119,6 @@ Remoção:
 ./uninstall.sh
 ```
 
----
-
 ## Como usar
 
 Para ver o help público:
@@ -115,67 +128,37 @@ aurora --help
 auro --help
 ```
 
-A identidade pública da assistente é:
+A identidade pública da ferramenta é:
 
 ```text
 🌌 Aurora
 ```
 
-No help, a versão aparece como:
+Nesta release, a versão pública aparece como:
 
 ```text
-🌌 Aurora v0.1.0
+🌌 Aurora v0.2.0
 ```
 
----
+## O que a v0.2.0 não promete
 
-## Contrato público mínimo da v0.1.0
+A Aurora `v0.2.0` ainda não abre:
 
-- `aurora --help` e `auro --help` renderizam o help público da base ativa.
-- `aurora --version` e `auro --version` imprimem `Aurora v0.1.0`.
-- `aurora dev <frase>` expõe um `decision record` próprio com request, host profile, policy, rota e resultado planejado/executado.
-- na `v0.1.0`, `procurar`, `instalar` e `remover` significam explicitamente **pacote do host**.
-- na `v0.1.0`, esse trio não significa software do usuário, app store, múltiplas origens nem política ampla de instalação cross-source.
-- na `v0.1.0`, hosts Atomic/imutáveis continuam bloqueados por política de forma explícita.
-- na `v0.1.0`, `flatpak` e `rpm-ostree` podem aparecer apenas como ferramentas observadas, fora do contrato ativo.
-- na `v0.1.0`, `--confirm` faz parte real da UX para mutações sensíveis.
-
-## O que a v0.1.0 não promete
-
-A Aurora `v0.1.0` não abre:
-
-- `flatpak` como rota ativa;
+- remotes `flatpak` além do default `flathub`;
 - AUR, COPR, PPA, AppImage e GitHub Releases;
 - `rpm-ostree`, toolbox, distrobox e `ujust`;
-- arquivos, rede e manutenção ampla do host;
-- software do usuário como domínio público desta primeira release.
-
----
-
-## Filosofia do projeto
-
-A Aurora não tenta simular amplitude vazia.
-
-Ela existe para:
-
-- abrir uma base Python própria e auditável;
-- tratar Linux com honestidade;
-- expor política em vez de esconder decisão;
-- mediar mutações do host com mais clareza;
-- crescer por contrato, não por improviso.
-
----
+- suporte operacional real a hosts imutáveis;
+- manutenção ampla do host;
+- backlog amplo de arquivos e rede.
 
 ## Documentação
 
-A documentação complementar da release fica em:
+A documentação complementar desta release fica em:
 
 - [Arquitetura](docs/ARCHITECTURE.md)
 - [Compatibilidade Linux](docs/COMPATIBILITY_LINUX.md)
 - [Política de Instalação](docs/INSTALLATION_POLICY.md)
 - [Mapa de Herança da Aury](docs/AURY_HERITAGE_MAP.md)
-
----
 
 ## Licença
 

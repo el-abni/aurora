@@ -6,36 +6,34 @@ Comandos públicos:
 - aurora instalar <pacote> --confirm
 - aurora remover <pacote>
 - aurora remover <pacote> --confirm
+- aurora procurar <software> no flatpak
+- aurora instalar <software> no flatpak
+- aurora remover <software> no flatpak
+- aurora remover <software> no flatpak --confirm
 - aurora dev <frase>
 - aurora --help
 - aurora --version
 
-Contrato público da v0.1:
+Contrato público da v0.2.0:
 - produto 100% Python;
 - launchers oficiais: aurora e auro;
-- domínio suportado de verdade: host_package;
-- ações reais: procurar, instalar e remover;
-- observabilidade: aurora dev com decision record proprio.
+- domínios ativos: host_package e user_software;
+- rotas reais: host_package.procurar/instalar/remover e flatpak.procurar/instalar/remover;
+- pedidos nus continuam em host_package;
+- pedidos com flatpak/flathub vão para user_software.
 
-Compatibilidade Linux da v0.1:
-- suportado agora: Arch/derivadas mutáveis, Debian/Ubuntu/derivadas mutáveis, Fedora mutável;
-- suportado contido: OpenSUSE mutável;
-- bloqueado por política: hosts Atomic/imutáveis.
+Confirmação:
+- use --confirm quando a Aurora pedir confirmação explícita;
+- isso cobre mutações sensíveis de host_package e remoções reais via flatpak.
 
-Política ativa:
-- source_type=host_package_manager;
-- trust_level=distribution_managed;
-- software_criticality participa do juizo;
-- policy_outcome pode permitir, bloquear ou exigir confirmação;
-- requires_confirmation e reversal_level afetam mutações sensíveis;
-- use --confirm no fim do comando quando a Aurora pedir confirmação explícita.
+Compatibilidade:
+- host_package: Arch, Debian/Ubuntu, Fedora e OpenSUSE mutáveis;
+- host_package em Atomic/imutáveis: bloqueado por política;
+- flatpak: depende do backend estar presente no host e atua no escopo do usuário.
 
-Fora da v0.1:
-- flatpak como rota ativa;
-- AUR, COPR, PPA, AppImage, GitHub Releases;
+Fora da v0.2.0:
+- remotes flatpak além do default flathub;
+- AUR, COPR, PPA, AppImage e GitHub Releases;
 - rpm-ostree, toolbox, distrobox e ujust;
-- arquivos, rede e manutenção ampla do host.
-
-Ferramentas observadas não são promessa de suporte:
-- flatpak;
-- rpm-ostree.
+- suporte operacional real a hosts imutáveis;
+- manutenção ampla do host, arquivos e rede.

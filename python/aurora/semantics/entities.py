@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from aurora.contracts.requests import PreparedAction
 
-_PACKAGE_DOMAIN_NOISE_TOKENS = {
+PACKAGE_DOMAIN_NOISE_TOKENS = {
     "a",
     "app",
     "aplicacao",
@@ -22,11 +22,15 @@ _PACKAGE_DOMAIN_NOISE_TOKENS = {
 }
 
 
-def extract_package_target(action: PreparedAction) -> str:
+def extract_target_token_pairs(action: PreparedAction) -> list[tuple[str, str]]:
     start = 1
     while start < len(action.normalized_tokens):
         token = action.normalized_tokens[start]
-        if token not in _PACKAGE_DOMAIN_NOISE_TOKENS:
+        if token not in PACKAGE_DOMAIN_NOISE_TOKENS:
             break
         start += 1
-    return " ".join(action.original_tokens[start:]).strip()
+    return list(zip(action.original_tokens[start:], action.normalized_tokens[start:]))
+
+
+def extract_package_target(action: PreparedAction) -> str:
+    return " ".join(original for original, _normalized in extract_target_token_pairs(action)).strip()

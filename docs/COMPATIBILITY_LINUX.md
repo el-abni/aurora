@@ -1,44 +1,41 @@
-# Compatibilidade Linux - Aurora v0.1.0
+# Compatibilidade Linux - Aurora v0.2.0
 
-## Contrato da v0.1
-
-O contrato publico atual da Aurora cobre apenas o dominio `host_package`.
-
-Accoes reais:
-
-- `procurar`
-- `instalar`
-- `remover`
-
-## Matriz atual
+## Matriz atual de `host_package`
 
 | Perfil Linux | Estado | Escopo real |
 | --- | --- | --- |
-| Arch e derivadas mutaveis | suportado agora | procurar, instalar, remover |
-| Debian/Ubuntu e derivadas mutaveis | suportado agora | procurar, instalar, remover |
-| Fedora mutavel | suportado agora | procurar, instalar, remover |
-| OpenSUSE mutavel | suportado contido | procurar, instalar, remover |
-| Atomic / imutaveis | bloqueado por politica | sem mutacao do host |
+| Arch e derivadas mutáveis | suportado agora | procurar, instalar, remover |
+| Debian/Ubuntu e derivadas mutáveis | suportado agora | procurar, instalar, remover |
+| Fedora mutável | suportado agora | procurar, instalar, remover |
+| OpenSUSE mutável | suportado contido | procurar, instalar, remover |
+| Atomic / imutáveis | bloqueado por política | sem mutação de `host_package` |
 
 ## Leitura correta da fronteira
 
-- `suportado agora` significa rota real de `host_package` aberta;
-- `suportado contido` significa escopo util e honesto, sem promocao artificial;
-- `bloqueado por politica` significa bloqueio deliberado, nao acidente de backend.
+- `suportado agora` significa rota real aberta para `host_package`;
+- `suportado contido` significa escopo útil e honesto, sem promoção artificial;
+- `bloqueado por política` significa bloqueio deliberado, não acidente de backend.
 
-## Atomic / imutaveis
+## `user_software` via `flatpak`
 
-Aurora `v0.1` bloqueia mutacao de `host_package` em perfis Atomic/imutaveis.
+Na `v0.2.0`, `flatpak` deixa de ser apenas ferramenta observada quando o pedido explicita `flatpak` ou `flathub`.
 
-Isso inclui a leitura honesta de perfis equivalentes a:
+Leitura correta desta frente:
 
-- Universal Blue e derivados equivalentes;
-- `opensuse-microos` e `microos`;
-- outros perfis detectados como imutaveis pela heuristica atual.
+- depende do backend `flatpak` estar presente no host;
+- atua em escopo de usuário;
+- não herda o bloqueio de mutação de `host_package` em Atomic/imutáveis;
+- cobre `procurar`, `instalar` e `remover`;
+- exige confirmação explícita para remoção real.
 
-## Ferramentas observadas que nao entram no contrato ativo
+## O que observação ainda não significa
 
-A deteccao de ferramenta nao vira promessa de suporte. Na `v0.1`, isto vale especialmente para:
+Detecção de ferramenta não vira promessa automática de suporte. Isto continua valendo para:
 
-- `flatpak`;
-- `rpm-ostree`.
+- AUR;
+- COPR;
+- PPA;
+- `rpm-ostree`;
+- toolbox;
+- distrobox;
+- `ujust`.

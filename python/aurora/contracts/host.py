@@ -50,4 +50,4 @@ class HostProfile:
     def observed_package_tools_label(self) -> str:
         if not self.observed_package_tools:
             return "-"
-        return f"{', '.join(self.observed_package_tools)} (fora do contrato ativo)"
+        return ", ".join(self.observed_package_tools)

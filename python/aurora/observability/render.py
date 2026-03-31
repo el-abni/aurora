@@ -4,6 +4,14 @@ from aurora.contracts.decisions import DecisionRecord
 from aurora.presentation.formatting import field
 
 
+def _scope_label(record: DecisionRecord) -> str:
+    if record.request.domain_kind == "user_software":
+        return "software do usuario"
+    if record.request.domain_kind == "host_package":
+        return "pacote do host"
+    return "indefinido"
+
+
 def render_decision_record(record: DecisionRecord) -> str:
     lines = [
         "Aurora decision record",
@@ -15,9 +23,11 @@ def render_decision_record(record: DecisionRecord) -> str:
         field("normalized_text", record.request.normalized_text),
         field("intent", record.request.intent),
         field("domain_kind", record.request.domain_kind),
+        field("scope_label", _scope_label(record)),
         field("target", record.request.target or "-"),
         field("status", record.request.status),
         field("reason", record.request.reason),
+        field("observations", ", ".join(record.request.observations) or "-"),
         field("action_count", str(record.request.action_count)),
     ]
 
@@ -40,6 +50,7 @@ def render_decision_record(record: DecisionRecord) -> str:
             [
                 "",
                 "Policy",
+                field("domain_kind", record.policy.domain_kind),
                 field("source_type", record.policy.source_type),
                 field("trust_level", record.policy.trust_level),
                 field("software_criticality", record.policy.software_criticality),
@@ -53,13 +64,30 @@ def render_decision_record(record: DecisionRecord) -> str:
             ]
         )
 
+    if record.target_resolution is not None:
+        lines.extend(
+            [
+                "",
+                "Target resolution",
+                field("original_target", record.target_resolution.original_target or "-"),
+                field("resolved_target", record.target_resolution.resolved_target or "-"),
+                field("status", record.target_resolution.status),
+                field("source", record.target_resolution.source or "-"),
+                field("canonicalized", str(record.target_resolution.canonicalized).lower()),
+                field("candidates", ", ".join(record.target_resolution.candidates) or "-"),
+                field("resolution_reason", record.target_resolution.reason),
+            ]
+        )
+
     if record.execution_route is not None:
         lines.extend(
             [
                 "",
                 "Execution route",
                 field("route_name", record.execution_route.route_name),
+                field("action_name", record.execution_route.action_name),
                 field("backend_name", record.execution_route.backend_name),
+                field("scope_label", _scope_label(record)),
                 field("implemented", str(record.execution_route.implemented).lower()),
                 field(
                     "requires_privilege_escalation",

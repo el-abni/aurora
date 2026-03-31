@@ -8,6 +8,10 @@ from collections.abc import Callable, Sequence
 
 from aurora.contracts.decisions import DecisionRecord
 from aurora.contracts.execution import ExecutionProbe, ExecutionResult
+from aurora.install.sources.flatpak import (
+    flatpak_mutation_reports_no_matching_ref,
+    flatpak_search_has_no_results,
+)
 from aurora.linux.host_package import mutation_reports_no_matching_package, search_has_no_results
 from aurora.presentation.messages import (
     backend_failed_message,
@@ -23,6 +27,7 @@ from aurora.presentation.messages import (
     search_results_message,
     state_confirmation_failed_message,
     state_probe_missing_message,
+    target_resolution_blocked_message,
 )
 
 UNSUPPORTED_EXIT = 120
@@ -73,7 +78,7 @@ def _probe_state(
 
     proc = run(route.state_probe_command)
     package_present = proc.returncode == 0
-    summary = "pacote presente no host." if package_present else "pacote ausente no host."
+    summary = _probe_summary(record, package_present)
     return ExecutionProbe(
         status="completed",
         command=route.state_probe_command,
@@ -93,6 +98,57 @@ def _result(
     execution: ExecutionResult,
 ) -> tuple[int, DecisionRecord, str]:
     return exit_code, replace(record, outcome=outcome, summary=message, execution=execution), message
+
+
+def _is_user_software(record: DecisionRecord) -> bool:
+    return record.request.domain_kind == "user_software"
+
+
+def _target_label(record: DecisionRecord) -> str:
+    return "software" if _is_user_software(record) else "pacote"
+
+
+def _location_label(record: DecisionRecord) -> str:
+    return "na instalação do usuário" if _is_user_software(record) else "neste host"
+
+
+def _probe_summary(record: DecisionRecord, package_present: bool) -> str:
+    if _is_user_software(record):
+        if package_present:
+            return "software presente na instalação do usuário."
+        return "software ausente na instalação do usuário."
+    if package_present:
+        return "pacote presente no host."
+    return "pacote ausente no host."
+
+
+def _target_resolution_block_reason(record: DecisionRecord) -> str | None:
+    resolution = record.target_resolution
+    if resolution is None:
+        return None
+    if resolution.status in {"ambiguous", "not_found", "unresolved"}:
+        return resolution.reason
+    return None
+
+
+def _search_reports_no_results(
+    record: DecisionRecord,
+    *,
+    stdout: str,
+    stderr: str,
+    returncode: int,
+) -> bool:
+    route = record.execution_route
+    if route is not None and route.backend_name == "flatpak":
+        return flatpak_search_has_no_results(stdout, stderr, returncode)
+    return search_has_no_results(stdout, stderr, returncode)
+
+
+def _mutation_reports_not_found(record: DecisionRecord, stdout: str, stderr: str) -> bool:
+    route = record.execution_route
+    if route is not None and route.backend_name == "flatpak":
+        return flatpak_mutation_reports_no_matching_ref(stdout, stderr)
+    return mutation_reports_no_matching_package(stdout, stderr)
 
 
 def _execute_search(
@@ -121,7 +177,12 @@ def _execute_search(
         )
 
     proc = run(route.command)
-    if search_has_no_results(proc.stdout, proc.stderr, proc.returncode):
+    if _search_reports_no_results(
+        record,
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+        returncode=proc.returncode,
+    ):
         message = no_results_message(record.request.target, route.backend_name)
         return _result(
             record,
@@ -205,7 +266,12 @@ def _execute_mutation(
         route.action_name == "remover" and pre_probe.package_present is False
     )
     if should_noop:
-        message = noop_message(route.action_name, record.request.target)
+        message = noop_message(
+            route.action_name,
+            record.request.target,
+            target_label=_target_label(record),
+            location_label=_location_label(record),
+        )
         return _result(
             record,
             exit_code=0,
@@ -215,6 +281,28 @@ def _execute_mutation(
                 status="noop",
                 attempted=False,
                 confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                command=route.command,
+                pre_probe=pre_probe,
+                summary=message,
+            ),
+        )
+
+    if record.policy is not None and record.policy.policy_outcome == "require_confirmation":
+        message = confirmation_required_message(
+            record.request.target,
+            record.policy.software_criticality,
+            record.policy.reversal_level,
+            target_label=_target_label(record),
+        )
+        return _result(
+            record,
+            exit_code=1,
+            outcome="blocked",
+            message=message,
+            execution=ExecutionResult(
+                status="confirmation_required",
+                attempted=False,
+                confirmation_supplied=record.policy.confirmation_supplied,
                 command=route.command,
                 pre_probe=pre_probe,
                 summary=message,
@@ -240,8 +328,13 @@ def _execute_mutation(
 
     proc = run(route.command)
     if proc.returncode != 0:
-        if mutation_reports_no_matching_package(proc.stdout, proc.stderr):
-            message = package_not_found_message(route.action_name, record.request.target, route.backend_name)
+        if _mutation_reports_not_found(record, proc.stdout, proc.stderr):
+            message = package_not_found_message(
+                route.action_name,
+                record.request.target,
+                route.backend_name,
+                target_label=_target_label(record),
+            )
             return _result(
                 record,
                 exit_code=1,
@@ -318,7 +411,11 @@ def _execute_mutation(
             ),
         )
 
-    message = mutation_success_message(route.action_name, record.request.target)
+    message = mutation_success_message(
+        route.action_name,
+        record.request.target,
+        target_label=_target_label(record),
+    )
     return _result(
         record,
         exit_code=0,
@@ -359,10 +456,14 @@ def perform_execution(
         )
 
     if record.policy is not None and record.policy.policy_outcome == "require_confirmation":
+        route = record.execution_route
+        if route is not None and route.action_name in {"instalar", "remover"}:
+            return _execute_mutation(record, run=run, environ=environ)
         message = confirmation_required_message(
             record.request.target,
             record.policy.software_criticality,
             record.policy.reversal_level,
+            target_label=_target_label(record),
         )
         return _result(
             record,
@@ -378,8 +479,12 @@ def perform_execution(
         )
 
     if record.outcome == "blocked":
-        reason = record.policy.reason if record.policy is not None else record.request.reason
-        message = blocked_message(reason)
+        resolution_reason = _target_resolution_block_reason(record)
+        if resolution_reason is not None:
+            message = target_resolution_blocked_message(resolution_reason)
+        else:
+            reason = record.policy.reason if record.policy is not None else record.request.reason
+            message = blocked_message(reason)
         return _result(
             record,
             exit_code=1,

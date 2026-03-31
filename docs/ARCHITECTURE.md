@@ -1,89 +1,110 @@
-# Architecture - Aurora v0.1.0
+# Architecture - Aurora v0.2.0
 
 ## Tese curta
 
-Aurora `v0.1` e um produto **100% Python** com foco estreito em `host_package`.
+Aurora `v0.2.0` é um produto **100% Python** com duas frentes reais e contidas:
 
-Ela nao depende de Fish como centro arquitetural, nao abre multiplas fontes e nao trata hosts imutaveis como se fossem mutaveis.
+- `host_package` para pacotes do host;
+- `user_software` para software do usuário via `flatpak`.
+
+Ela não depende de Fish como centro do runtime, não trata ferramenta observada como promessa de suporte e não colapsa espécies diferentes de ação numa única rota opaca.
 
 ## Fluxo principal
 
-1. `cli.py` recebe o comando publico;
-2. `semantics/` normaliza a frase e classifica a intencao minima;
-3. `linux/host_profile.py` detecta familia, mutabilidade e backends observados;
-4. `install/policy_engine.py` produz o juizo de politica;
-5. `install/candidates.py` e `install/route_selector.py` escolhem a rota;
-6. `install/execution_handoff.py` executa a rota, faz probe antes/depois e produz o resultado final;
-7. `observability/` registra e renderiza o `decision_record`.
+1. `cli.py` recebe o comando público;
+2. `semantics/` normaliza a frase e classifica a intenção mínima;
+3. `linux/host_profile.py` detecta família, mutabilidade e backends observados;
+4. `install/domain_classifier.py` decide entre `host_package` e `user_software`;
+5. `install/policy_engine.py` produz o juízo de política;
+6. `install/candidates.py` e `install/route_selector.py` escolhem a rota executável;
+7. `install/execution_handoff.py` executa, faz probes e produz o resultado final;
+8. `observability/` registra e renderiza o `decision_record`.
 
-## Modulos principais
+## Módulos principais
 
 ### `semantics/`
 
-Guarda o patrimonio herdado e refatorado da Aury para:
+Guarda o patrimônio herdado e refatorado da Aury para:
 
-- normalizacao;
-- protecao de tokens sensiveis;
-- split simples de acoes;
-- classificacao minima de `procurar`, `instalar` e `remover`.
+- normalização;
+- proteção de tokens sensíveis;
+- split simples de ações;
+- classificação mínima de `procurar`, `instalar` e `remover`.
 
 ### `linux/`
 
-Guarda a parte Linux real da `v0.1`:
+Guarda a parte Linux real da Aurora:
 
 - `host_profile`;
-- deteccao de mutabilidade;
-- matriz por familia;
+- detecção de mutabilidade;
+- matriz por família;
 - rotas concretas de `host_package`;
-- bloqueio de hosts Atomic/imutaveis.
+- bloqueio explícito de mutação do host em perfis Atomic/imutáveis.
 
 ### `install/`
 
-Orquestra a decisao:
+Orquestra a decisão:
 
-- classificacao de dominio;
-- candidatos de rota;
+- classificação de domínio;
 - policy;
-- selecao;
-- handoff de execucao.
+- candidatos e seleção de rota;
+- handoff de execução;
+- separação entre bloqueio, `noop`, confirmação e erro operacional.
 
 ### `observability/`
 
 Explica o que a Aurora entendeu e fez:
 
 - `decision_record`;
-- renderizacao curta e expandida;
+- renderização curta e expandida;
 - `aurora dev`.
 
 ### `presentation/`
 
-Mantem a superficie publica:
+Mantém a superfície pública:
 
 - help;
 - mensagens de bloqueio;
-- mensagens de confirmacao;
+- mensagens de confirmação;
 - mensagens de resultado.
 
-## Contrato de execucao da v0.1
+## Rotas abertas na v0.2.0
 
-Rotas realmente abertas:
+### `host_package`
+
+Rotas reais:
 
 - `host_package.search`
 - `host_package.install`
 - `host_package.remove`
 
-Comportamentos garantidos:
+Comportamento garantido:
 
-- probe antes/depois para mutacao;
+- probe antes/depois para mutação;
 - `noop` honesto;
-- bloqueio por politica em hosts imutaveis;
-- confirmacao explicita quando a politica exigir;
-- separacao entre bloqueio, `noop`, execucao e erro operacional.
+- bloqueio por política em hosts imutáveis;
+- confirmação explícita quando a política exigir.
 
-## O que esta deliberadamente fora
+### `user_software`
 
-- `flatpak` como rota ativa;
-- qualquer fonte alem de `host_package_manager`;
-- manutencao ampla do host;
-- dominios de arquivos e rede;
-- multi-acao real como superficie publica.
+Primeira frente real:
+
+- `flatpak.procurar`
+- `flatpak.instalar`
+- `flatpak.remover`
+
+Comportamento garantido:
+
+- `flatpak` só entra por pedido explícito;
+- `flatpak.instalar` e `flatpak.remover` usam escopo explícito de usuário;
+- mutação usa probe antes/depois e `noop` honesto;
+- `flatpak.remover` exige confirmação explícita quando a remoção realmente precisa acontecer.
+
+## Fronteiras deliberadas
+
+Esta release continua pequena de propósito:
+
+- pedido nu continua em `host_package`;
+- `flatpak` não generaliza seleção de remote além do default `flathub`;
+- `user_software` não abre outras fontes além de `flatpak`;
+- hosts imutáveis reais continuam fora da superfície operacional.

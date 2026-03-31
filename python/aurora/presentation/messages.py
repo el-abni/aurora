@@ -23,22 +23,39 @@ def search_results_message(target: str, backend_name: str, details: str) -> str:
     return f"✅ encontrei resultados para '{target}' no backend '{backend_name}':\n{details.rstrip()}"
 
 
-def package_not_found_message(intent: str, target: str, backend_name: str) -> str:
+def package_not_found_message(
+    intent: str,
+    target: str,
+    backend_name: str,
+    *,
+    target_label: str = "pacote",
+) -> str:
     if intent == "instalar":
-        return f"❌ não encontrei o pacote '{target}' no backend '{backend_name}'."
-    return f"❌ não consegui localizar o pacote '{target}' no backend '{backend_name}' para remover."
+        return f"❌ não encontrei o {target_label} '{target}' no backend '{backend_name}'."
+    return f"❌ não consegui localizar o {target_label} '{target}' no backend '{backend_name}' para remover."
 
 
-def noop_message(intent: str, target: str) -> str:
+def noop_message(
+    intent: str,
+    target: str,
+    *,
+    target_label: str = "pacote",
+    location_label: str = "neste host",
+) -> str:
     if intent == "instalar":
-        return f"ℹ️ o pacote '{target}' já está instalado neste host. Nada foi feito."
-    return f"ℹ️ o pacote '{target}' já não está instalado neste host. Nada foi feito."
+        return f"ℹ️ o {target_label} '{target}' já está instalado {location_label}. Nada foi feito."
+    return f"ℹ️ o {target_label} '{target}' já não está instalado {location_label}. Nada foi feito."
 
 
-def mutation_success_message(intent: str, target: str) -> str:
+def mutation_success_message(
+    intent: str,
+    target: str,
+    *,
+    target_label: str = "pacote",
+) -> str:
     if intent == "instalar":
-        return f"✅ pronto, o pacote '{target}' esta instalado."
-    return f"✅ pronto, o pacote '{target}' foi removido."
+        return f"✅ pronto, o {target_label} '{target}' está instalado."
+    return f"✅ pronto, o {target_label} '{target}' foi removido."
 
 
 def state_probe_missing_message(backend_name: str, probe_label: str) -> str:
@@ -58,9 +75,19 @@ def blocked_message(reason: str) -> str:
     return f"❌ bloqueado por política: {reason}"
 
 
-def confirmation_required_message(target: str, software_criticality: str, reversal_level: str) -> str:
+def target_resolution_blocked_message(reason: str) -> str:
+    return f"❌ bloqueado por resolução de alvo: {reason}"
+
+
+def confirmation_required_message(
+    target: str,
+    software_criticality: str,
+    reversal_level: str,
+    *,
+    target_label: str = "pacote",
+) -> str:
     return (
-        f"❌ a mutação do pacote '{target}' exige confirmação explícita nesta rodada "
+        f"❌ a mutação do {target_label} '{target}' exige confirmação explícita nesta rodada "
         f"(criticidade {software_criticality}; reversão {reversal_level}). Use --confirm para prosseguir."
     )
 

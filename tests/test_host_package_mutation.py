@@ -6,10 +6,107 @@ from pathlib import Path
 
 from aurora.install.execution_handoff import perform_execution
 from aurora.install.planner import plan_text
+from aurora.observability.decision_record import decision_record_to_dict
 from support import run_module, setup_host_package_testbed, write_os_release, write_stub
 
 
 class HostPackageMutationTests(unittest.TestCase):
+    def test_install_resolves_compound_human_name_before_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("obs-studio|OBS Studio",),
+            )
+            exit_code, record, message = perform_execution(plan_text("instalar obs studio", environ=env), environ=env)
+            payload = decision_record_to_dict(record)
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(payload["target_resolution"]["status"], "resolved")
+            self.assertEqual(payload["target_resolution"]["resolved_target"], "obs-studio")
+            self.assertEqual(payload["execution_route"]["command"][-1], "obs-studio")
+            self.assertIn("está instalado", message)
+            self.assertIn("obs-studio", state_file.read_text(encoding="utf-8"))
+
+    def test_install_supports_explicit_hyphenated_package_name(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("obs-studio|OBS Studio",),
+            )
+            payload = decision_record_to_dict(plan_text("instalar obs-studio", environ=env))
+            self.assertEqual(payload["target_resolution"]["status"], "direct")
+            self.assertEqual(payload["target_resolution"]["resolved_target"], "obs-studio")
+            self.assertEqual(payload["execution_route"]["command"][-1], "obs-studio")
+
+            proc = run_module("instalar", "obs-studio", env=env)
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("está instalado", proc.stdout)
+            self.assertIn("obs-studio", state_file.read_text(encoding="utf-8"))
+
+    def test_remove_resolves_compound_human_name_before_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("obs-studio|OBS Studio",),
+                installed_packages=("obs-studio",),
+            )
+            exit_code, record, message = perform_execution(plan_text("remover obs studio", environ=env), environ=env)
+            payload = decision_record_to_dict(record)
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(payload["target_resolution"]["status"], "resolved")
+            self.assertEqual(payload["target_resolution"]["resolved_target"], "obs-studio")
+            self.assertEqual(payload["execution_route"]["command"][-1], "obs-studio")
+            self.assertIn("foi removido", message)
+            self.assertEqual(state_file.read_text(encoding="utf-8"), "")
+
+    def test_compound_human_name_blocks_when_resolution_is_ambiguous(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("obs-studio|OBS Studio", "obs_studio|OBS Studio Legacy"),
+            )
+            exit_code, record, message = perform_execution(plan_text("instalar obs studio", environ=env), environ=env)
+            payload = decision_record_to_dict(record)
+            self.assertEqual(exit_code, 1)
+            self.assertEqual(payload["outcome"], "blocked")
+            self.assertEqual(payload["target_resolution"]["status"], "ambiguous")
+            self.assertEqual(set(payload["target_resolution"]["candidates"]), {"obs-studio", "obs_studio"})
+            self.assertNotIn("execution_route", payload)
+            self.assertIn("bloqueado por resolução de alvo", message)
+
+    def test_compound_human_name_blocks_when_no_exact_package_match_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("obs-studio-browser|OBS Studio Browser",),
+            )
+            exit_code, record, message = perform_execution(plan_text("instalar obs studio", environ=env), environ=env)
+            payload = decision_record_to_dict(record)
+            self.assertEqual(exit_code, 1)
+            self.assertEqual(payload["outcome"], "blocked")
+            self.assertEqual(payload["target_resolution"]["status"], "not_found")
+            self.assertNotIn("execution_route", payload)
+            self.assertIn("bloqueado por resolução de alvo", message)
+
     def test_install_executes_across_supported_families(self) -> None:
         cases = [
             ("arch", "cachyos", "arch"),
@@ -30,7 +127,7 @@ class HostPackageMutationTests(unittest.TestCase):
                     )
                     proc = run_module("instalar", "firefox", env=env)
                     self.assertEqual(proc.returncode, 0)
-                    self.assertIn("esta instalado", proc.stdout)
+                    self.assertIn("está instalado", proc.stdout)
                     self.assertIn("firefox", state_file.read_text(encoding="utf-8"))
 
     def test_remove_executes_across_supported_families(self) -> None:
@@ -122,6 +219,21 @@ class HostPackageMutationTests(unittest.TestCase):
             self.assertEqual(confirmed.returncode, 0)
             self.assertIn("foi removido", confirmed.stdout)
             self.assertNotIn("sudo", state_file.read_text(encoding="utf-8"))
+
+    def test_sensitive_remove_noops_when_package_is_already_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("sudo",),
+            )
+            proc = run_module("remover", "sudo", env=env)
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("já não está instalado", proc.stdout)
+            self.assertEqual(state_file.read_text(encoding="utf-8"), "")
 
     def test_missing_state_probe_is_reported_as_operational_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

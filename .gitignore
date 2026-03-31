@@ -1,6 +1,3 @@
-
 .aurora-private/
-
-.aurora-private/
-
-.aurora-private/
+__pycache__/
+*.pyc

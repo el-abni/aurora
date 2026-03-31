@@ -35,7 +35,7 @@ _CRITICAL_PACKAGE_PREFIXES = (
 )
 
 
-def _software_criticality(request: SemanticRequest) -> str:
+def _host_package_software_criticality(request: SemanticRequest) -> str:
     if request.intent == "procurar":
         return "low"
 
@@ -50,7 +50,7 @@ def _software_criticality(request: SemanticRequest) -> str:
     return "high"
 
 
-def _reversal_level(intent: str, software_criticality: str) -> str:
+def _host_package_reversal_level(intent: str, software_criticality: str) -> str:
     if intent == "procurar":
         return "informational"
     if intent == "instalar":
@@ -59,17 +59,15 @@ def _reversal_level(intent: str, software_criticality: str) -> str:
         return "hard_to_reverse"
     return "reinstall_required"
 
-def assess_policy(
+
+def _assess_host_package_policy(
     request: SemanticRequest,
     profile: HostProfile | None,
     *,
     confirmation_supplied: bool = False,
 ) -> PolicyAssessment | None:
-    if request.domain_kind != "host_package":
-        return None
-
-    software_criticality = _software_criticality(request)
-    reversal_level = _reversal_level(request.intent, software_criticality)
+    software_criticality = _host_package_software_criticality(request)
+    reversal_level = _host_package_reversal_level(request.intent, software_criticality)
     requires_confirmation = (
         request.intent in {"instalar", "remover"} and software_criticality in {"high", "sensitive"}
     )
@@ -143,3 +141,126 @@ def assess_policy(
         reversal_level=reversal_level,
         reason=reason,
     )
+
+
+def _user_software_software_criticality(request: SemanticRequest) -> str:
+    if request.intent == "procurar":
+        return "low"
+    return "medium"
+
+
+def _user_software_reversal_level(intent: str) -> str:
+    if intent == "procurar":
+        return "informational"
+    if intent == "instalar":
+        return "user_scope_change"
+    return "user_scope_removal"
+
+
+def _assess_user_software_policy(
+    request: SemanticRequest,
+    profile: HostProfile | None,
+    *,
+    confirmation_supplied: bool = False,
+) -> PolicyAssessment | None:
+    software_criticality = _user_software_software_criticality(request)
+    reversal_level = _user_software_reversal_level(request.intent)
+    requires_confirmation = request.intent == "remover"
+
+    if profile is None:
+        return PolicyAssessment(
+            domain_kind="user_software",
+            source_type="flatpak_remote",
+            trust_level="guarded",
+            software_criticality=software_criticality,
+            trust_signals=(),
+            trust_gaps=("host_profile_unavailable",),
+            policy_outcome="block",
+            requires_confirmation=requires_confirmation,
+            confirmation_supplied=confirmation_supplied,
+            reversal_level=reversal_level,
+            reason="o host profile nao esta disponivel.",
+        )
+
+    source_hint = next(
+        (item.split(":", 1)[1] for item in request.observations if item.startswith("source_hint:")),
+        "flatpak",
+    )
+    trust_signals = [
+        "domain:user_software",
+        "source_type:flatpak_remote",
+        f"source_hint:{source_hint}",
+        f"mutability:{profile.mutability}",
+        f"software_criticality:{software_criticality}",
+    ]
+    trust_gaps: list[str] = []
+    if request.intent == "procurar":
+        trust_gaps.append("flatpak_search_scope_not_generalized")
+    else:
+        trust_signals.extend(("installation_scope:user", "remote_default:flathub"))
+        trust_gaps.append("flatpak_remote_selection_not_generalized")
+    if "flatpak" in profile.observed_package_tools:
+        trust_signals.append("backend:flatpak_observed")
+    if confirmation_supplied:
+        trust_signals.append("confirmation:explicit")
+
+    outcome = "allow"
+    reason = "user_software via flatpak foi aceito como rota explicita nesta release."
+
+    if request.status != "CONSISTENT":
+        outcome = "block"
+        trust_gaps.append("request_not_consistent")
+        reason = request.reason
+    elif "flatpak" not in profile.observed_package_tools:
+        outcome = "block"
+        trust_gaps.append("flatpak_backend_not_observed")
+        reason = "o backend flatpak nao foi observado neste host."
+    elif request.intent == "instalar":
+        reason = (
+            "flatpak.instalar usa installation scope explicito de usuario e remote default flathub "
+            "nesta rodada."
+        )
+    elif request.intent == "remover":
+        reason = "flatpak.remover usa installation scope explicito de usuario nesta rodada."
+
+    if outcome == "allow" and requires_confirmation and not confirmation_supplied:
+        outcome = "require_confirmation"
+        trust_gaps.append("confirmation_missing_for_user_software_removal")
+        reason = (
+            "a remocao de software do usuario via flatpak exige confirmacao explicita nesta rodada."
+        )
+
+    return PolicyAssessment(
+        domain_kind="user_software",
+        source_type="flatpak_remote",
+        trust_level="guarded",
+        software_criticality=software_criticality,
+        trust_signals=tuple(trust_signals),
+        trust_gaps=tuple(trust_gaps),
+        policy_outcome=outcome,
+        requires_confirmation=requires_confirmation,
+        confirmation_supplied=confirmation_supplied,
+        reversal_level=reversal_level,
+        reason=reason,
+    )
+
+
+def assess_policy(
+    request: SemanticRequest,
+    profile: HostProfile | None,
+    *,
+    confirmation_supplied: bool = False,
+) -> PolicyAssessment | None:
+    if request.domain_kind == "host_package":
+        return _assess_host_package_policy(
+            request,
+            profile,
+            confirmation_supplied=confirmation_supplied,
+        )
+    if request.domain_kind == "user_software":
+        return _assess_user_software_policy(
+            request,
+            profile,
+            confirmation_supplied=confirmation_supplied,
+        )
+    return None

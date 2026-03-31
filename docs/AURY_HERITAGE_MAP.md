@@ -1,42 +1,43 @@
-# Aury Heritage Map - Aurora v0.1.0
+# Aury Heritage Map - Aurora v0.2.0
 
 ## Objetivo
 
-Este mapa registra o que a Aurora herdou da Aury, o que foi refatorado e o que nao migrou para a `v0.1`.
+Este mapa registra o que a Aurora herdou da Aury, o que foi refatorado e o que não migrou para o contrato público atual.
 
-## Mapa por area
+## Mapa por área
 
-| Area | Origem principal na Aury | Situacao na Aurora v0.1 | Observacao |
+| Área | Origem principal na Aury | Situação na Aurora | Observação |
 | --- | --- | --- | --- |
-| Normalizacao | `python/aury/normalize.py` | herdado com refatoracao | vocativos, correcoes e texto limpo |
-| Tokens sensiveis | `python/aury/sensitive_tokens.py` | herdado com refatoracao | paths, files e hosts continuam protegidos |
-| Pipeline semantico minimo | `python/aury/pipeline.py` | herdado com refatoracao | split simples e preparacao de frase |
-| Classificacao minima de pacote | partes de `python/aury/analyzer.py` | reescrito no estilo Aurora | recorte estreito para `host_package` |
-| Host profile Linux | `python/aury/host.py` | herdado com refatoracao | familia, mutabilidade, tier e ferramentas observadas |
-| Roteamento de host package | `python/aury/host.py` | herdado com refatoracao | busca, instalacao, remocao e probes |
-| Runtime de execucao | partes de `python/aury/runtime.py` | reescrito no estilo Aurora | sem dependencia mental de Fish |
-| Observabilidade | `python/aury/diagnostics.py` | reencarnado | `aurora dev` e `decision_record` proprios |
+| Normalização | `python/aury/normalize.py` | herdado com refatoração | vocativos, correções e texto limpo |
+| Tokens sensíveis | `python/aury/sensitive_tokens.py` | herdado com refatoração | paths, files e hosts continuam protegidos |
+| Pipeline semântico mínimo | `python/aury/pipeline.py` | herdado com refatoração | split simples e preparação de frase |
+| Classificação mínima de domínio | partes de `python/aury/analyzer.py` | reescrito no estilo Aurora | `host_package` e `user_software` sob contrato próprio |
+| Host profile Linux | `python/aury/host.py` | herdado com refatoração | família, mutabilidade, tier e ferramentas observadas |
+| Roteamento de `host_package` | `python/aury/host.py` | herdado com refatoração | busca, instalação, remoção e probes |
+| Runtime de execução | partes de `python/aury/runtime.py` | reescrito no estilo Aurora | sem dependência mental de Fish |
+| Observabilidade | `python/aury/diagnostics.py` | reencarnado | `aurora dev` e `decision_record` próprios |
 | Contratos internos | `python/aury/contracts.py` | reescritos | tipagem focada na Aurora |
 
-## O que nao migrou
+## O que não migrou
 
-Nao entrou na `v0.1`:
+Não entrou no contrato atual:
 
 - adaptador Fish como centro do produto;
-- dominio de arquivos;
-- dominio de rede;
-- manutencao ampla do host;
-- linguagem publica da Aury por inercia;
-- qualquer dependencia de runtime no checkout da Aury.
+- domínio de arquivos;
+- domínio de rede;
+- manutenção ampla do host;
+- linguagem pública da Aury por inércia;
+- qualquer dependência de runtime no checkout da Aury.
 
-## O que ficou explicitamente fora da v0.1
+## O que continua fora da v0.2.0
 
-- `flatpak` como rota ativa;
-- AUR, COPR, PPA, AppImage, GitHub Releases;
-- `rpm-ostree`, toolbox, distrobox, `ujust`.
+- AUR, COPR, PPA, AppImage e GitHub Releases;
+- `rpm-ostree`, toolbox, distrobox e `ujust`;
+- suporte operacional real a hosts imutáveis;
+- qualquer expansão pública além de `host_package` e `user_software` via `flatpak`.
 
-## Regra de proveniencia
+## Regra de proveniência
 
-A Aury continua sendo a origem do patrimonio funcional herdado.
-A Aurora `v0.1` nao e um rename da Aury e nao e clean room.
-Ela e uma reencarnacao disciplinada desse patrimonio sob contrato proprio.
+A Aury continua sendo a origem do patrimônio funcional herdado.
+
+A Aurora não é rename da Aury e não é clean room. Ela é uma reencarnação disciplinada desse patrimônio sob contrato próprio, agora com `host_package` e `user_software` como domínios públicos distintos.

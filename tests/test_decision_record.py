@@ -8,7 +8,7 @@ from aurora.install.execution_handoff import perform_execution
 from aurora.install.planner import plan_text
 from aurora.observability.decision_record import decision_record_to_dict
 from aurora.observability.dev_command import render_dev_report
-from support import setup_host_package_testbed, write_os_release, write_stub
+from support import setup_flatpak_testbed, setup_host_package_testbed, write_os_release, write_stub
 
 
 class DecisionRecordTests(unittest.TestCase):
@@ -34,6 +34,8 @@ class DecisionRecordTests(unittest.TestCase):
             self.assertEqual(payload["execution_route"]["implemented"], True)
             self.assertEqual(payload["execution_route"]["requires_privilege_escalation"], True)
             self.assertEqual(payload["execution_route"]["state_probe_command"], ["dpkg", "-s", "firefox"])
+            self.assertEqual(payload["target_resolution"]["status"], "direct")
+            self.assertEqual(payload["target_resolution"]["resolved_target"], "firefox")
 
     def test_atomic_block_records_trust_gap(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -102,6 +104,64 @@ class DecisionRecordTests(unittest.TestCase):
             self.assertIn("source_type:", rendered)
             self.assertIn("trust_gaps:", rendered)
             self.assertIn("Execution route", rendered)
+
+    def test_dev_render_labels_user_scope_for_flatpak_routes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("obs-studio|OBS Studio",),
+                name="Ubuntu",
+            )
+            rendered = render_dev_report("procurar obs-studio no flatpak", environ=env)
+            self.assertIn("scope_label:             software do usuario", rendered)
+
+    def test_dev_render_exposes_flatpak_target_resolution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("com.obsproject.Studio|OBS Studio",),
+                name="Ubuntu",
+            )
+            rendered = render_dev_report("instalar obs studio no flatpak", environ=env)
+            self.assertIn("Target resolution", rendered)
+            self.assertIn("resolved_target:         com.obsproject.Studio", rendered)
+            self.assertIn("canonicalized:           true", rendered)
+
+    def test_decision_record_marks_normalized_query_resolution_for_hyphenated_name(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("com.obsproject.Studio|OBS Studio",),
+                name="Ubuntu",
+            )
+            payload = decision_record_to_dict(plan_text("instalar obs-studio no flatpak", environ=env))
+            self.assertEqual(payload["target_resolution"]["source"], "flatpak_search_normalized_query")
+            self.assertEqual(payload["target_resolution"]["resolved_target"], "com.obsproject.Studio")
+
+    def test_decision_record_exposes_host_package_target_resolution_for_compound_name(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("obs-studio|OBS Studio",),
+            )
+            payload = decision_record_to_dict(plan_text("instalar obs studio", environ=env))
+            self.assertEqual(payload["target_resolution"]["status"], "resolved")
+            self.assertEqual(payload["target_resolution"]["source"], "host_package_search_normalized_query")
+            self.assertEqual(payload["target_resolution"]["resolved_target"], "obs-studio")
+            self.assertEqual(payload["execution_route"]["command"][-1], "obs-studio")
 
 
 if __name__ == "__main__":

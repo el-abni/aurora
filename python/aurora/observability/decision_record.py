@@ -47,6 +47,17 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "reason": record.policy.reason,
         }
 
+    if record.target_resolution is not None:
+        payload["target_resolution"] = {
+            "original_target": record.target_resolution.original_target,
+            "resolved_target": record.target_resolution.resolved_target,
+            "status": record.target_resolution.status,
+            "source": record.target_resolution.source,
+            "canonicalized": record.target_resolution.canonicalized,
+            "candidates": list(record.target_resolution.candidates),
+            "reason": record.target_resolution.reason,
+        }
+
     if record.execution_route is not None:
         payload["execution_route"] = {
             "route_name": record.execution_route.route_name,

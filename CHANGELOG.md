@@ -1,5 +1,34 @@
 # Changelog
 
+## 🌌 Aurora v0.2.0
+
+Fechamento público da release que abre `user_software` como segundo domínio real da Aurora, preservando `host_package` como base íntegra da `v0.1.0`.
+
+### Adicionado
+- `domain_kind=user_software` como parte real do contrato público.
+- arbitragem inicial entre `host_package` e `user_software`, com default seguro para pedidos nus.
+- `flatpak.procurar`, `flatpak.instalar` e `flatpak.remover` como primeira rota ativa de software do usuário.
+- probes antes e depois para mutações `flatpak`, com `noop` honesto quando o estado já está satisfeito.
+- gate final da `v0.2.0` com auditoria pública alinhada ao contrato real da release.
+
+### Alterado
+- `README.md`, `resources/help.txt` e docs principais agora descrevem a `v0.2.0` como release pública legítima.
+- `aurora dev <frase>` e o `decision_record` passaram a expor melhor a leitura de domínio, escopo e rota.
+- a política operacional agora governa `host_package` e `user_software`, incluindo `source_type=flatpak_remote`.
+- `flatpak.remover` continua exigindo confirmação explícita quando a remoção realmente vai acontecer.
+
+### Higiene da release
+- `VERSION` promovido para `v0.2.0`.
+- `.gitignore` passou a ignorar `__pycache__/` e `*.pyc`.
+- artefatos Python compilados deixaram de fazer parte do rastreamento do repositório.
+
+### Continua fora da v0.2.0
+- seleção de remote além do default `flathub`;
+- AUR, COPR, PPA, AppImage e GitHub Releases;
+- `rpm-ostree`, toolbox, distrobox e `ujust`;
+- suporte operacional real a hosts imutáveis;
+- backlog amplo de arquivos, rede e manutenção de host.
+
 ## 🌌 Aurora v0.1.0
 
 Primeiro release público da Aurora.
@@ -25,11 +54,11 @@ Primeiro release público da Aurora.
 
 ### Endurecimento da release
 - `host_package.instalar` e `host_package.remover` passaram a executar de verdade em hosts mutáveis suportados.
-- Mutações reais do host agora contam com probe antes/depois, noop honesto, bloqueio explícito para Atomic/imutáveis e trilha de execução no `decision_record`.
+- Mutações reais do host agora contam com probe antes/depois, `noop` honesto, bloqueio explícito para Atomic/imutáveis e trilha de execução no `decision_record`.
 - Confirmação explícita por `--confirm` foi consolidada como parte real da UX para mutações sensíveis.
 
 ### Compatibilidade
-- Suporte real na v0.1.0 para:
+- Suporte real na `v0.1.0` para:
   - Arch/derivadas mutáveis
   - Debian/Ubuntu/derivadas mutáveis
   - Fedora mutável
@@ -44,12 +73,6 @@ Primeiro release público da Aurora.
   - `docs/INSTALLATION_POLICY.md`
   - `docs/AURY_HERITAGE_MAP.md`
 - `resources/help.txt` alinhado ao comportamento real da Aurora e ao uso de `--confirm`.
-
-### Testes
-- Primeira rodada fechou com 20 testes verdes cobrindo bootstrap, semântica mínima, `host_profile`, `host_package.procurar`, bloqueio Atomic e `decision_record`.
-- A segunda rodada consolidou a mutação real de `host_package` com 28 testes verdes.
-- O fechamento público da release consolidou gates pequenos e fortes para a v0.1.0.
-- A validação local em terminal real confirmou instalação da Aurora, `--version`, `--help`, `procurar`, `instalar` e `remover` funcionando na prática.
 
 ### Fora da v0.1.0
 - `flatpak` como rota ativa.

@@ -9,10 +9,22 @@ from .requests import SemanticRequest
 
 
 @dataclass(frozen=True)
+class TargetResolution:
+    original_target: str
+    resolved_target: str = ""
+    status: str = "not_needed"
+    source: str = ""
+    canonicalized: bool = False
+    candidates: tuple[str, ...] = ()
+    reason: str = ""
+
+
+@dataclass(frozen=True)
 class DecisionRecord:
     request: SemanticRequest
     host_profile: HostProfile | None
     policy: PolicyAssessment | None
+    target_resolution: TargetResolution | None
     execution_route: ExecutionRoute | None
     outcome: str
     summary: str
