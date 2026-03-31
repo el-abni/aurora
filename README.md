@@ -9,10 +9,6 @@
 
 Ela nasce como um produto **100% Python**, com launchers oficiais `aurora` e `auro`, e abre sua primeira release pública com um contrato pequeno, real e auditável.
 
----
-
-> Estado público real da **v0.1.0**: a Aurora abre com suporte operacional explícito para `host_package` em Arch/derivadas mutáveis, Debian/Ubuntu/derivadas mutáveis, Fedora mutável e OpenSUSE mutável em escopo contido. `procurar`, `instalar` e `remover` significam **pacote do host**, não software do usuário, múltiplas rotas, app store, política ampla de origem nem instalação cross-source. Hosts Atomic/imutáveis permanecem **bloqueados por política**. `flatpak` e `rpm-ostree` podem ser observados no ambiente, mas ficam fora do contrato ativo desta release.
-
 ## O que é a Aurora
 
 A Aurora funciona como uma camada de decisão e execução sobre o domínio de `host_package`.
