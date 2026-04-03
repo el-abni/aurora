@@ -17,11 +17,6 @@ Fechamento público da release que abre AUR como fonte explícita de terceiro so
 - `aur.instalar` anuncia a entrega e o retorno do helper interativo antes da validação final por probe.
 - README, help e docs técnicas passam a refletir a `v0.3.0` como release pública atual.
 
-### Higiene da release
-- `VERSION` promovido para `v0.3.0`.
-- `tests/audit_public_release.py` e `tests/release_gate_v0_3.sh` passam a congelar o contrato público final da release.
-- `.gitignore` passa a ignorar `.codex` como artefato transitório local da ferramenta de desenvolvimento.
-
 ### Continua fora da v0.3.0
 - fallback automático de pedido nu para AUR;
 - helpers AUR além de `paru`;
@@ -47,11 +42,6 @@ Fechamento público da release que abre `user_software` como segundo domínio re
 - `aurora dev <frase>` e o `decision_record` passaram a expor melhor a leitura de domínio, escopo e rota.
 - a política operacional agora governa `host_package` e `user_software`, incluindo `source_type=flatpak_remote`.
 - `flatpak.remover` continua exigindo confirmação explícita quando a remoção realmente vai acontecer.
-
-### Higiene da release
-- `VERSION` promovido para `v0.2.0`.
-- `.gitignore` passou a ignorar `__pycache__/` e `*.pyc`.
-- artefatos Python compilados deixaram de fazer parte do rastreamento do repositório.
 
 ### Continua fora da v0.2.0
 - seleção de remote além do default `flathub`;
