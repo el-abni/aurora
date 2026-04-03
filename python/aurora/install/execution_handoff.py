@@ -8,6 +8,11 @@ from collections.abc import Callable, Sequence
 
 from aurora.contracts.decisions import DecisionRecord
 from aurora.contracts.execution import ExecutionProbe, ExecutionResult
+from aurora.install.sources.aur import (
+    aur_mutation_reports_no_matching_package,
+    aur_search_has_no_results,
+    aur_search_has_parseable_candidates,
+)
 from aurora.install.sources.flatpak import (
     flatpak_mutation_reports_no_matching_ref,
     flatpak_search_has_no_results,
@@ -18,6 +23,8 @@ from aurora.presentation.messages import (
     backend_missing_message,
     blocked_message,
     confirmation_required_message,
+    interactive_handoff_return_message,
+    interactive_handoff_start_message,
     mutation_success_message,
     no_results_message,
     package_not_found_message,
@@ -32,6 +39,7 @@ from aurora.presentation.messages import (
 
 UNSUPPORTED_EXIT = 120
 Runner = Callable[[Sequence[str]], subprocess.CompletedProcess[str]]
+Announcer = Callable[[str], None]
 
 
 def _run_command(
@@ -40,6 +48,15 @@ def _run_command(
     environ: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, text=True, capture_output=True, check=False, env=environ)
+
+
+def _run_interactive_command(
+    args: Sequence[str],
+    *,
+    environ: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    proc = subprocess.run(args, check=False, env=environ)
+    return subprocess.CompletedProcess(args, proc.returncode, "", "")
 
 
 def _required_backend_available(
@@ -104,11 +121,19 @@ def _is_user_software(record: DecisionRecord) -> bool:
     return record.request.domain_kind == "user_software"
 
 
+def _is_aur_source(record: DecisionRecord) -> bool:
+    return record.request.domain_kind == "host_package" and record.request.requested_source == "aur"
+
+
 def _target_label(record: DecisionRecord) -> str:
+    if _is_aur_source(record):
+        return "pacote AUR"
     return "software" if _is_user_software(record) else "pacote"
 
 
 def _location_label(record: DecisionRecord) -> str:
+    if _is_aur_source(record):
+        return "como pacote AUR neste host"
     return "na instalação do usuário" if _is_user_software(record) else "neste host"
 
 
@@ -117,6 +142,10 @@ def _probe_summary(record: DecisionRecord, package_present: bool) -> str:
         if package_present:
             return "software presente na instalação do usuário."
         return "software ausente na instalação do usuário."
+    if _is_aur_source(record):
+        if package_present:
+            return "pacote AUR presente como foreign no host."
+        return "pacote AUR ausente como foreign no host."
     if package_present:
         return "pacote presente no host."
     return "pacote ausente no host."
@@ -126,7 +155,7 @@ def _target_resolution_block_reason(record: DecisionRecord) -> str | None:
     resolution = record.target_resolution
     if resolution is None:
         return None
-    if resolution.status in {"ambiguous", "not_found", "unresolved"}:
+    if resolution.status in {"ambiguous", "not_found", "unresolved", "source_mismatch"}:
         return resolution.reason
     return None
 
@@ -139,6 +168,8 @@ def _search_reports_no_results(
     returncode: int,
 ) -> bool:
     route = record.execution_route
+    if route is not None and route.route_name.startswith("aur."):
+        return aur_search_has_no_results(stdout, stderr, returncode)
     if route is not None and route.backend_name == "flatpak":
         return flatpak_search_has_no_results(stdout, stderr, returncode)
     return search_has_no_results(stdout, stderr, returncode)
@@ -146,6 +177,8 @@ def _search_reports_no_results(
 
 def _mutation_reports_not_found(record: DecisionRecord, stdout: str, stderr: str) -> bool:
     route = record.execution_route
+    if route is not None and route.route_name.startswith("aur."):
+        return aur_mutation_reports_no_matching_package(stdout, stderr)
     if route is not None and route.backend_name == "flatpak":
         return flatpak_mutation_reports_no_matching_ref(stdout, stderr)
     return mutation_reports_no_matching_package(stdout, stderr)
@@ -172,6 +205,7 @@ def _execute_search(
                 attempted=False,
                 confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
                 command=route.command,
+                interactive_passthrough=route.interactive_passthrough,
                 summary=message,
             ),
         )
@@ -195,11 +229,30 @@ def _execute_search(
                 confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
                 command=route.command,
                 exit_code=proc.returncode,
+                interactive_passthrough=route.interactive_passthrough,
                 summary=message,
             ),
         )
 
     if proc.returncode != 0:
+        if route.route_name.startswith("aur.") and aur_search_has_parseable_candidates(proc.stdout):
+            output = proc.stdout.rstrip()
+            message = search_results_message(record.request.target, route.backend_name, output)
+            return _result(
+                record,
+                exit_code=0,
+                outcome="executed",
+                message=message,
+                execution=ExecutionResult(
+                    status="executed_with_backend_warning",
+                    attempted=True,
+                    confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                    command=route.command,
+                    exit_code=proc.returncode,
+                    interactive_passthrough=route.interactive_passthrough,
+                    summary=message,
+                ),
+            )
         message = backend_failed_message(route.backend_name)
         return _result(
             record,
@@ -212,6 +265,7 @@ def _execute_search(
                 confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
                 command=route.command,
                 exit_code=proc.returncode,
+                interactive_passthrough=route.interactive_passthrough,
                 summary=message,
             ),
         )
@@ -229,6 +283,7 @@ def _execute_search(
             confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
             command=route.command,
             exit_code=proc.returncode,
+            interactive_passthrough=route.interactive_passthrough,
             summary=message,
         ),
     )
@@ -238,6 +293,8 @@ def _execute_mutation(
     record: DecisionRecord,
     *,
     run: Runner,
+    run_interactive: Runner,
+    announce: Announcer | None = None,
     environ: dict[str, str] | None = None,
 ) -> tuple[int, DecisionRecord, str]:
     route = record.execution_route
@@ -256,6 +313,7 @@ def _execute_mutation(
                 confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
                 command=route.command,
                 pre_probe=pre_probe,
+                interactive_passthrough=route.interactive_passthrough,
                 summary=pre_probe.summary,
             ),
         )
@@ -283,6 +341,7 @@ def _execute_mutation(
                 confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
                 command=route.command,
                 pre_probe=pre_probe,
+                interactive_passthrough=route.interactive_passthrough,
                 summary=message,
             ),
         )
@@ -305,6 +364,7 @@ def _execute_mutation(
                 confirmation_supplied=record.policy.confirmation_supplied,
                 command=route.command,
                 pre_probe=pre_probe,
+                interactive_passthrough=route.interactive_passthrough,
                 summary=message,
             ),
         )
@@ -322,11 +382,18 @@ def _execute_mutation(
                 confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
                 command=route.command,
                 pre_probe=pre_probe,
+                interactive_passthrough=route.interactive_passthrough,
                 summary=message,
             ),
         )
 
-    proc = run(route.command)
+    if route.interactive_passthrough and announce is not None:
+        announce(interactive_handoff_start_message(route.backend_name))
+
+    command_runner = run_interactive if route.interactive_passthrough else run
+    proc = command_runner(route.command)
+    if route.interactive_passthrough and announce is not None:
+        announce(interactive_handoff_return_message(route.backend_name, proc.returncode))
     if proc.returncode != 0:
         if _mutation_reports_not_found(record, proc.stdout, proc.stderr):
             message = package_not_found_message(
@@ -347,6 +414,7 @@ def _execute_mutation(
                     command=route.command,
                     exit_code=proc.returncode,
                     pre_probe=pre_probe,
+                    interactive_passthrough=route.interactive_passthrough,
                     summary=message,
                 ),
             )
@@ -364,6 +432,7 @@ def _execute_mutation(
                 command=route.command,
                 exit_code=proc.returncode,
                 pre_probe=pre_probe,
+                interactive_passthrough=route.interactive_passthrough,
                 summary=message,
             ),
         )
@@ -383,6 +452,7 @@ def _execute_mutation(
                 exit_code=proc.returncode,
                 pre_probe=pre_probe,
                 post_probe=post_probe,
+                interactive_passthrough=route.interactive_passthrough,
                 summary=post_probe.summary,
             ),
         )
@@ -407,6 +477,7 @@ def _execute_mutation(
                 exit_code=proc.returncode,
                 pre_probe=pre_probe,
                 post_probe=post_probe,
+                interactive_passthrough=route.interactive_passthrough,
                 summary=message,
             ),
         )
@@ -429,6 +500,7 @@ def _execute_mutation(
             exit_code=proc.returncode,
             pre_probe=pre_probe,
             post_probe=post_probe,
+            interactive_passthrough=route.interactive_passthrough,
             summary=message,
         ),
     )
@@ -438,12 +510,21 @@ def perform_execution(
     record: DecisionRecord,
     runner: Runner | None = None,
     *,
+    interactive_runner: Runner | None = None,
+    announce: Announcer | None = None,
     environ: dict[str, str] | None = None,
 ) -> tuple[int, DecisionRecord, str]:
     def run(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
         if runner is not None:
             return runner(args)
         return _run_command(args, environ=environ)
+
+    def run_interactive(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
+        if interactive_runner is not None:
+            return interactive_runner(args)
+        if runner is not None:
+            return runner(args)
+        return _run_interactive_command(args, environ=environ)
 
     if record.outcome == "out_of_scope":
         message = out_of_scope_message(record.request.reason)
@@ -455,10 +536,32 @@ def perform_execution(
             execution=ExecutionResult(status="blocked", summary=message),
         )
 
+    resolution_reason = _target_resolution_block_reason(record)
+    if resolution_reason is not None:
+        message = target_resolution_blocked_message(resolution_reason)
+        return _result(
+            record,
+            exit_code=1,
+            outcome="blocked",
+            message=message,
+            execution=ExecutionResult(
+                status="blocked",
+                attempted=False,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                summary=message,
+            ),
+        )
+
     if record.policy is not None and record.policy.policy_outcome == "require_confirmation":
         route = record.execution_route
         if route is not None and route.action_name in {"instalar", "remover"}:
-            return _execute_mutation(record, run=run, environ=environ)
+            return _execute_mutation(
+                record,
+                run=run,
+                run_interactive=run_interactive,
+                announce=announce,
+                environ=environ,
+            )
         message = confirmation_required_message(
             record.request.target,
             record.policy.software_criticality,
@@ -479,12 +582,8 @@ def perform_execution(
         )
 
     if record.outcome == "blocked":
-        resolution_reason = _target_resolution_block_reason(record)
-        if resolution_reason is not None:
-            message = target_resolution_blocked_message(resolution_reason)
-        else:
-            reason = record.policy.reason if record.policy is not None else record.request.reason
-            message = blocked_message(reason)
+        reason = record.policy.reason if record.policy is not None else record.request.reason
+        message = blocked_message(reason)
         return _result(
             record,
             exit_code=1,
@@ -521,16 +620,29 @@ def perform_execution(
     if record.execution_route.action_name == "procurar":
         return _execute_search(record, run=run, environ=environ)
 
-    return _execute_mutation(record, run=run, environ=environ)
+    return _execute_mutation(
+        record,
+        run=run,
+        run_interactive=run_interactive,
+        announce=announce,
+        environ=environ,
+    )
 
 
 def execute_decision(
     record: DecisionRecord,
     runner: Runner | None = None,
     *,
+    interactive_runner: Runner | None = None,
     environ: dict[str, str] | None = None,
 ) -> int:
-    exit_code, _updated_record, message = perform_execution(record, runner, environ=environ)
+    exit_code, _updated_record, message = perform_execution(
+        record,
+        runner,
+        interactive_runner=interactive_runner,
+        announce=print,
+        environ=environ,
+    )
     if message:
         print(message)
     return exit_code

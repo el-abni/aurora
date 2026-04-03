@@ -20,6 +20,10 @@ PACKAGE_DOMAIN_NOISE_TOKENS = {
     "uns",
     "umas",
 }
+TARGET_CONTROL_TOKENS = {
+    "--confirm",
+    "--yes",
+}
 
 
 def extract_target_token_pairs(action: PreparedAction) -> list[tuple[str, str]]:
@@ -29,7 +33,11 @@ def extract_target_token_pairs(action: PreparedAction) -> list[tuple[str, str]]:
         if token not in PACKAGE_DOMAIN_NOISE_TOKENS:
             break
         start += 1
-    return list(zip(action.original_tokens[start:], action.normalized_tokens[start:]))
+    return [
+        (original, normalized)
+        for original, normalized in zip(action.original_tokens[start:], action.normalized_tokens[start:])
+        if normalized not in TARGET_CONTROL_TOKENS
+    ]
 
 
 def extract_package_target(action: PreparedAction) -> str:

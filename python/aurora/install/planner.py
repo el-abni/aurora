@@ -6,9 +6,19 @@ from aurora.install.candidates import build_route_candidates
 from aurora.install.domain_classifier import classify_text
 from aurora.install.policy_engine import assess_policy
 from aurora.install.route_selector import select_route
-from aurora.install.sources.flatpak import resolve_flatpak_target
+from aurora.install.sources.aur import (
+    aur_target_resolution_blocks,
+    resolve_aur_target,
+    resolved_aur_target,
+)
+from aurora.install.sources.flatpak import (
+    flatpak_target_resolution_blocks,
+    resolve_flatpak_target,
+    resolved_flatpak_target,
+)
 from aurora.linux.host_profile import detect_host_profile
 from aurora.linux.host_package import resolve_host_package_target
+from aurora.semantics.pipeline import has_confirmation_marker
 
 
 def _summary_for_request(request: SemanticRequest) -> str:
@@ -16,6 +26,13 @@ def _summary_for_request(request: SemanticRequest) -> str:
         return "Sem acao aberta."
 
     if request.domain_kind == "host_package":
+        if request.requested_source == "aur":
+            if request.intent == "procurar":
+                return f"Procurar o pacote AUR '{request.target}'."
+            if request.intent == "instalar":
+                return f"Instalar o pacote AUR '{request.target}'."
+            if request.intent == "remover":
+                return f"Remover o pacote AUR '{request.target}'."
         if request.intent == "procurar":
             return f"Procurar o pacote do host '{request.target}'."
         if request.intent == "instalar":
@@ -44,7 +61,7 @@ def _outcome_for_request(
         return "out_of_scope"
     if request.status == "BLOCKED":
         return "blocked"
-    if _target_resolution_blocks(target_resolution):
+    if _target_resolution_blocks(request, target_resolution):
         return "blocked"
     if policy_outcome in {"block", "require_confirmation"}:
         return "blocked"
@@ -56,7 +73,7 @@ def _summary(
     *,
     target_resolution=None,
 ) -> str:
-    if _target_resolution_blocks(target_resolution) and target_resolution is not None:
+    if _target_resolution_blocks(request, target_resolution) and target_resolution is not None:
         return target_resolution.reason
     return _summary_for_request(request)
 
@@ -70,20 +87,36 @@ def _resolve_target(
     if request.domain_kind == "user_software":
         return resolve_flatpak_target(request, profile, environ=environ)
     if request.domain_kind == "host_package":
+        if request.requested_source == "aur":
+            return resolve_aur_target(request, profile, environ=environ)
         return resolve_host_package_target(request, profile, environ=environ)
     return None
 
 
 def _resolved_target(request: SemanticRequest, target_resolution) -> str:
+    if request.domain_kind == "user_software":
+        return resolved_flatpak_target(request, target_resolution)
+    if request.domain_kind == "host_package" and request.requested_source == "aur":
+        return resolved_aur_target(request, target_resolution)
     if target_resolution is not None and target_resolution.resolved_target:
         return target_resolution.resolved_target
     return request.target
 
 
-def _target_resolution_blocks(target_resolution) -> bool:
+def _target_resolution_blocks(request: SemanticRequest, target_resolution) -> bool:
     if target_resolution is None:
         return False
+    if request.domain_kind == "user_software":
+        return flatpak_target_resolution_blocks(request, target_resolution)
+    if request.domain_kind == "host_package" and request.requested_source == "aur":
+        return aur_target_resolution_blocks(request, target_resolution)
     return target_resolution.status in {"ambiguous", "not_found", "unresolved"}
+
+
+def _confirmation_supplied(request: SemanticRequest, *, confirmed: bool) -> bool:
+    if confirmed:
+        return True
+    return has_confirmation_marker(request.original_text)
 
 
 def plan_request(
@@ -96,12 +129,13 @@ def plan_request(
     policy = None
     target_resolution = None
     route = None
+    confirmation_supplied = _confirmation_supplied(request, confirmed=confirmed)
 
     if request.domain_kind in {"host_package", "user_software"}:
         profile = detect_host_profile(environ)
-        policy = assess_policy(request, profile, confirmation_supplied=confirmed)
+        policy = assess_policy(request, profile, confirmation_supplied=confirmation_supplied)
         target_resolution = _resolve_target(request, profile, environ=environ)
-        if not _target_resolution_blocks(target_resolution):
+        if not _target_resolution_blocks(request, target_resolution):
             route = select_route(
                 build_route_candidates(
                     request,

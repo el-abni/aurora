@@ -12,6 +12,7 @@ class HostProfile:
     mutability: str
     package_backends: tuple[str, ...]
     observed_package_tools: tuple[str, ...]
+    observed_third_party_package_tools: tuple[str, ...]
     support_tier: str
 
     @property
@@ -51,3 +52,9 @@ class HostProfile:
         if not self.observed_package_tools:
             return "-"
         return ", ".join(self.observed_package_tools)
+
+    @property
+    def observed_third_party_package_tools_label(self) -> str:
+        if not self.observed_third_party_package_tools:
+            return "-"
+        return ", ".join(self.observed_third_party_package_tools)

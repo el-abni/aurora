@@ -50,6 +50,7 @@ class SemanticRequest:
     normalized_text: str
     intent: str
     domain_kind: str
+    requested_source: str = ""
     target: str = ""
     status: str = "OUT_OF_SCOPE"
     reason: str = ""

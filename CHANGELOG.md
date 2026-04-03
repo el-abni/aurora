@@ -1,5 +1,36 @@
 # Changelog
 
+## 🌌 Aurora v0.3.0
+
+Fechamento público da release que abre AUR como fonte explícita de terceiro sobre a base já consolidada da `v0.2.0`, sem recontaminar `host_package`.
+
+### Adicionado
+- marcação pública inicial de AUR por frase explícita, como `aurora procurar <pacote> no aur`.
+- `aur.procurar`, `aur.instalar` e `aur.remover` como primeira fonte terceira real da Aurora.
+- `source_type=aur_repository` e `trust_level=third_party_build` como leitura própria da nova frente.
+- resolução de alvo com separação entre pacote `foreign` e pacote oficial do host.
+
+### Alterado
+- `decision_record` e `aurora dev` agora expõem `requested_source`, helper selecionado e `source_mismatch`.
+- a política de AUR nasce com confirmação explícita para mutações e bloqueio honesto quando `paru` não está observado.
+- `--confirm` e `--yes` passam a contar como confirmação explícita também quando entram inline na frase inspecionada.
+- `aur.instalar` anuncia a entrega e o retorno do helper interativo antes da validação final por probe.
+- README, help e docs técnicas passam a refletir a `v0.3.0` como release pública atual.
+
+### Higiene da release
+- `VERSION` promovido para `v0.3.0`.
+- `tests/audit_public_release.py` e `tests/release_gate_v0_3.sh` passam a congelar o contrato público final da release.
+- `.gitignore` passa a ignorar `.codex` como artefato transitório local da ferramenta de desenvolvimento.
+
+### Continua fora da v0.3.0
+- fallback automático de pedido nu para AUR;
+- helpers AUR além de `paru`;
+- passthrough interativo para `aur.remover`;
+- seleção de remote além do default `flathub`;
+- COPR, PPA, AppImage e GitHub Releases;
+- `rpm-ostree`, toolbox, distrobox e `ujust`;
+- hosts imutáveis reais como superfície operacional.
+
 ## 🌌 Aurora v0.2.0
 
 Fechamento público da release que abre `user_software` como segundo domínio real da Aurora, preservando `host_package` como base íntegra da `v0.1.0`.
@@ -38,7 +69,7 @@ Primeiro release público da Aurora.
 - Bootstrap próprio da Aurora com `python -m aurora`, `--help` e `--version`.
 - Núcleo inicial de semântica herdada/refatorada da Aury, incluindo normalização conservadora, proteção de tokens sensíveis, split simples de ações e classificação mínima de intenção para `procurar`, `instalar` e `remover`.
 - `host_profile` estruturado para Linux, com detecção de família, mutabilidade, tier de suporte e ferramentas observadas.
-- `host_package.procurar` com execução real por família:
+- `host_package.search` com execução real por família:
   - Arch/derivadas
   - Debian/Ubuntu/derivadas
   - Fedora

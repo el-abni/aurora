@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 
 from aurora.install.domain_classifier import classify_text
-from aurora.semantics.pipeline import prepare_text
+from aurora.semantics.pipeline import has_confirmation_marker, prepare_text
 from aurora.semantics.sensitive_tokens import protect_sensitive_tokens, restore_sensitive_tokens
 
 
@@ -36,6 +36,11 @@ class SemanticsTests(unittest.TestCase):
         self.assertEqual(request.domain_kind, "host_package")
         self.assertEqual(request.status, "BLOCKED")
         self.assertIn("faltou o alvo", request.reason)
+
+    def test_confirmation_marker_detection_is_inline_and_conservative(self) -> None:
+        self.assertTrue(has_confirmation_marker("instalar firefox --confirm"))
+        self.assertTrue(has_confirmation_marker("remover firefox --yes"))
+        self.assertFalse(has_confirmation_marker("procurar pacote-confirmacao"))
 
 
 if __name__ == "__main__":

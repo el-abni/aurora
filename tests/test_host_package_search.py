@@ -24,6 +24,28 @@ class HostPackageSearchTests(unittest.TestCase):
             self.assertIn("encontrei resultados", proc.stdout)
             self.assertIn("extra/firefox 1.0", proc.stdout)
 
+    def test_arch_search_stays_anchored_in_pacman_when_paru_is_present(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("firefox",),
+                prefer_paru=True,
+            )
+            write_stub(root / "bin", "paru", "#!/bin/sh\necho paru-should-not-run >&2\nexit 7\n")
+
+            record = plan_text("procurar firefox", environ=env)
+            self.assertIsNotNone(record.execution_route)
+            self.assertEqual(record.execution_route.backend_name, "pacman")
+            self.assertEqual(record.execution_route.command, ("pacman", "-Ss", "--", "firefox"))
+
+            proc = run_module("procurar", "firefox", env=env)
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("extra/firefox 1.0", proc.stdout)
+
     def test_search_handles_no_results(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

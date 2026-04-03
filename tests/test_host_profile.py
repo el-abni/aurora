@@ -21,6 +21,7 @@ class HostProfileTests(unittest.TestCase):
             bin_dir = root / "bin"
             bin_dir.mkdir()
             write_stub(bin_dir, "pacman", "#!/usr/bin/env bash\nexit 0\n")
+            write_stub(bin_dir, "paru", "#!/usr/bin/env bash\nexit 0\n")
             write_stub(bin_dir, "flatpak", "#!/usr/bin/env bash\nexit 0\n")
             write_os_release(root, distro_id="cachyos", distro_like="arch", name="CachyOS")
             profile = detect_host_profile(self._env(root))
@@ -29,6 +30,7 @@ class HostProfileTests(unittest.TestCase):
             self.assertEqual(profile.support_tier, "tier_1")
             self.assertEqual(profile.package_backends, ("pacman",))
             self.assertEqual(profile.observed_package_tools, ("flatpak",))
+            self.assertEqual(profile.observed_third_party_package_tools, ("paru",))
 
     def test_debian_mutable_profile(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

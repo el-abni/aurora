@@ -1,3 +1,4 @@
 .aurora-private/
 __pycache__/
 *.pyc
+.codex

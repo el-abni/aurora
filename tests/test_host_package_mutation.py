@@ -50,6 +50,30 @@ class HostPackageMutationTests(unittest.TestCase):
             self.assertIn("está instalado", proc.stdout)
             self.assertIn("obs-studio", state_file.read_text(encoding="utf-8"))
 
+    def test_arch_mutation_stays_anchored_in_pacman_when_paru_is_present(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("firefox",),
+                prefer_paru=True,
+            )
+            write_stub(root / "bin", "paru", "#!/bin/sh\necho paru-should-not-run >&2\nexit 7\n")
+
+            payload = decision_record_to_dict(plan_text("instalar firefox", environ=env))
+            self.assertEqual(payload["host_profile"]["package_backends"], ["pacman"])
+            self.assertEqual(payload["host_profile"]["observed_third_party_package_tools"], ["paru"])
+            self.assertEqual(payload["execution_route"]["backend_name"], "sudo + pacman")
+            self.assertEqual(payload["execution_route"]["command"][:2], ["sudo", "pacman"])
+
+            proc = run_module("instalar", "firefox", env=env)
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("está instalado", proc.stdout)
+            self.assertIn("firefox", state_file.read_text(encoding="utf-8"))
+
     def test_remove_resolves_compound_human_name_before_mutation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -216,6 +240,38 @@ class HostPackageMutationTests(unittest.TestCase):
             self.assertIn("sudo", state_file.read_text(encoding="utf-8"))
 
             confirmed = run_module("remover", "sudo", "--confirm", env=env)
+            self.assertEqual(confirmed.returncode, 0)
+            self.assertIn("foi removido", confirmed.stdout)
+            self.assertNotIn("sudo", state_file.read_text(encoding="utf-8"))
+
+    def test_sensitive_remove_accepts_inline_confirmation_when_phrase_is_single_argument(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("sudo",),
+                installed_packages=("sudo",),
+            )
+            confirmed = run_module("remover sudo --confirm", env=env)
+            self.assertEqual(confirmed.returncode, 0)
+            self.assertIn("foi removido", confirmed.stdout)
+            self.assertNotIn("sudo", state_file.read_text(encoding="utf-8"))
+
+    def test_sensitive_remove_accepts_inline_yes_when_phrase_is_single_argument(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("sudo",),
+                installed_packages=("sudo",),
+            )
+            confirmed = run_module("remover sudo --yes", env=env)
             self.assertEqual(confirmed.returncode, 0)
             self.assertIn("foi removido", confirmed.stdout)
             self.assertNotIn("sudo", state_file.read_text(encoding="utf-8"))

@@ -7,9 +7,20 @@ from aurora.presentation.formatting import field
 def _scope_label(record: DecisionRecord) -> str:
     if record.request.domain_kind == "user_software":
         return "software do usuario"
+    if record.request.domain_kind == "host_package" and record.request.requested_source == "aur":
+        return "pacote AUR no host"
     if record.request.domain_kind == "host_package":
         return "pacote do host"
     return "indefinido"
+
+
+def _compact_diagnostic(value: str) -> str:
+    compact = " | ".join(line.strip() for line in value.splitlines() if line.strip())
+    if not compact:
+        return "-"
+    if len(compact) <= 200:
+        return compact
+    return compact[:197].rstrip() + "..."
 
 
 def render_decision_record(record: DecisionRecord) -> str:
@@ -23,6 +34,7 @@ def render_decision_record(record: DecisionRecord) -> str:
         field("normalized_text", record.request.normalized_text),
         field("intent", record.request.intent),
         field("domain_kind", record.request.domain_kind),
+        field("requested_source", record.request.requested_source or "-"),
         field("scope_label", _scope_label(record)),
         field("target", record.request.target or "-"),
         field("status", record.request.status),
@@ -42,6 +54,10 @@ def render_decision_record(record: DecisionRecord) -> str:
                 field("compatibility", record.host_profile.compatibility_frontier_label),
                 field("package_backends", record.host_profile.package_backends_label),
                 field("observed_tools", record.host_profile.observed_package_tools_label),
+                field(
+                    "observed_third_party_tools",
+                    record.host_profile.observed_third_party_package_tools_label,
+                ),
             ]
         )
 
@@ -70,6 +86,8 @@ def render_decision_record(record: DecisionRecord) -> str:
                 "",
                 "Target resolution",
                 field("original_target", record.target_resolution.original_target or "-"),
+                field("consulted_target", record.target_resolution.consulted_target or "-"),
+                field("consulted_targets", ", ".join(record.target_resolution.consulted_targets) or "-"),
                 field("resolved_target", record.target_resolution.resolved_target or "-"),
                 field("status", record.target_resolution.status),
                 field("source", record.target_resolution.source or "-"),
@@ -78,6 +96,30 @@ def render_decision_record(record: DecisionRecord) -> str:
                 field("resolution_reason", record.target_resolution.reason),
             ]
         )
+        if (
+            record.target_resolution.diagnostic_command
+            or record.target_resolution.diagnostic_exit_code is not None
+            or record.target_resolution.diagnostic_stdout
+            or record.target_resolution.diagnostic_stderr
+        ):
+            lines.extend(
+                [
+                    field(
+                        "diagnostic_command",
+                        " ".join(record.target_resolution.diagnostic_command) or "-",
+                    ),
+                    field(
+                        "diagnostic_exit_code",
+                        (
+                            str(record.target_resolution.diagnostic_exit_code)
+                            if record.target_resolution.diagnostic_exit_code is not None
+                            else "-"
+                        ),
+                    ),
+                    field("diagnostic_stdout", _compact_diagnostic(record.target_resolution.diagnostic_stdout)),
+                    field("diagnostic_stderr", _compact_diagnostic(record.target_resolution.diagnostic_stderr)),
+                ]
+            )
 
     if record.execution_route is not None:
         lines.extend(
@@ -93,6 +135,10 @@ def render_decision_record(record: DecisionRecord) -> str:
                     "requires_privilege_escalation",
                     str(record.execution_route.requires_privilege_escalation).lower(),
                 ),
+                field(
+                    "interactive_passthrough",
+                    str(record.execution_route.interactive_passthrough).lower(),
+                ),
                 field("command", " ".join(record.execution_route.command) or "-"),
                 field("state_probe", " ".join(record.execution_route.state_probe_command) or "-"),
                 field("notes", "; ".join(record.execution_route.notes) or "-"),
@@ -107,6 +153,7 @@ def render_decision_record(record: DecisionRecord) -> str:
                 field("status", record.execution.status),
                 field("attempted", str(record.execution.attempted).lower()),
                 field("confirmation_supplied", str(record.execution.confirmation_supplied).lower()),
+                field("interactive_passthrough", str(record.execution.interactive_passthrough).lower()),
                 field("exit_code", str(record.execution.exit_code) if record.execution.exit_code is not None else "-"),
                 field("summary", record.execution.summary),
                 field(

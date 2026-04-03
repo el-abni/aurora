@@ -12,6 +12,7 @@ from aurora.contracts.host import HostProfile
 from aurora.contracts.requests import SemanticRequest
 
 from .backends import (
+    arch_host_package_contract_notes,
     build_arch_search_route,
     build_debian_search_route,
     build_fedora_search_route,
@@ -42,15 +43,10 @@ class _HostPackageSearchResolution:
 
 
 def _planned_backend_label(intent: str, profile: HostProfile) -> str:
-    backends = set(profile.package_backends)
     if profile.linux_family == "arch":
         if intent == "procurar":
-            if "pacman" in backends:
-                return "pacman"
-            if "paru" in backends:
-                return "paru"
             return "pacman"
-        return "paru + pacman" if "paru" in backends else "sudo + pacman"
+        return "sudo + pacman"
     if profile.linux_family == "debian":
         return "apt-cache" if intent == "procurar" else "sudo + apt-get"
     if profile.linux_family == "opensuse":
@@ -61,11 +57,7 @@ def _planned_backend_label(intent: str, profile: HostProfile) -> str:
 def _planned_mutation_command(intent: str, target: str, profile: HostProfile) -> tuple[str, ...]:
     if profile.linux_family == "arch":
         if intent == "instalar":
-            if "paru" in set(profile.package_backends):
-                return ("paru", "-S", "--needed", "--", target)
             return ("sudo", "pacman", "-S", "--needed", "--", target)
-        if "paru" in set(profile.package_backends):
-            return ("paru", "-Rns", "--", target)
         return ("sudo", "pacman", "-Rns", "--", target)
     if profile.linux_family == "debian":
         if intent == "instalar":
@@ -149,7 +141,7 @@ def _package_name_from_search_line(line: str, backend_name: str) -> str:
     if not stripped:
         return ""
 
-    if backend_name in {"pacman", "paru"}:
+    if backend_name == "pacman":
         if line[:1].isspace():
             return ""
         token = stripped.split()[0]
@@ -404,15 +396,17 @@ def build_host_package_route(intent: str, target: str, profile: HostProfile) -> 
 
     if intent in {"instalar", "remover"}:
         state_probe_command, state_probe_required_commands = _state_probe_for_mutation(target, profile)
-        backends = set(profile.package_backends)
         if profile.linux_family == "arch":
-            required_commands = ("paru", "pacman") if "paru" in backends else ("sudo", "pacman")
+            required_commands = ("sudo", "pacman")
         elif profile.linux_family == "debian":
             required_commands = ("sudo", "apt-get")
         elif profile.linux_family == "opensuse":
             required_commands = ("sudo", "zypper")
         else:
             required_commands = ("sudo", "dnf")
+        notes = ("mutacao do host exige probe antes e depois da execucao",)
+        if profile.linux_family == "arch":
+            notes = arch_host_package_contract_notes(profile) + notes
         return ExecutionRoute(
             route_name=f"host_package.{intent}",
             action_name=intent,
@@ -423,7 +417,7 @@ def build_host_package_route(intent: str, target: str, profile: HostProfile) -> 
             state_probe_required_commands=state_probe_required_commands,
             implemented=True,
             requires_privilege_escalation=True,
-            notes=("mutacao do host exige probe antes e depois da execucao",),
+            notes=notes,
         )
 
     return None

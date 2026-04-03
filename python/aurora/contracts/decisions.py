@@ -11,12 +11,18 @@ from .requests import SemanticRequest
 @dataclass(frozen=True)
 class TargetResolution:
     original_target: str
+    consulted_target: str = ""
+    consulted_targets: tuple[str, ...] = ()
     resolved_target: str = ""
     status: str = "not_needed"
     source: str = ""
     canonicalized: bool = False
     candidates: tuple[str, ...] = ()
     reason: str = ""
+    diagnostic_command: tuple[str, ...] = ()
+    diagnostic_exit_code: int | None = None
+    diagnostic_stdout: str = ""
+    diagnostic_stderr: str = ""
 
 
 @dataclass(frozen=True)

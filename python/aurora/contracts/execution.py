@@ -14,6 +14,7 @@ class ExecutionRoute:
     state_probe_required_commands: tuple[str, ...] = ()
     implemented: bool = False
     requires_privilege_escalation: bool = False
+    interactive_passthrough: bool = False
     notes: tuple[str, ...] = field(default_factory=tuple)
 
     @property
@@ -40,4 +41,5 @@ class ExecutionResult:
     exit_code: int | None = None
     pre_probe: ExecutionProbe | None = None
     post_probe: ExecutionProbe | None = None
+    interactive_passthrough: bool = False
     summary: str = ""

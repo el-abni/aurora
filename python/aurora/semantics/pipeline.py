@@ -8,6 +8,8 @@ from .normalize import normalize_token, preprocess_text, strip_accents
 from .sensitive_tokens import protect_sensitive_tokens, restore_sensitive_tokens
 from .split import split_actions
 
+CONFIRMATION_TOKENS = {"--confirm", "--yes"}
+
 
 def _original_tokens_from_value(value: Sequence[str] | str) -> list[str]:
     if isinstance(value, str):
@@ -52,3 +54,8 @@ def prepare_text(text: str) -> tuple[InputPhrase, list[PreparedAction]]:
     phrase = build_input_phrase(text)
     actions = [prepare_action(i + 1, action) for i, action in enumerate(split_actions(phrase.original_tokens))]
     return phrase, actions
+
+
+def has_confirmation_marker(value: Sequence[str] | str) -> bool:
+    phrase = build_input_phrase(value)
+    return any(token in CONFIRMATION_TOKENS for token in phrase.normalized_tokens)

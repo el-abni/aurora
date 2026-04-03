@@ -10,6 +10,7 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "normalized_text": record.request.normalized_text,
             "intent": record.request.intent,
             "domain_kind": record.request.domain_kind,
+            "requested_source": record.request.requested_source,
             "target": record.request.target,
             "status": record.request.status,
             "reason": record.request.reason,
@@ -29,6 +30,7 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "mutability": record.host_profile.mutability,
             "package_backends": list(record.host_profile.package_backends),
             "observed_package_tools": list(record.host_profile.observed_package_tools),
+            "observed_third_party_package_tools": list(record.host_profile.observed_third_party_package_tools),
             "support_tier": record.host_profile.support_tier,
         }
 
@@ -50,12 +52,18 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
     if record.target_resolution is not None:
         payload["target_resolution"] = {
             "original_target": record.target_resolution.original_target,
+            "consulted_target": record.target_resolution.consulted_target,
+            "consulted_targets": list(record.target_resolution.consulted_targets),
             "resolved_target": record.target_resolution.resolved_target,
             "status": record.target_resolution.status,
             "source": record.target_resolution.source,
             "canonicalized": record.target_resolution.canonicalized,
             "candidates": list(record.target_resolution.candidates),
             "reason": record.target_resolution.reason,
+            "diagnostic_command": list(record.target_resolution.diagnostic_command),
+            "diagnostic_exit_code": record.target_resolution.diagnostic_exit_code,
+            "diagnostic_stdout": record.target_resolution.diagnostic_stdout,
+            "diagnostic_stderr": record.target_resolution.diagnostic_stderr,
         }
 
     if record.execution_route is not None:
@@ -69,6 +77,7 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "state_probe_required_commands": list(record.execution_route.state_probe_required_commands),
             "implemented": record.execution_route.implemented,
             "requires_privilege_escalation": record.execution_route.requires_privilege_escalation,
+            "interactive_passthrough": record.execution_route.interactive_passthrough,
             "notes": list(record.execution_route.notes),
         }
 
@@ -79,6 +88,7 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "confirmation_supplied": record.execution.confirmation_supplied,
             "command": list(record.execution.command),
             "exit_code": record.execution.exit_code,
+            "interactive_passthrough": record.execution.interactive_passthrough,
             "summary": record.execution.summary,
             "pre_probe": (
                 {

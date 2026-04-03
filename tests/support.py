@@ -500,6 +500,221 @@ def setup_host_package_testbed(
     return env, state_file
 
 
+def setup_aur_testbed(
+    root: Path,
+    *,
+    distro_id: str = "cachyos",
+    distro_like: str = "arch",
+    repo_packages: tuple[str, ...] = (),
+    aur_installed_packages: tuple[str, ...] = (),
+    native_installed_packages: tuple[str, ...] = (),
+    helpers: tuple[str, ...] = ("paru",),
+    name: str = "",
+) -> tuple[dict[str, str], Path, Path]:
+    bin_dir = root / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    aur_state_file = root / "aur-installed.txt"
+    native_state_file = root / "native-installed.txt"
+    repo_file = root / "aur-repo.txt"
+    normalized_repo_packages: list[tuple[str, str]] = []
+    for entry in repo_packages:
+        package_name, separator, label_value = entry.partition("|")
+        package_name = package_name.strip()
+        display_label = label_value.strip() if separator else "pacote AUR de teste"
+        normalized_repo_packages.append((package_name, display_label or "pacote AUR de teste"))
+
+    aur_state_file.write_text(
+        "\n".join(aur_installed_packages) + ("\n" if aur_installed_packages else ""),
+        encoding="utf-8",
+    )
+    native_state_file.write_text(
+        "\n".join(native_installed_packages) + ("\n" if native_installed_packages else ""),
+        encoding="utf-8",
+    )
+    repo_file.write_text(
+        "\n".join(f"{package_name}\t{display_label}" for package_name, display_label in normalized_repo_packages)
+        + ("\n" if normalized_repo_packages else ""),
+        encoding="utf-8",
+    )
+    write_os_release(root, distro_id=distro_id, distro_like=distro_like, name=name or distro_id)
+    write_stub(bin_dir, "sudo", "#!/bin/sh\nexec \"$@\"\n")
+    write_stub(
+        bin_dir,
+        "pacman",
+        textwrap.dedent(
+            f"""\
+            #!/bin/sh
+            aur_state_file="{aur_state_file}"
+            native_state_file="{native_state_file}"
+            action="$1"
+            target=""
+            for arg in "$@"; do
+              case "$arg" in
+                -Q|-Qm|-Qn|--)
+                  ;;
+                *)
+                  target="$arg"
+                  ;;
+              esac
+            done
+            has_aur_state() {{
+              /usr/bin/grep -qx "$1" "$aur_state_file"
+            }}
+            has_native_state() {{
+              /usr/bin/grep -qx "$1" "$native_state_file"
+            }}
+            print_state() {{
+              state_file="$1"
+              while IFS= read -r package_name; do
+                [ -n "$package_name" ] || continue
+                printf "%s %s\\n" "$package_name" "1.0-1"
+              done < "$state_file"
+            }}
+            case "$action" in
+              -Qm)
+                if [ -n "$target" ]; then
+                  if has_aur_state "$target"; then
+                    printf "%s %s\\n" "$target" "1.0-1"
+                    exit 0
+                  fi
+                  exit 1
+                fi
+                print_state "$aur_state_file"
+                exit 0
+                ;;
+              -Qn)
+                if [ -n "$target" ]; then
+                  if has_native_state "$target"; then
+                    printf "%s %s\\n" "$target" "1.0-1"
+                    exit 0
+                  fi
+                  exit 1
+                fi
+                print_state "$native_state_file"
+                exit 0
+                ;;
+              -Q)
+                if has_aur_state "$target" || has_native_state "$target"; then
+                  printf "%s %s\\n" "$target" "1.0-1"
+                  exit 0
+                fi
+                exit 1
+                ;;
+            esac
+            exit 1
+            """
+        ),
+    )
+
+    if "paru" in helpers:
+        write_stub(
+            bin_dir,
+            "paru",
+            textwrap.dedent(
+                f"""\
+                #!/bin/sh
+                aur_state_file="{aur_state_file}"
+                native_state_file="{native_state_file}"
+                repo_file="{repo_file}"
+                action="$1"
+                target=""
+                has_aur_state() {{
+                  /usr/bin/grep -qx "$1" "$aur_state_file"
+                }}
+                has_native_state() {{
+                  /usr/bin/grep -qx "$1" "$native_state_file"
+                }}
+                has_repo() {{
+                  /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
+                }}
+                repo_label() {{
+                  /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ print $2; exit }}' "$repo_file"
+                }}
+                remove_state() {{
+                  tmp="$aur_state_file.tmp"
+                  /usr/bin/grep -vx "$1" "$aur_state_file" > "$tmp" || true
+                  /usr/bin/mv "$tmp" "$aur_state_file"
+                }}
+                search_key() {{
+                  printf "%s" "$1" | /usr/bin/tr '[:upper:]' '[:lower:]'
+                }}
+                for arg in "$@"; do
+                  case "$arg" in
+                    -Ss|-S|-Rns|--aur|--needed|--noconfirm|--)
+                      ;;
+                    *)
+                      target="$arg"
+                      ;;
+                  esac
+                done
+                case "$action" in
+                  -Ss)
+                    query_key="$(search_key "$target")"
+                    found=1
+                    while IFS="$(printf '\\t')" read -r package_name display_label; do
+                      [ -n "$package_name" ] || continue
+                      package_key="$(search_key "$package_name")"
+                      label_key="$(search_key "$display_label")"
+                      match=1
+                      case "$package_key" in
+                        *"$query_key"*) match=0 ;;
+                      esac
+                      case "$label_key" in
+                        *"$query_key"*) match=0 ;;
+                      esac
+                      if [ "$match" -eq 0 ]; then
+                        echo "aur/$package_name 1.0-1"
+                        echo "    $display_label"
+                        found=0
+                      fi
+                    done < "$repo_file"
+                    if [ "$found" -eq 0 ]; then
+                      exit 0
+                    fi
+                    echo "no packages found" >&2
+                    exit 1
+                    ;;
+                  -S)
+                    if has_aur_state "$target"; then
+                      exit 0
+                    fi
+                    if has_native_state "$target"; then
+                      echo "target already installed from official repos: $target" >&2
+                      exit 1
+                    fi
+                    if ! has_repo "$target"; then
+                      echo "target not found: $target" >&2
+                      exit 1
+                    fi
+                    echo "$target" >> "$aur_state_file"
+                    echo "installed $target"
+                    exit 0
+                    ;;
+                  -Rns)
+                    if ! has_aur_state "$target"; then
+                      echo "package not found: $target" >&2
+                      exit 1
+                    fi
+                    remove_state "$target"
+                    echo "removed $target"
+                    exit 0
+                    ;;
+                esac
+                exit 1
+                """
+            ),
+        )
+
+    if "yay" in helpers:
+        write_stub(bin_dir, "yay", "#!/bin/sh\nexit 0\n")
+
+    env = {
+        "PATH": str(bin_dir),
+        "AURORA_OS_RELEASE_PATH": str(root / "os-release"),
+    }
+    return env, aur_state_file, native_state_file
+
+
 def setup_flatpak_testbed(
     root: Path,
     *,

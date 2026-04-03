@@ -13,6 +13,19 @@ def backend_failed_message(name: str) -> str:
     return f"❌ backend '{name}' retornou erro operacional"
 
 
+def interactive_handoff_start_message(name: str) -> str:
+    return (
+        f"ℹ️ entregando o terminal ao helper interativo '{name}'. "
+        "Quando ele terminar, vou validar o estado final."
+    )
+
+
+def interactive_handoff_return_message(name: str, exit_code: int) -> str:
+    if exit_code == 0:
+        return f"ℹ️ o helper interativo '{name}' terminou. Validando o estado final."
+    return f"ℹ️ o helper interativo '{name}' terminou com exit code {exit_code}."
+
+
 def no_results_message(target: str, backend_name: str) -> str:
     return f"ℹ️ não encontrei resultados para '{target}' no backend '{backend_name}'."
 
