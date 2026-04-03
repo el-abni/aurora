@@ -1,11 +1,12 @@
-# Installation Policy - Aurora v0.3.0
+# Installation Policy - Aurora v0.3.1
 
 ## Escopo real da política
 
-Na `v0.3.0`, a política operacional da Aurora governa dois domínios e três fontes reais:
+Na `v0.3.1`, a política operacional da Aurora governa dois domínios e quatro fontes reais:
 
 - `host_package` com `source_type=host_package_manager`;
 - `host_package` explicitamente marcado com `source_type=aur_repository`;
+- `host_package` explicitamente marcado com `source_type=copr_repository`;
 - `user_software` com `source_type=flatpak_remote`.
 
 A política existe para explicitar contrato, risco e limite da rota. Ela não existe para simular amplitude.
@@ -44,6 +45,19 @@ Os campos ativos desta release são:
 - `aur.remover` permanece no caminho não interativo desta release;
 - continua bloqueado fora de Arch mutável, sem `pacman` observado ou sem helper aceito.
 
+### `COPR` explícito
+
+- pedido explicitamente marcado com `copr` continua no escopo de pacote do host, mas com fonte separada;
+- a frase precisa trazer `owner/project` de forma explícita;
+- `source_type=copr_repository`;
+- `trust_level=third_party_repository`;
+- `copr.instalar` e `copr.remover` exigem confirmação explícita;
+- a frente só abre em Fedora mutável com `dnf` e capacidade `dnf copr` observados;
+- `copr.instalar` habilita explicitamente o repositório pedido antes de instalar;
+- `copr.remover` remove o pacote e não gerencia o lifecycle do repositório;
+- `copr.procurar` fica fora desta release;
+- não existe descoberta automática de repositório nem canonicalização de nome de pacote por busca.
+
 ### `user_software`
 
 - pedido explicitamente marcado como `flatpak` ou `flathub` cai em `user_software`;
@@ -65,7 +79,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v0.3.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v0.3.1`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -104,6 +118,10 @@ Registra o peso de reversão esperado da mutação, por exemplo:
   resultado típico: `allow`
 - `aurora instalar google chrome no aur`
   resultado típico: `require_confirmation`
+- `aurora instalar yt-dlp do copr atim/ytdlp`
+  resultado típico: `require_confirmation`
+- `aurora remover yt-dlp do copr atim/ytdlp`
+  resultado típico: `require_confirmation`
 - `aurora procurar firefox no flatpak`
   resultado típico: `allow`
 - `aurora instalar firefox no flatpak`
@@ -113,10 +131,11 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 
 ## O que ainda não está aberto
 
-Continuam fora da `v0.3.0`:
+Continuam fora da `v0.3.1`:
 
 - seleção de remote além do default `flathub`;
-- COPR, PPA, AppImage e GitHub Releases;
+- `copr.procurar`, descoberta automática de repositório COPR e validação de origem RPM na remoção;
+- PPA, AppImage e GitHub Releases;
 - `rpm-ostree`, toolbox, distrobox e `ujust`.
 
-Se `flatpak` ou helper AUR aparecerem no host sem pedido explícito, isso continua sendo apenas observação e não muda o default de `host_package`.
+Se `flatpak`, helper AUR ou capacidade COPR aparecerem no host sem pedido explícito, isso continua sendo apenas observação e não muda o default de `host_package`.

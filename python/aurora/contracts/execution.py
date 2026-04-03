@@ -8,6 +8,8 @@ class ExecutionRoute:
     route_name: str
     action_name: str
     backend_name: str
+    pre_commands: tuple[tuple[str, ...], ...] = field(default_factory=tuple)
+    pre_command_required_commands: tuple[tuple[str, ...], ...] = field(default_factory=tuple)
     command: tuple[str, ...] = ()
     required_commands: tuple[str, ...] = ()
     state_probe_command: tuple[str, ...] = ()

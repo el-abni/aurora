@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.3.0
+# Architecture - Aurora v0.3.1
 
 ## Tese curta
 
@@ -6,6 +6,7 @@ Aurora continua sendo um produto **100% Python** com contratos pequenos e observ
 
 - `host_package` para pacotes oficiais do host;
 - `AUR` como fonte explícita de terceiro para pacote do host em Arch;
+- `COPR` como fonte explícita de terceiro para pacote do host em Fedora;
 - `user_software` para software do usuário via `flatpak`.
 
 Ela não depende de Fish como centro do runtime, não trata ferramenta observada como promessa de suporte e não colapsa fontes diferentes numa única rota opaca.
@@ -15,10 +16,10 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 1. `cli.py` recebe o comando público.
 2. `semantics/` normaliza a frase e classifica a intenção mínima.
 3. `linux/host_profile.py` detecta família, mutabilidade e ferramentas observadas.
-4. `install/domain_classifier.py` decide entre default de `host_package`, fonte explícita `AUR` e `user_software`.
+4. `install/domain_classifier.py` decide entre default de `host_package`, fontes explícitas `AUR` e `COPR`, e `user_software`.
 5. `install/policy_engine.py` produz o juízo de política.
 6. `install/candidates.py` e `install/route_selector.py` escolhem a rota executável.
-7. `install/execution_handoff.py` executa, faz probes, entrega o terminal ao helper quando a rota é interativa e produz o resultado final.
+7. `install/execution_handoff.py` executa, faz probes, roda passos preparatórios quando a rota exige preparação explícita e entrega o terminal ao helper quando a rota é interativa.
 8. `observability/` registra e renderiza o `decision_record`.
 
 ## Módulos principais
@@ -40,7 +41,7 @@ Guarda a parte Linux real da Aurora:
 - detecção de mutabilidade;
 - matriz por família;
 - rotas concretas de `host_package`;
-- fronteira entre backend oficial do host e helper de fonte terceira em Arch.
+- fronteira entre backend oficial do host e fontes terceiras explícitas.
 
 ### `install/`
 
@@ -50,7 +51,7 @@ Orquestra a decisão:
 - policy;
 - resolução controlada de alvo;
 - candidatos e seleção de rota;
-- handoff de execução;
+- handoff de execução, incluindo preparação explícita de rota quando necessário;
 - separação entre bloqueio, `noop`, confirmação e erro operacional.
 
 ### `observability/`
@@ -70,7 +71,7 @@ Mantém a superfície pública:
 - mensagens de confirmação;
 - mensagens de resultado.
 
-## Rotas abertas na v0.3.0
+## Rotas abertas na v0.3.1
 
 ### `host_package`
 
@@ -108,6 +109,24 @@ Comportamento garantido:
 - `--confirm` e `--yes` contam como confirmação explícita também quando entram inline na frase;
 - não existe fallback implícito de pedido nu para AUR.
 
+### `COPR` explícito
+
+Segunda fonte terceira real:
+
+- `copr.instalar`
+- `copr.remover`
+
+Comportamento garantido:
+
+- `COPR` só entra por pedido explícito;
+- a frase precisa carregar a coordenada `owner/project`;
+- a frente só abre em Fedora mutável com `dnf copr` observado;
+- `copr.instalar` executa um passo preparatório explícito para habilitar o repositório pedido e depois instala o pacote;
+- `copr.remover` remove o pacote do host, mas não desabilita o repositório;
+- mutação exige confirmação explícita;
+- o nome do pacote precisa vir de forma exata neste primeiro corte;
+- não existe busca global, descoberta mágica de repositório ou fallback implícito de pedido nu para COPR.
+
 ### `user_software`
 
 Frente explícita de software do usuário:
@@ -125,10 +144,11 @@ Comportamento garantido:
 
 ## Fronteiras deliberadas
 
-A `v0.3.0` continua pequena de propósito:
+A `v0.3.1` continua pequena de propósito:
 
 - pedido nu continua em `host_package`;
 - `AUR` não vira fallback mágico;
+- `COPR` não abre `procurar`, não descobre repositório e não canoniza pacote por busca;
 - `flatpak` não generaliza seleção de remote além do default `flathub`;
 - `user_software` não abre outras fontes além de `flatpak`;
 - hosts imutáveis reais continuam fora da superfície operacional.

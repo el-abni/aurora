@@ -1,5 +1,30 @@
 # Changelog
 
+## 🌌 Aurora v0.3.1
+
+Fechamento público da release que abre COPR como fonte explícita de terceiro em Fedora mutável, sem reabrir a espinha já consolidada da `v0.3.0`.
+
+### Adicionado
+- marcação pública inicial de COPR por frase explícita com coordenada `owner/project`, como `aurora instalar <pacote> do copr <owner>/<project> --confirm`.
+- `copr.instalar` e `copr.remover` como segunda frente real de terceiro dentro de `host_package`.
+- `source_type=copr_repository` e `trust_level=third_party_repository` como leitura própria da nova frente.
+- `source_coordinate` no request observável e passos preparatórios explícitos de rota para registrar o `enable` antes da instalação.
+
+### Alterado
+- o `decision_record` e o `aurora dev` agora expõem a coordenada `owner/project` pedida para COPR.
+- a política de COPR nasce com confirmação explícita para mutações, bloqueio fora de Fedora mutável e checagem honesta de capacidade `dnf copr`.
+- o runtime passa a sustentar rotas com passo preparatório explícito antes da mutação principal, sem esconder isso da observabilidade.
+- README, help e docs técnicas passam a refletir a `v0.3.1` como release pública atual.
+
+### Continua fora da v0.3.1
+- `copr.procurar`;
+- descoberta automática de repositório COPR a partir do nome do pacote;
+- canonicalização de pacote por busca em COPR;
+- lifecycle amplo do repositório COPR e validação de origem RPM na remoção;
+- PPA, AppImage e GitHub Releases;
+- `rpm-ostree`, toolbox, distrobox e `ujust`;
+- hosts imutáveis reais como superfície operacional.
+
 ## 🌌 Aurora v0.3.0
 
 Fechamento público da release que abre AUR como fonte explícita de terceiro sobre a base já consolidada da `v0.2.0`, sem recontaminar `host_package`.
@@ -16,11 +41,6 @@ Fechamento público da release que abre AUR como fonte explícita de terceiro so
 - `--confirm` e `--yes` passam a contar como confirmação explícita também quando entram inline na frase inspecionada.
 - `aur.instalar` anuncia a entrega e o retorno do helper interativo antes da validação final por probe.
 - README, help e docs técnicas passam a refletir a `v0.3.0` como release pública atual.
-
-### Higiene da release
-- `VERSION` promovido para `v0.3.0`.
-- `tests/audit_public_release.py` e `tests/release_gate_v0_3.sh` passam a congelar o contrato público final da release.
-- `.gitignore` passa a ignorar `.codex` como artefato transitório local da ferramenta de desenvolvimento.
 
 ### Continua fora da v0.3.0
 - fallback automático de pedido nu para AUR;
@@ -47,11 +67,6 @@ Fechamento público da release que abre `user_software` como segundo domínio re
 - `aurora dev <frase>` e o `decision_record` passaram a expor melhor a leitura de domínio, escopo e rota.
 - a política operacional agora governa `host_package` e `user_software`, incluindo `source_type=flatpak_remote`.
 - `flatpak.remover` continua exigindo confirmação explícita quando a remoção realmente vai acontecer.
-
-### Higiene da release
-- `VERSION` promovido para `v0.2.0`.
-- `.gitignore` passou a ignorar `__pycache__/` e `*.pyc`.
-- artefatos Python compilados deixaram de fazer parte do rastreamento do repositório.
 
 ### Continua fora da v0.2.0
 - seleção de remote além do default `flathub`;
