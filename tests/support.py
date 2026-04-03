@@ -715,6 +715,147 @@ def setup_aur_testbed(
     return env, aur_state_file, native_state_file
 
 
+def setup_copr_testbed(
+    root: Path,
+    *,
+    copr_repo: str,
+    repo_packages: tuple[str, ...] = (),
+    installed_packages: tuple[str, ...] = (),
+    copr_available: bool = True,
+    distro_id: str = "fedora",
+    distro_like: str = "fedora",
+    name: str = "Fedora Linux",
+) -> tuple[dict[str, str], Path, Path, Path]:
+    bin_dir = root / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    state_file = root / "installed.txt"
+    repo_file = root / "copr-repo.txt"
+    enabled_repo_file = root / "enabled-copr.txt"
+    commands_file = root / "commands.txt"
+    normalized_repo_packages: list[tuple[str, str]] = []
+    for entry in repo_packages:
+        package_name, separator, label_value = entry.partition("|")
+        package_name = package_name.strip()
+        display_label = label_value.strip() if separator else "pacote COPR de teste"
+        normalized_repo_packages.append((package_name, display_label or "pacote COPR de teste"))
+
+    state_file.write_text("\n".join(installed_packages) + ("\n" if installed_packages else ""), encoding="utf-8")
+    repo_file.write_text(
+        "\n".join(f"{package_name}\t{display_label}" for package_name, display_label in normalized_repo_packages)
+        + ("\n" if normalized_repo_packages else ""),
+        encoding="utf-8",
+    )
+    enabled_repo_file.write_text("", encoding="utf-8")
+    commands_file.write_text("", encoding="utf-8")
+    write_os_release(root, distro_id=distro_id, distro_like=distro_like, name=name)
+    write_stub(bin_dir, "sudo", "#!/bin/sh\nexec \"$@\"\n")
+    write_stub(
+        bin_dir,
+        "dnf",
+        textwrap.dedent(
+            f"""\
+            #!/bin/sh
+            state_file="{state_file}"
+            repo_file="{repo_file}"
+            enabled_repo_file="{enabled_repo_file}"
+            commands_file="{commands_file}"
+            requested_repo="{copr_repo}"
+            copr_available="{1 if copr_available else 0}"
+            printf "%s\\n" "$*" >> "$commands_file"
+            if [ "$1" = "-y" ]; then
+              shift
+            fi
+            action="$1"
+            target=""
+            for arg in "$@"; do
+              target="$arg"
+            done
+            has_state() {{
+              /usr/bin/grep -qx "$1" "$state_file"
+            }}
+            has_repo() {{
+              /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
+            }}
+            repo_enabled() {{
+              /usr/bin/grep -qx "$requested_repo" "$enabled_repo_file"
+            }}
+            remove_state() {{
+              tmp="$state_file.tmp"
+              /usr/bin/grep -vx "$1" "$state_file" > "$tmp" || true
+              /usr/bin/mv "$tmp" "$state_file"
+            }}
+            case "$action" in
+              copr)
+                if [ "$copr_available" != "1" ]; then
+                  echo "No such command: copr" >&2
+                  exit 1
+                fi
+                case "$2" in
+                  --help)
+                    echo "usage: dnf copr [enable] owner/project"
+                    exit 0
+                    ;;
+                  enable)
+                    repo="$3"
+                    printf "%s\\n" "$repo" > "$enabled_repo_file"
+                    echo "enabled $repo"
+                    exit 0
+                    ;;
+                esac
+                ;;
+              install)
+                if has_state "$target"; then
+                  exit 0
+                fi
+                if ! repo_enabled; then
+                  echo "No match for argument: $target" >&2
+                  exit 1
+                fi
+                if ! has_repo "$target"; then
+                  echo "No match for argument: $target" >&2
+                  exit 1
+                fi
+                echo "$target" >> "$state_file"
+                echo "installed $target"
+                exit 0
+                ;;
+              remove)
+                if ! has_state "$target"; then
+                  echo "No match for argument: $target" >&2
+                  exit 1
+                fi
+                remove_state "$target"
+                echo "removed $target"
+                exit 0
+                ;;
+            esac
+            exit 1
+            """
+        ),
+    )
+    write_stub(
+        bin_dir,
+        "rpm",
+        textwrap.dedent(
+            f"""\
+            #!/bin/sh
+            state_file="{state_file}"
+            target="$2"
+            if /usr/bin/grep -qx "$target" "$state_file"; then
+              exit 0
+            fi
+            exit 1
+            """
+        ),
+    )
+
+    env = {
+        "PATH": str(bin_dir),
+        "AURORA_OS_RELEASE_PATH": str(root / "os-release"),
+    }
+    return env, state_file, enabled_repo_file, commands_file
+
+
 def setup_flatpak_testbed(
     root: Path,
     *,

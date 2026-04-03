@@ -7,6 +7,8 @@ from aurora.presentation.formatting import field
 def _scope_label(record: DecisionRecord) -> str:
     if record.request.domain_kind == "user_software":
         return "software do usuario"
+    if record.request.domain_kind == "host_package" and record.request.requested_source == "copr":
+        return "pacote do host via COPR"
     if record.request.domain_kind == "host_package" and record.request.requested_source == "aur":
         return "pacote AUR no host"
     if record.request.domain_kind == "host_package":
@@ -35,6 +37,7 @@ def render_decision_record(record: DecisionRecord) -> str:
         field("intent", record.request.intent),
         field("domain_kind", record.request.domain_kind),
         field("requested_source", record.request.requested_source or "-"),
+        field("source_coordinate", record.request.source_coordinate or "-"),
         field("scope_label", _scope_label(record)),
         field("target", record.request.target or "-"),
         field("status", record.request.status),
@@ -138,6 +141,10 @@ def render_decision_record(record: DecisionRecord) -> str:
                 field(
                     "interactive_passthrough",
                     str(record.execution_route.interactive_passthrough).lower(),
+                ),
+                field(
+                    "pre_commands",
+                    " | ".join(" ".join(command) for command in record.execution_route.pre_commands) or "-",
                 ),
                 field("command", " ".join(record.execution_route.command) or "-"),
                 field("state_probe", " ".join(record.execution_route.state_probe_command) or "-"),

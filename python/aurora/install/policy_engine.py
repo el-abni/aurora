@@ -4,6 +4,7 @@ from aurora.contracts.host import HostProfile
 from aurora.contracts.policy import PolicyAssessment
 from aurora.contracts.requests import SemanticRequest
 from aurora.install.sources.aur import observed_out_of_contract_aur_helpers, supported_aur_helper
+from aurora.install.sources.copr import observe_copr_capability
 from aurora.linux.immutable_policy import host_package_block_reason
 
 _CRITICAL_PACKAGE_NAMES = {
@@ -394,12 +395,161 @@ def _assess_aur_policy(
     )
 
 
+def _copr_software_criticality(request: SemanticRequest) -> str:
+    if request.intent == "procurar":
+        return "low"
+    return "medium"
+
+
+def _copr_reversal_level(intent: str) -> str:
+    if intent == "procurar":
+        return "informational"
+    if intent == "instalar":
+        return "third_party_host_change"
+    return "third_party_host_removal"
+
+
+def _assess_copr_policy(
+    request: SemanticRequest,
+    profile: HostProfile | None,
+    *,
+    confirmation_supplied: bool = False,
+    environ: dict[str, str] | None = None,
+) -> PolicyAssessment | None:
+    software_criticality = _copr_software_criticality(request)
+    reversal_level = _copr_reversal_level(request.intent)
+    requires_confirmation = request.intent in {"instalar", "remover"}
+    repository = request.source_coordinate.strip()
+
+    if profile is None:
+        return PolicyAssessment(
+            domain_kind="host_package",
+            source_type="copr_repository",
+            trust_level="third_party_repository",
+            software_criticality=software_criticality,
+            trust_signals=tuple(
+                signal
+                for signal in (
+                    "source_request:copr",
+                    f"copr_repo:{repository}" if repository else "",
+                )
+                if signal
+            ),
+            trust_gaps=("host_profile_unavailable", "copr_third_party_source_requires_human_review"),
+            policy_outcome="block",
+            requires_confirmation=requires_confirmation,
+            confirmation_supplied=confirmation_supplied,
+            reversal_level=reversal_level,
+            reason="o host profile nao esta disponivel para validar a rota COPR.",
+        )
+
+    source_hint = next(
+        (item.split(":", 1)[1] for item in request.observations if item.startswith("source_hint:")),
+        "copr",
+    )
+    capability = observe_copr_capability(profile, environ=environ)
+    trust_signals = [
+        "domain:host_package",
+        "source_type:copr_repository",
+        "source_request:copr",
+        f"source_hint:{source_hint}",
+        f"linux_family:{profile.linux_family}",
+        f"mutability:{profile.mutability}",
+        f"software_criticality:{software_criticality}",
+    ]
+    if repository:
+        trust_signals.append(f"copr_repo:{repository}")
+    if profile.package_backends:
+        trust_signals.append(f"observed_backends:{','.join(profile.package_backends)}")
+    if capability.observed:
+        trust_signals.append("copr_capability:dnf_copr_observed")
+    if confirmation_supplied:
+        trust_signals.append("confirmation:explicit")
+
+    trust_gaps = ["copr_third_party_source_requires_human_review"]
+    if request.intent == "remover":
+        trust_gaps.append("copr_package_origin_not_verified_on_remove")
+    trust_gaps.append("copr_repository_lifecycle_not_managed")
+
+    outcome = "allow"
+    reason = "COPR explicito foi aceito como fonte contida de terceiro em Fedora mutavel nesta rodada."
+
+    if request.status != "CONSISTENT":
+        outcome = "block"
+        trust_gaps.append("request_not_consistent")
+        reason = request.reason
+    elif request.intent == "procurar":
+        outcome = "block"
+        trust_gaps.append("copr_search_not_open")
+        reason = (
+            "COPR explicito nesta release abre apenas instalacao e remocao. "
+            "A busca controlada por repositorio ficou fora deste corte."
+        )
+    elif profile.linux_family != "fedora":
+        outcome = "block"
+        trust_gaps.append("copr_linux_family_not_supported")
+        reason = "COPR explicito nesta rodada so abre em hosts Fedora mutaveis suportados."
+    elif profile.mutability == "atomic":
+        outcome = "block"
+        trust_gaps.append("copr_blocked_on_atomic_host")
+        reason = "COPR explicito continua bloqueado em hosts Atomic/imutaveis nesta rodada."
+    elif "dnf" not in profile.package_backends:
+        outcome = "block"
+        trust_gaps.append("copr_dnf_backend_not_observed")
+        reason = "a frente COPR depende de dnf observado neste host Fedora."
+    elif not repository:
+        outcome = "block"
+        trust_gaps.append("copr_repository_coordinate_missing")
+        reason = "faltou a coordenada explicita do repositório COPR no formato owner/project."
+    elif not capability.observed:
+        outcome = "block"
+        trust_gaps.append(capability.gap or "copr_dnf_plugin_not_observed")
+        reason = capability.reason
+    elif request.intent == "instalar":
+        reason = (
+            "copr.instalar habilita explicitamente o repositório pedido antes de instalar o pacote "
+            "e exige confirmacao explicita nesta rodada."
+        )
+    elif request.intent == "remover":
+        reason = (
+            "copr.remover remove o pacote do host e preserva a honestidade de que o lifecycle do "
+            "repositório e a verificacao de origem ficam fora deste primeiro corte."
+        )
+
+    if outcome == "allow" and requires_confirmation and not confirmation_supplied:
+        outcome = "require_confirmation"
+        trust_gaps.append("confirmation_missing_for_copr_mutation")
+        reason = "a mutacao explicitamente marcada como COPR exige confirmacao explicita nesta rodada."
+
+    return PolicyAssessment(
+        domain_kind="host_package",
+        source_type="copr_repository",
+        trust_level="third_party_repository",
+        software_criticality=software_criticality,
+        trust_signals=tuple(trust_signals),
+        trust_gaps=tuple(trust_gaps),
+        policy_outcome=outcome,
+        requires_confirmation=requires_confirmation,
+        confirmation_supplied=confirmation_supplied,
+        reversal_level=reversal_level,
+        reason=reason,
+    )
+
+
 def assess_policy(
     request: SemanticRequest,
     profile: HostProfile | None,
     *,
     confirmation_supplied: bool = False,
+    environ: dict[str, str] | None = None,
 ) -> PolicyAssessment | None:
+    if request.domain_kind == "host_package" and request.requested_source == "copr":
+        return _assess_copr_policy(
+            request,
+            profile,
+            confirmation_supplied=confirmation_supplied,
+            environ=environ,
+        )
     if request.domain_kind == "host_package" and request.requested_source == "aur":
         return _assess_aur_policy(
             request,

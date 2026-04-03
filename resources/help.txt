@@ -11,6 +11,8 @@ Comandos públicos:
 - aurora instalar <pacote> no aur --confirm
 - aurora remover <pacote> no aur
 - aurora remover <pacote> no aur --confirm
+- aurora instalar <pacote> do copr <owner>/<project> --confirm
+- aurora remover <pacote> do copr <owner>/<project> --confirm
 - aurora procurar <software> no flatpak
 - aurora instalar <software> no flatpak
 - aurora remover <software> no flatpak
@@ -19,33 +21,39 @@ Comandos públicos:
 - aurora --help
 - aurora --version
 
-Contrato público da v0.3.0:
+Contrato público da v0.3.1:
 - produto 100% Python;
 - launchers oficiais: aurora e auro;
 - domínios ativos: host_package e user_software;
-- fontes reais: host_package_manager, aur_repository e flatpak_remote;
-- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover e flatpak.procurar/instalar/remover;
+- fontes reais: host_package_manager, aur_repository, copr_repository e flatpak_remote;
+- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.instalar/remover e flatpak.procurar/instalar/remover;
 - pedidos nus continuam em host_package;
 - AUR so entra por frase marcada com aur;
+- COPR so entra por frase marcada com copr e owner/project explicito;
+- COPR abre apenas instalar/remover em Fedora mutavel com dnf copr observado;
 - pedidos com flatpak/flathub vão para user_software.
 
 Confirmação:
 - use --confirm ou --yes quando a Aurora pedir confirmação explícita;
 - isso também vale quando o marcador entra inline numa frase passada como texto único, inclusive em aurora dev;
-- isso cobre mutações sensíveis de host_package, mutações reais via AUR e remoções reais via flatpak.
+- isso cobre mutações sensíveis de host_package, mutações reais via AUR, mutações reais via COPR e remoções reais via flatpak.
 
 Compatibilidade:
 - host_package: Arch, Debian/Ubuntu, Fedora e OpenSUSE mutáveis;
 - host_package em Atomic/imutáveis: bloqueado por política;
 - AUR explícito: Arch mutável com helper paru observado;
 - aur.instalar pode entregar o terminal ao helper para revisão/build interativos; aur.remover permanece não interativo nesta release;
+- COPR explícito: Fedora mutável com dnf copr observado, nome real de pacote e repositório owner/project explícito;
+- copr.instalar habilita o repositório pedido antes da instalação; copr.remover não desabilita o repositório nesta release;
 - flatpak: depende do backend estar presente no host e atua no escopo do usuário.
 
-Fora da v0.3.0:
+Fora da v0.3.1:
 - fallback automático de pedido nu para AUR;
+- copr.procurar, descoberta automática de repositório COPR e canonicalização de pacote por busca;
+- lifecycle amplo de repositório COPR e validação de origem na remoção;
 - helpers AUR além de paru e passthrough interativo para aur.remover;
 - remotes flatpak além do default flathub;
-- COPR, PPA, AppImage e GitHub Releases;
+- PPA, AppImage e GitHub Releases;
 - rpm-ostree, toolbox, distrobox e ujust;
 - suporte operacional real a hosts imutáveis;
 - manutenção ampla do host, arquivos e rede.

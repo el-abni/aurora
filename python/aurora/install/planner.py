@@ -11,6 +11,11 @@ from aurora.install.sources.aur import (
     resolve_aur_target,
     resolved_aur_target,
 )
+from aurora.install.sources.copr import (
+    copr_target_resolution_blocks,
+    resolve_copr_target,
+    resolved_copr_target,
+)
 from aurora.install.sources.flatpak import (
     flatpak_target_resolution_blocks,
     resolve_flatpak_target,
@@ -26,6 +31,22 @@ def _summary_for_request(request: SemanticRequest) -> str:
         return "Sem acao aberta."
 
     if request.domain_kind == "host_package":
+        if request.requested_source == "copr":
+            if request.intent == "procurar":
+                return (
+                    f"Inspecionar o pacote do host '{request.target}' no COPR "
+                    f"'{request.source_coordinate or '-'}'."
+                )
+            if request.intent == "instalar":
+                return (
+                    f"Instalar o pacote do host '{request.target}' via COPR "
+                    f"'{request.source_coordinate or '-'}'."
+                )
+            if request.intent == "remover":
+                return (
+                    f"Remover o pacote do host '{request.target}' via COPR "
+                    f"'{request.source_coordinate or '-'}'."
+                )
         if request.requested_source == "aur":
             if request.intent == "procurar":
                 return f"Procurar o pacote AUR '{request.target}'."
@@ -87,6 +108,8 @@ def _resolve_target(
     if request.domain_kind == "user_software":
         return resolve_flatpak_target(request, profile, environ=environ)
     if request.domain_kind == "host_package":
+        if request.requested_source == "copr":
+            return resolve_copr_target(request, profile, environ=environ)
         if request.requested_source == "aur":
             return resolve_aur_target(request, profile, environ=environ)
         return resolve_host_package_target(request, profile, environ=environ)
@@ -96,6 +119,8 @@ def _resolve_target(
 def _resolved_target(request: SemanticRequest, target_resolution) -> str:
     if request.domain_kind == "user_software":
         return resolved_flatpak_target(request, target_resolution)
+    if request.domain_kind == "host_package" and request.requested_source == "copr":
+        return resolved_copr_target(request, target_resolution)
     if request.domain_kind == "host_package" and request.requested_source == "aur":
         return resolved_aur_target(request, target_resolution)
     if target_resolution is not None and target_resolution.resolved_target:
@@ -108,6 +133,8 @@ def _target_resolution_blocks(request: SemanticRequest, target_resolution) -> bo
         return False
     if request.domain_kind == "user_software":
         return flatpak_target_resolution_blocks(request, target_resolution)
+    if request.domain_kind == "host_package" and request.requested_source == "copr":
+        return copr_target_resolution_blocks(request, target_resolution)
     if request.domain_kind == "host_package" and request.requested_source == "aur":
         return aur_target_resolution_blocks(request, target_resolution)
     return target_resolution.status in {"ambiguous", "not_found", "unresolved"}
@@ -133,7 +160,12 @@ def plan_request(
 
     if request.domain_kind in {"host_package", "user_software"}:
         profile = detect_host_profile(environ)
-        policy = assess_policy(request, profile, confirmation_supplied=confirmation_supplied)
+        policy = assess_policy(
+            request,
+            profile,
+            confirmation_supplied=confirmation_supplied,
+            environ=environ,
+        )
         target_resolution = _resolve_target(request, profile, environ=environ)
         if not _target_resolution_blocks(request, target_resolution):
             route = select_route(

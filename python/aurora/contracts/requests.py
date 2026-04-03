@@ -51,6 +51,7 @@ class SemanticRequest:
     intent: str
     domain_kind: str
     requested_source: str = ""
+    source_coordinate: str = ""
     target: str = ""
     status: str = "OUT_OF_SCOPE"
     reason: str = ""

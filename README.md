@@ -1,21 +1,22 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v0.3.0-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v0.3.1-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com política explícita, observabilidade própria e execução real sobre um contrato pequeno e auditável.
 
-A release pública atual é a `v0.3.0`. Ela fecha a frente AUR como fonte explícita de terceiro, sem fallback para pedidos nus e com execução real de instalação via helper quando o fluxo pede interação.
+A release pública atual é a `v0.3.1`. Ela abre **COPR como fonte explícita de terceiro** em Fedora mutável, sem reabrir a base já consolidada de `host_package`, `AUR` explícito e `user_software` via `flatpak`.
 
-Na `v0.3.0`, a superfície pública cobre dois domínios reais e uma fonte explícita adicional:
+Na `v0.3.1`, a superfície pública cobre dois domínios reais e duas fontes explícitas adicionais:
 
 - `host_package` para pacotes do host;
 - `AUR` como fonte explícita de terceiro dentro do escopo de pacote do host;
+- `COPR` como fonte explícita de terceiro dentro do escopo de pacote do host;
 - `user_software` para software do usuário via `flatpak`.
 
-Pedidos nus, como `aurora procurar firefox`, continuam no default seguro de `host_package`. Pedidos explicitamente marcados como `aur`, como `aurora instalar google chrome no aur`, entram na frente AUR. Pedidos explicitamente marcados como `flatpak` ou `flathub`, como `aurora instalar firefox no flatpak`, entram em `user_software`.
+Pedidos nus, como `aurora procurar firefox`, continuam no default seguro de `host_package`. Pedidos explicitamente marcados como `aur`, como `aurora instalar google chrome no aur`, entram na frente AUR. Pedidos explicitamente marcados como `copr`, como `aurora instalar yt-dlp do copr atim/ytdlp --confirm`, entram na frente COPR. Pedidos explicitamente marcados como `flatpak` ou `flathub`, como `aurora instalar firefox no flatpak`, entram em `user_software`.
 
 ## O que a Aurora faz
 
@@ -28,7 +29,7 @@ A Aurora funciona como uma camada de decisão e execução sobre Linux. Em vez d
 - executa com probe de estado quando a ação muda software;
 - e expõe um `decision_record` auditável com `aurora dev <frase>`.
 
-## Contrato público da v0.3.0
+## Contrato público da v0.3.1
 
 Rotas reais abertas nesta release:
 
@@ -38,6 +39,8 @@ Rotas reais abertas nesta release:
 - `aur.procurar`
 - `aur.instalar`
 - `aur.remover`
+- `copr.instalar`
+- `copr.remover`
 - `flatpak.procurar`
 - `flatpak.instalar`
 - `flatpak.remover`
@@ -51,11 +54,16 @@ Comportamento garantido:
 - `--confirm` e `--yes` funcionam como confirmação explícita, inclusive quando aparecem inline numa frase passada como texto único ou inspecionada em `aurora dev`;
 - `aur.instalar` pode entregar o terminal ao helper para revisão/build interativos;
 - `aur.remover` permanece no caminho não interativo desta release;
+- `COPR` só entra quando a frase marca `copr` e traz `owner/project` de forma explícita;
+- `copr.instalar` e `copr.remover` exigem confirmação explícita;
+- `copr.instalar` habilita explicitamente o repositório pedido antes da instalação;
+- `COPR` só abre em Fedora mutável com `dnf copr` observado;
+- `COPR` não faz descoberta automática de repositório nem canonicalização de nome de pacote por busca;
+- `copr.remover` remove o pacote, mas não desabilita o repositório nem valida a origem RPM nesta rodada;
 - `flatpak` só entra quando a frase marca `flatpak` ou `flathub`;
 - `flatpak.instalar` e `flatpak.remover` usam escopo explícito de usuário;
 - `flatpak.instalar` usa `flathub` como remote default nesta release;
-- mutações usam probe antes e depois, com `noop` honesto quando nada precisa mudar;
-- `--confirm` continua fazendo parte real da UX para mutações sensíveis.
+- mutações usam probe antes e depois, com `noop` honesto quando nada precisa mudar.
 
 ## Exemplos rápidos
 
@@ -77,6 +85,13 @@ aurora instalar google chrome no aur --confirm
 aurora remover google chrome no aur --confirm
 ```
 
+### Pacotes COPR explícitos
+
+```bash
+aurora instalar yt-dlp do copr atim/ytdlp --confirm
+aurora remover yt-dlp do copr atim/ytdlp --confirm
+```
+
 ### Software do usuário via Flatpak
 
 ```bash
@@ -91,6 +106,7 @@ aurora remover firefox no flatpak --confirm
 aurora dev "procurar firefox"
 aurora dev "instalar firefox no flatpak"
 aurora dev "instalar google chrome no aur --confirm"
+aurora dev "instalar yt-dlp do copr atim/ytdlp --confirm"
 aurora dev "remover sudo"
 ```
 
@@ -106,9 +122,19 @@ aurora dev "remover sudo"
 
 - suportado agora: hosts Arch/derivados mutáveis com `paru` observado;
 - exige marcação explícita de fonte com `aur`;
-- usa política mais cautelosa, `source_type=aur_repository` e `trust_level=third_party_build`;
+- usa política própria, `source_type=aur_repository` e `trust_level=third_party_build`;
 - `aur.instalar` pode abrir o fluxo interativo real do helper e volta para validação por probe quando o helper termina;
 - `aur.remover` continua fora do passthrough interativo nesta release;
+- não herda fallback implícito de `host_package`.
+
+### `COPR` explícito
+
+- suportado agora: Fedora mutável com `dnf` e capacidade `dnf copr` observados;
+- exige marcação explícita de fonte com `copr` e coordenada `owner/project`;
+- usa política própria, `source_type=copr_repository` e `trust_level=third_party_repository`;
+- `copr.instalar` habilita explicitamente o repositório pedido antes da instalação;
+- `copr.remover` remove o pacote, mas não gerencia o lifecycle do repositório;
+- `COPR` não abre `procurar` nesta release;
 - não herda fallback implícito de `host_package`.
 
 ### `user_software` via `flatpak`
@@ -154,8 +180,8 @@ Remoção:
 Para ver o help público:
 
 ```bash
-aurora --help
 auro --help
+aurora --help
 ```
 
 A identidade pública da ferramenta é:
@@ -167,17 +193,19 @@ A identidade pública da ferramenta é:
 No help público, a versão aparece como:
 
 ```text
-🌌 Aurora v0.3.0
+🌌 Aurora v0.3.1
 ```
 
-## O que a v0.3.0 não promete
+## O que a v0.3.1 não promete
 
 A Aurora ainda não abre:
 
 - fallback automático de pedido nu para AUR;
+- `copr.procurar`, descoberta automática de repositório COPR ou canonicalização de pacote por busca;
+- lifecycle amplo de repositório COPR e validação de origem RPM na remoção;
 - helpers AUR além de `paru` e passthrough interativo para `aur.remover`;
 - remotes `flatpak` além do default `flathub`;
-- COPR, PPA, AppImage e GitHub Releases;
+- PPA, AppImage e GitHub Releases;
 - `rpm-ostree`, toolbox, distrobox e `ujust`;
 - suporte operacional real a hosts imutáveis;
 - manutenção ampla do host;

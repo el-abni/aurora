@@ -11,6 +11,7 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "intent": record.request.intent,
             "domain_kind": record.request.domain_kind,
             "requested_source": record.request.requested_source,
+            "source_coordinate": record.request.source_coordinate,
             "target": record.request.target,
             "status": record.request.status,
             "reason": record.request.reason,
@@ -71,6 +72,10 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "route_name": record.execution_route.route_name,
             "action_name": record.execution_route.action_name,
             "backend_name": record.execution_route.backend_name,
+            "pre_commands": [list(command) for command in record.execution_route.pre_commands],
+            "pre_command_required_commands": [
+                list(commands) for commands in record.execution_route.pre_command_required_commands
+            ],
             "command": list(record.execution_route.command),
             "required_commands": list(record.execution_route.required_commands),
             "state_probe_command": list(record.execution_route.state_probe_command),

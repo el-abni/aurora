@@ -1,4 +1,4 @@
-# Compatibilidade Linux - Aurora v0.3.0
+# Compatibilidade Linux - Aurora v0.3.1
 
 ## Matriz atual de `host_package`
 
@@ -19,9 +19,18 @@
 | Demais famílias Linux | fora do recorte | sem rota executável |
 | Atomic / imutáveis | bloqueado por política | sem mutação via AUR |
 
+## Frente `COPR` explícito
+
+| Perfil Linux | Estado | Escopo real |
+| --- | --- | --- |
+| Fedora mutável com `dnf copr` observado | suportado agora | instalar, remover |
+| Fedora mutável sem capacidade `dnf copr` observada | bloqueado por política | sem rota executável |
+| Demais famílias Linux | fora do recorte | sem rota executável |
+| Atomic / imutáveis | bloqueado por política | sem mutação via COPR |
+
 ## `user_software` via `flatpak`
 
-Na `v0.3.0`, `flatpak` deixa de ser apenas ferramenta observada quando o pedido explicita `flatpak` ou `flathub`.
+Na `v0.3.1`, `flatpak` continua sendo a frente explícita de software do usuário.
 
 Leitura correta desta frente:
 
@@ -37,6 +46,14 @@ Leitura operacional da frente AUR:
 - `aur.remover` permanece fora do passthrough interativo nesta release;
 - ambos continuam auditados com rota explícita e probes coerentes.
 
+Leitura operacional da frente COPR:
+
+- `copr.instalar` habilita explicitamente o repositório pedido antes da instalação;
+- `copr.remover` remove o pacote, mas não desabilita o repositório;
+- a coordenada `owner/project` é obrigatória;
+- o nome do pacote precisa vir de forma exata neste primeiro corte;
+- não existe `copr.procurar`, descoberta mágica de repositório ou canonicalização por busca.
+
 ## Leitura correta da fronteira
 
 - `suportado agora` significa rota real aberta com policy, execução e observabilidade;
@@ -48,7 +65,6 @@ Leitura operacional da frente AUR:
 
 Detecção de ferramenta não vira promessa automática de suporte. Isto continua valendo para:
 
-- COPR;
 - PPA;
 - `rpm-ostree`;
 - toolbox;

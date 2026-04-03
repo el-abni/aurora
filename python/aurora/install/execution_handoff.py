@@ -121,23 +121,35 @@ def _is_user_software(record: DecisionRecord) -> bool:
     return record.request.domain_kind == "user_software"
 
 
+def _is_copr_source(record: DecisionRecord) -> bool:
+    return record.request.domain_kind == "host_package" and record.request.requested_source == "copr"
+
+
 def _is_aur_source(record: DecisionRecord) -> bool:
     return record.request.domain_kind == "host_package" and record.request.requested_source == "aur"
 
 
 def _target_label(record: DecisionRecord) -> str:
+    if _is_copr_source(record):
+        return "pacote do COPR"
     if _is_aur_source(record):
         return "pacote AUR"
     return "software" if _is_user_software(record) else "pacote"
 
 
 def _location_label(record: DecisionRecord) -> str:
+    if _is_copr_source(record):
+        return "neste host via COPR"
     if _is_aur_source(record):
         return "como pacote AUR neste host"
     return "na instalação do usuário" if _is_user_software(record) else "neste host"
 
 
 def _probe_summary(record: DecisionRecord, package_present: bool) -> str:
+    if _is_copr_source(record):
+        if package_present:
+            return "pacote presente no host para a rota COPR."
+        return "pacote ausente no host para a rota COPR."
     if _is_user_software(record):
         if package_present:
             return "software presente na instalação do usuário."
@@ -182,6 +194,18 @@ def _mutation_reports_not_found(record: DecisionRecord, stdout: str, stderr: str
     if route is not None and route.backend_name == "flatpak":
         return flatpak_mutation_reports_no_matching_ref(stdout, stderr)
     return mutation_reports_no_matching_package(stdout, stderr)
+
+
+def _pre_commands_with_requirements(route) -> tuple[tuple[tuple[str, ...], tuple[str, ...]], ...]:
+    prepared: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+    for index, command in enumerate(route.pre_commands):
+        required_commands = (
+            route.pre_command_required_commands[index]
+            if index < len(route.pre_command_required_commands)
+            else ()
+        )
+        prepared.append((command, required_commands))
+    return tuple(prepared)
 
 
 def _execute_search(
@@ -386,6 +410,45 @@ def _execute_mutation(
                 summary=message,
             ),
         )
+
+    for command, required_commands in _pre_commands_with_requirements(route):
+        if not _required_backend_available(command, required_commands, environ=environ):
+            message = backend_missing_message(route.backend_name)
+            return _result(
+                record,
+                exit_code=1,
+                outcome="operational_error",
+                message=message,
+                execution=ExecutionResult(
+                    status="backend_missing",
+                    attempted=False,
+                    confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                    command=command,
+                    pre_probe=pre_probe,
+                    interactive_passthrough=False,
+                    summary=message,
+                ),
+            )
+
+        proc = run(command)
+        if proc.returncode != 0:
+            message = backend_failed_message(route.backend_name)
+            return _result(
+                record,
+                exit_code=1,
+                outcome="operational_error",
+                message=message,
+                execution=ExecutionResult(
+                    status="operational_error",
+                    attempted=True,
+                    confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                    command=command,
+                    exit_code=proc.returncode,
+                    pre_probe=pre_probe,
+                    interactive_passthrough=False,
+                    summary=message,
+                ),
+            )
 
     if route.interactive_passthrough and announce is not None:
         announce(interactive_handoff_start_message(route.backend_name))
