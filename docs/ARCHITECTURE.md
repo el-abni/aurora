@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.4.0
+# Architecture - Aurora v0.4.1
 
 ## Tese curta
 
@@ -62,7 +62,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - mensagens de confirmação;
 - mensagens de resultado.
 
-## Rotas abertas na v0.4.0
+## Rotas abertas na v0.4.1
 
 ### `host_package`
 
@@ -135,12 +135,16 @@ Garantias:
 
 - `flatpak` só entra por pedido explícito;
 - `flatpak.instalar` e `flatpak.remover` usam escopo explícito de usuário;
+- `flatpak.procurar` e `flatpak.instalar` assumem `flathub` apenas quando nenhum remote é informado;
+- `flatpak` aceita remote explícito somente quando esse remote já é observável via `flatpak remotes`;
+- `flatpak.procurar` usa `flatpak remote-ls` filtrado localmente para respeitar o remote selecionado;
+- `flatpak.remover` usa remote explícito apenas como restrição de `origin`, sem default implícito para remoção;
 - mutação usa probe antes/depois e `noop` honesto;
 - `flatpak.remover` exige confirmação explícita quando a remoção realmente precisa acontecer.
 
 ## Fronteiras deliberadas
 
-A `v0.4.0` continua pequena de propósito:
+A `v0.4.1` continua pequena de propósito:
 
 - pedido nu continua em `host_package`;
 - `AUR` não vira fallback mágico;
@@ -148,5 +152,5 @@ A `v0.4.0` continua pequena de propósito:
 - `PPA` não vira sinônimo de `apt` externo;
 - `PPA` não abre Debian puro nem outras derivadas Debian-like sem sustentação operacional;
 - `PPA` não abre `ppa.procurar`, `ppa.remover`, `remove-apt-repository` nem cleanup automático;
-- `flatpak` não generaliza seleção de remote além do default `flathub`;
+- `flatpak` não faz descoberta automática, add arbitrário nem administração geral de remotes;
 - hosts imutáveis reais continuam fora da superfície operacional.

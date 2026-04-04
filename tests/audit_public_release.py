@@ -58,15 +58,24 @@ def git_ls_files() -> list[str]:
 
 
 def main() -> int:
-    ensure(VERSION == "v0.4.0", "VERSION precisa estar promovido para v0.4.0 no fechamento desta release")
+    ensure(VERSION == "v0.4.1", "VERSION precisa estar promovido para v0.4.1 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v0.4.0")
+    ok("VERSION promovido para v0.4.1")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
-    ensure("## 🌌 Aurora v0.4.0" in changelog, "CHANGELOG.md precisa abrir a release publica v0.4.0")
-    ensure("## 🌌 Aurora v0.3.4" in changelog, "CHANGELOG.md precisa preservar a release publica v0.3.4")
-    for term in ("ppa.instalar", "ppa_repository", "ppa:owner/name", "ubuntu", "add-apt-repository"):
+    ensure("## 🌌 Aurora v0.4.1" in changelog, "CHANGELOG.md precisa abrir a release publica v0.4.1")
+    ensure("## 🌌 Aurora v0.4.0" in changelog, "CHANGELOG.md precisa preservar a release publica v0.4.0")
+    for term in (
+        "ppa.instalar",
+        "ppa_repository",
+        "ppa:owner/name",
+        "ubuntu",
+        "add-apt-repository",
+        "flatpak remotes",
+        "remote-ls",
+        "flathub",
+    ):
         ensure(term in changelog_normalized or term in changelog, f"CHANGELOG.md precisa citar {term}")
     ensure("ppa.remover" in changelog, "CHANGELOG.md precisa citar o bloqueio de ppa.remover")
     ensure("copr" in changelog_normalized, "CHANGELOG.md precisa preservar a frente COPR")
@@ -93,6 +102,9 @@ def main() -> int:
         "ppa_repository",
         "add-apt-repository",
         "ubuntu mutavel",
+        "flatpak remotes",
+        "remote-ls",
+        "flathub",
         "--confirm",
         "--yes",
     ):
@@ -122,7 +134,7 @@ def main() -> int:
         "flatpak.remover",
     ):
         ensure(route_name in architecture, f"ARCHITECTURE precisa listar a rota {route_name}")
-    for term in ("ppa:owner/name", "ubuntu", "add-apt-repository", "ppa.remover"):
+    for term in ("ppa:owner/name", "ubuntu", "add-apt-repository", "ppa.remover", "flatpak remotes", "remote-ls", "flathub", "origin"):
         ensure(term in architecture_normalized or term in architecture, f"ARCHITECTURE precisa citar {term}")
     assert_no_auroboros("docs/ARCHITECTURE.md", architecture)
     ok("docs/ARCHITECTURE.md alinhado")
@@ -150,6 +162,10 @@ def main() -> int:
         "apt-get",
         "dpkg",
         "ppa.remover",
+        "flatpak remotes",
+        "remote-ls",
+        "flathub",
+        "origin",
     ):
         ensure(term in compatibility_normalized or term in compatibility, f"COMPATIBILITY precisa citar {term}")
     assert_no_auroboros("docs/COMPATIBILITY_LINUX.md", compatibility)
@@ -175,6 +191,11 @@ def main() -> int:
         "third_party_repository",
         "guarded",
         "flathub",
+        "flatpak_effective_remote",
+        "flatpak_remote_origin",
+        "flatpak_observed_remotes",
+        "flatpak remotes",
+        "remote-ls",
         "ppa:owner/name",
         "add-apt-repository",
         "ubuntu",
@@ -211,6 +232,9 @@ def main() -> int:
         "ppa:owner/name",
         "ubuntu",
         "add-apt-repository",
+        "flatpak remotes",
+        "remote-ls",
+        "flathub",
         "--confirm",
         "--yes",
     ):
@@ -222,6 +246,14 @@ def main() -> int:
     ensure(
         "aurora remover <pacote> do ppa <ppa:owner/name>" in help_text,
         "resources/help.txt precisa mostrar a sintaxe observavel para o bloqueio de remocao PPA",
+    )
+    ensure(
+        "aurora procurar <software> no flatpak <remote>" in help_text,
+        "resources/help.txt precisa mostrar a sintaxe publica de remote explicito no flatpak",
+    )
+    ensure(
+        "aurora remover <software> no flatpak <remote> --confirm" in help_text,
+        "resources/help.txt precisa mostrar a sintaxe publica de remocao flatpak com remote explicito",
     )
     assert_no_auroboros("resources/help.txt", help_text)
     ok("resources/help.txt alinhado")

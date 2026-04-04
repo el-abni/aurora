@@ -1,5 +1,30 @@
 # Changelog
 
+## 🌌 Aurora v0.4.1
+
+Fechamento pequeno da frente `flatpak` para abrir `remote` explícito além de `flathub`, sem transformar a Aurora em gerenciador amplo de remotes.
+
+### Adicionado
+
+- `flatpak` agora aceita `remote` explícito via coordenada simples já observável no host, como `no flatpak <remote>` ou `no flathub`.
+- `flatpak.procurar`, `flatpak.instalar` e `flatpak.remover` carregam o `remote` para policy, route, execution e `decision_record`.
+- observação explícita de `flatpak remotes` e uso controlado de `flatpak remote-ls` para respeitar o `remote` selecionado sem descoberta ampla.
+
+### Alterado
+
+- `flathub` continua sendo o default apenas para `flatpak.procurar` e `flatpak.instalar` quando nenhum `remote` é informado.
+- `flatpak.remover` deixa explícito que `remote` só entra como restrição honesta de `origin`, sem assumir default para remoção.
+- README, help e docs técnicas passam a refletir a `v0.4.1` como release pública atual.
+
+### Continua fora da v0.4.1
+
+- descoberta automática de remotes `flatpak`;
+- add automático de remote arbitrário;
+- administração geral de remotes `flatpak`;
+- sincronização ampla de remotes;
+- PPA, COPR e AUR fora do que já estava aberto;
+- toolbox, distrobox, `rpm-ostree` e hosts imutáveis como superfície operacional.
+
 ## 🌌 Aurora v0.4.0
 
 Fechamento pequeno da frente PPA para abrir uma nova família explícita de repositório terceiro sem transformar `apt` genérico em promessa ampla de Debian-like.

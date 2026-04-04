@@ -1,8 +1,8 @@
-# Installation Policy - Aurora v0.4.0
+# Installation Policy - Aurora v0.4.1
 
 ## Escopo real da política
 
-Na `v0.4.0`, a política operacional da Aurora governa dois domínios e cinco fontes reais:
+Na `v0.4.1`, a política operacional da Aurora governa dois domínios e cinco fontes reais:
 
 - `host_package` com `source_type=host_package_manager`;
 - `host_package` explicitamente marcado com `source_type=aur_repository`;
@@ -79,7 +79,11 @@ Os campos ativos desta release são:
 
 - pedido explicitamente marcado como `flatpak` ou `flathub` cai em `user_software`;
 - `trust_level=guarded`;
-- `flatpak.instalar` usa escopo explícito de usuário e remote default `flathub`;
+- `flatpak.procurar` e `flatpak.instalar` assumem `flathub` apenas quando nenhum remote é informado;
+- `flatpak` aceita remote explícito apenas como nome simples já observável via `flatpak remotes`;
+- a política expõe `flatpak_effective_remote`, `flatpak_remote_origin` e `flatpak_observed_remotes`;
+- `flatpak.procurar` usa `flatpak remote-ls` dentro do remote selecionado;
+- `flatpak.instalar` bloqueia cedo quando o remote default ou explícito não está observado;
 - `flatpak.remover` usa escopo explícito de usuário e exige confirmação real quando a remoção vai acontecer.
 
 ## Como a política afeta o runtime
@@ -96,7 +100,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v0.4.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v0.4.1`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -146,14 +150,16 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 
 ## O que ainda não está aberto
 
-Continuam fora da `v0.4.0`:
+Continuam fora da `v0.4.1`:
 
 - descoberta automática de repositório COPR;
 - descoberta automática de PPA ou inferência por nome do pacote;
 - `ppa.procurar`, `ppa.remover` real, `remove-apt-repository` e cleanup/lifecycle amplo;
 - tratamento de apt repo genérico como se fosse PPA;
 - promessa ampla para Debian-like fora do recorte Ubuntu mutável;
-- seleção de remote além do default `flathub`;
+- descoberta automática de remotes `flatpak`;
+- add automático de remote arbitrário;
+- administração geral de remotes `flatpak`;
 - helpers AUR além de `paru` e `yay`, e passthrough interativo para `aur.remover`;
 - AppImage e GitHub Releases;
 - `rpm-ostree`, toolbox, distrobox e `ujust`.

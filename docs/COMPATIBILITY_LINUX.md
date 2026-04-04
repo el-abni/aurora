@@ -1,4 +1,4 @@
-# Compatibilidade Linux - Aurora v0.4.0
+# Compatibilidade Linux - Aurora v0.4.1
 
 ## Matriz atual de `host_package`
 
@@ -41,7 +41,7 @@
 
 ## `user_software` via `flatpak`
 
-Na `v0.4.0`, `flatpak` continua sendo a frente explícita de software do usuário.
+Na `v0.4.1`, `flatpak` continua sendo a frente explícita de software do usuário.
 
 Leitura correta desta frente:
 
@@ -49,6 +49,9 @@ Leitura correta desta frente:
 - atua em escopo de usuário;
 - não herda o bloqueio de mutação de `host_package` em Atomic/imutáveis;
 - cobre `procurar`, `instalar` e `remover`;
+- preserva `flathub` como default em `procurar` e `instalar` quando nenhum remote é informado;
+- aceita remote explícito apenas quando esse remote já é observável via `flatpak remotes`;
+- `remover` só usa remote explícito como restrição de `origin`, sem default implícito;
 - exige confirmação explícita para remoção real.
 
 ## Leitura operacional das frentes explícitas
@@ -77,6 +80,13 @@ Leitura correta desta frente:
 - `PPA` não equivale a `apt` genérico nem a qualquer repo externo;
 - URL genérica de apt repo continua fora do contrato;
 - Debian puro e outras derivadas continuam bloqueados nesta frente.
+
+### `flatpak`
+
+- `flatpak.procurar` usa `flatpak remote-ls` no remote selecionado, sem descoberta ampla;
+- `flatpak.instalar` bloqueia cedo quando o remote default `flathub` ou o remote explícito não está observado;
+- `flatpak.remover` respeita remote explícito só como restrição de `origin`;
+- não existe add automático, sincronização ampla nem administração geral de remotes.
 
 ## Leitura correta da fronteira
 

@@ -157,6 +157,28 @@ def render_decision_record(record: DecisionRecord) -> str:
                     ),
                 ]
             )
+        if record.request.domain_kind == "user_software":
+            lines.extend(
+                [
+                    field(
+                        "flatpak_effective_remote",
+                        _signal_value(record.policy.trust_signals, "flatpak_effective_remote:") or "-",
+                    ),
+                    field(
+                        "flatpak_remote_origin",
+                        _signal_value(record.policy.trust_signals, "flatpak_remote_origin:") or "-",
+                    ),
+                    field(
+                        "flatpak_observed_remotes",
+                        _signal_value(record.policy.trust_signals, "flatpak_observed_remotes:") or "-",
+                    ),
+                    field(
+                        "flatpak_remove_origin_constraint",
+                        _signal_value(record.policy.trust_signals, "flatpak_remove_origin_constraint:")
+                        or "-",
+                    ),
+                ]
+            )
 
     if record.target_resolution is not None:
         lines.extend(
@@ -293,6 +315,50 @@ def render_decision_record(record: DecisionRecord) -> str:
                         "ppa_install_preparation",
                         (
                             _signal_value(record.policy.trust_signals, "ppa_install_preparation:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                ]
+            )
+        if record.execution_route.route_name.startswith("flatpak."):
+            lines.extend(
+                [
+                    field(
+                        "flatpak_effective_remote",
+                        (
+                            _signal_value(record.policy.trust_signals, "flatpak_effective_remote:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                    field(
+                        "flatpak_remote_origin",
+                        (
+                            _signal_value(record.policy.trust_signals, "flatpak_remote_origin:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                    field(
+                        "flatpak_observed_remotes",
+                        (
+                            _signal_value(record.policy.trust_signals, "flatpak_observed_remotes:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                    field(
+                        "flatpak_remove_origin_constraint",
+                        (
+                            _signal_value(
+                                record.policy.trust_signals,
+                                "flatpak_remove_origin_constraint:",
+                            )
                             if record.policy is not None
                             else "-"
                         )

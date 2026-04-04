@@ -1,15 +1,15 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v0.4.0-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v0.4.1-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com política explícita, observabilidade própria e execução real sobre um contrato pequeno e auditável.
 
-A release pública atual é a `v0.4.0`. Ela abre **PPA como fonte explícita e contida**, sem transformar `apt` genérico em PPA, sem descoberta automática de fonte e sem prometer Debian-like amplo onde ainda não existe sustentação operacional.
+A release pública atual é a `v0.4.1`. Ela amplia `flatpak` com **remote explícito e contido**, preservando `flathub` como default quando nada é informado e sem abrir descoberta, add automático ou administração geral de remotes.
 
-Na `v0.4.0`, a superfície pública cobre dois domínios reais e três famílias explícitas de fonte terceira:
+Na `v0.4.1`, a superfície pública cobre dois domínios reais, três famílias explícitas de fonte terceira no host e uma frente `flatpak` com seleção explícita de remote:
 
 - `host_package` para pacotes do host;
 - `AUR` como fonte explícita de terceiro dentro de `host_package`;
@@ -30,7 +30,7 @@ A Aurora funciona como uma camada de decisão e execução sobre Linux. Em vez d
 - executa com probe de estado quando a ação muda software;
 - expõe um `decision_record` auditável com `aurora dev <frase>`.
 
-## Contrato público da v0.4.0
+## Contrato público da v0.4.1
 
 Rotas reais abertas nesta release:
 
@@ -55,6 +55,8 @@ Comportamento garantido:
 - `COPR` só entra quando a frase marca `copr` e traz `owner/project`;
 - `PPA` só entra quando a frase marca `ppa` e traz a coordenada canônica `ppa:owner/name`;
 - `flatpak` só entra quando a frase marca `flatpak` ou `flathub`;
+- `flatpak.procurar` e `flatpak.instalar` usam `flathub` como default quando nenhum remote é informado;
+- `flatpak` aceita remote explícito no formato `no flatpak <remote>` ou `no flathub`, mas só quando esse remote já foi observado no host;
 - `decision_record` e `aurora dev` deixam visíveis `requested_source`, `source_coordinate`, capacidades observadas, gaps e passos preparatórios;
 - `aur.instalar`, `aur.remover`, `copr.instalar`, `copr.remover` e `ppa.instalar` exigem confirmação explícita;
 - `--confirm` e `--yes` funcionam como confirmação explícita, inclusive quando aparecem inline numa frase passada como texto único ou inspecionada em `aurora dev`;
@@ -105,6 +107,7 @@ aurora dev "remover obs-studio do ppa ppa:obsproject/obs-studio"
 ```bash
 aurora procurar firefox no flatpak
 aurora instalar firefox no flatpak
+aurora procurar firefox no flatpak flathub-beta
 aurora remover firefox no flatpak --confirm
 ```
 
@@ -160,7 +163,11 @@ aurora dev "remover obs-studio do ppa ppa:obsproject/obs-studio"
 - depende do backend `flatpak` estar presente no host;
 - atua em escopo de usuário, sem mutação do pacote do host;
 - vale também em hosts Atomic/imutáveis quando o pedido explicita `flatpak`;
-- continua pequeno: não há seleção pública de remote além do default `flathub`.
+- preserva `flathub` como default para `flatpak.procurar` e `flatpak.instalar` quando nenhum remote é informado;
+- aceita remote explícito apenas quando ele já é observável via `flatpak remotes` no host;
+- `flatpak.procurar` respeita o remote selecionado via `flatpak remote-ls` filtrado localmente;
+- `flatpak.remover` só usa remote explícito como restrição honesta de `origin`, sem assumir default para remoção;
+- continua pequeno: não há add automático, descoberta ampla nem administração geral de remotes.
 
 Ferramenta observada no host não vira promessa de suporte automaticamente. A Aurora só abre rota onde já existe política, execução real e auditoria.
 
@@ -211,10 +218,10 @@ A identidade pública da ferramenta é:
 No help público, a versão aparece como:
 
 ```text
-🌌 Aurora v0.4.0
+🌌 Aurora v0.4.1
 ```
 
-## O que a v0.4.0 não promete
+## O que a v0.4.1 não promete
 
 A Aurora ainda não abre:
 
@@ -224,7 +231,9 @@ A Aurora ainda não abre:
 - `ppa.procurar`, `ppa.remover` real, cleanup automático, `remove-apt-repository` e lifecycle amplo de PPA;
 - tratamento de URL genérica de apt repo como se fosse PPA;
 - promessa ampla para qualquer Debian-like fora de Ubuntu mutável;
-- remotes `flatpak` além do default `flathub`;
+- descoberta automática de remotes `flatpak`;
+- add automático de remote arbitrário;
+- administração geral de remotes `flatpak`;
 - AppImage e GitHub Releases;
 - `rpm-ostree`, toolbox, distrobox e `ujust`;
 - suporte operacional real a hosts imutáveis;

@@ -28,6 +28,30 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
         self.assertEqual(request.target, "obs studio")
         self.assertEqual(request.status, "CONSISTENT")
 
+    def test_classifier_accepts_explicit_flatpak_remote(self) -> None:
+        request = classify_text("instalar obs studio no flatpak flathub-beta")
+        self.assertEqual(request.intent, "instalar")
+        self.assertEqual(request.domain_kind, "user_software")
+        self.assertEqual(request.target, "obs studio")
+        self.assertEqual(request.requested_source, "flatpak")
+        self.assertEqual(request.source_coordinate, "flathub-beta")
+        self.assertEqual(request.status, "CONSISTENT")
+        self.assertIn("flatpak_requested_remote:flathub-beta", request.observations)
+
+    def test_classifier_treats_flathub_hint_as_explicit_remote(self) -> None:
+        request = classify_text("procurar firefox no flathub")
+        self.assertEqual(request.domain_kind, "user_software")
+        self.assertEqual(request.requested_source, "flatpak")
+        self.assertEqual(request.source_coordinate, "flathub")
+        self.assertEqual(request.status, "CONSISTENT")
+        self.assertIn("source_hint:flathub", request.observations)
+
+    def test_classifier_blocks_when_flatpak_remote_is_not_conservative(self) -> None:
+        request = classify_text("procurar firefox no flatpak remote/url/path")
+        self.assertEqual(request.domain_kind, "user_software")
+        self.assertEqual(request.status, "BLOCKED")
+        self.assertIn("remote Flatpak explicito precisa ser um nome unico", request.reason)
+
     def test_naked_search_stays_in_host_package_by_default(self) -> None:
         request = classify_text("procurar firefox")
         self.assertEqual(request.domain_kind, "host_package")
@@ -49,19 +73,33 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             self.assertIn("encontrei resultados", proc.stdout)
             self.assertIn("flathub", proc.stdout)
 
+    def test_flatpak_search_uses_explicit_remote_when_supported(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("org.mozilla.Firefox|Firefox|flathub-beta",),
+                remotes=("flathub", "flathub-beta"),
+                name="Ubuntu",
+            )
+            proc = run_module("procurar", "firefox", "no", "flatpak", "flathub-beta", env=env)
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("encontrei resultados", proc.stdout)
+            self.assertIn("flathub-beta", proc.stdout)
+
     def test_atomic_host_keeps_naked_search_on_host_package_but_allows_explicit_flatpak(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            bin_dir = root / "bin"
-            bin_dir.mkdir(parents=True, exist_ok=True)
-            write_stub(bin_dir, "dnf", "#!/bin/sh\nexit 0\n")
-            write_stub(
-                bin_dir,
-                "flatpak",
-                "#!/bin/sh\nif [ \"$1\" = \"search\" ]; then echo \"firefox\tfirefox app\t1.0\tstable\tflathub\"; exit 0; fi\nexit 1\n",
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="bazzite",
+                distro_like="fedora",
+                repo_apps=("firefox|Firefox",),
+                name="Bazzite",
             )
-            write_os_release(root, distro_id="bazzite", distro_like="fedora", name="Bazzite")
-            env = {"PATH": str(bin_dir), "AURORA_OS_RELEASE_PATH": str(root / "os-release")}
+            write_stub(root / "bin", "dnf", "#!/bin/sh\nexit 0\n")
 
             naked = run_module("procurar", "firefox", env=env)
             explicit = run_module("procurar", "firefox", "no", "flatpak", env=env)
@@ -85,6 +123,8 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             self.assertIn("domain_kind:             user_software", rendered)
             self.assertIn("source_type:             flatpak_remote", rendered)
             self.assertIn("route_name:              flatpak.procurar", rendered)
+            self.assertIn("flatpak_effective_remote: flathub", rendered)
+            self.assertIn("flatpak_remote_origin:   default", rendered)
             self.assertIn("observations:", rendered)
 
     def test_flatpak_install_resolves_hyphenated_human_target_to_app_id(self) -> None:
@@ -100,49 +140,29 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             payload = decision_record_to_dict(plan_text("instalar obs-studio no flatpak", environ=env))
             self.assertEqual(payload["target_resolution"]["status"], "resolved")
             self.assertEqual(payload["target_resolution"]["resolved_target"], "com.obsproject.Studio")
-            self.assertEqual(payload["target_resolution"]["source"], "flatpak_search_normalized_query")
+            self.assertEqual(payload["target_resolution"]["source"], "flatpak_remote_ls")
             self.assertTrue(payload["target_resolution"]["canonicalized"])
             self.assertEqual(payload["execution_route"]["command"][-1], "com.obsproject.Studio")
+            self.assertEqual(payload["policy"]["flatpak_effective_remote"], "flathub")
+            self.assertEqual(payload["policy"]["flatpak_remote_origin"], "default")
 
     def test_flatpak_install_keeps_hyphen_space_equivalence_when_literal_search_returns_noise(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            bin_dir = root / "bin"
-            bin_dir.mkdir(parents=True, exist_ok=True)
-            write_stub(
-                bin_dir,
-                "flatpak",
-                """#!/bin/sh
-action="$1"
-target=""
-for arg in "$@"; do
-  case "$arg" in
-    search|--columns=*|--show-ref|--user|--system|--noninteractive|-y|--app|flathub)
-      ;;
-    *)
-      target="$arg"
-      ;;
-  esac
-done
-if [ "$action" = "search" ]; then
-  if [ "$target" = "obs-studio" ]; then
-    printf "org.example.Noise\\tNoise App\\n"
-    exit 0
-  fi
-  if [ "$target" = "obs studio" ]; then
-    printf "org.example.Noise\\tNoise App\\ncom.obsproject.Studio\\tOBS Studio\\n"
-    exit 0
-  fi
-fi
-exit 0
-""",
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=(
+                    "org.example.Noise|Noise App",
+                    "com.obsproject.Studio|OBS Studio",
+                ),
+                name="Ubuntu",
             )
-            write_os_release(root, distro_id="ubuntu", distro_like="debian", name="Ubuntu")
-            env = {"PATH": str(bin_dir), "AURORA_OS_RELEASE_PATH": str(root / "os-release")}
 
             payload = decision_record_to_dict(plan_text("instalar obs-studio no flatpak", environ=env))
             self.assertEqual(payload["target_resolution"]["status"], "resolved")
-            self.assertEqual(payload["target_resolution"]["source"], "flatpak_search_normalized_query")
+            self.assertEqual(payload["target_resolution"]["source"], "flatpak_remote_ls")
             self.assertEqual(payload["target_resolution"]["resolved_target"], "com.obsproject.Studio")
             self.assertEqual(payload["execution_route"]["command"][-1], "com.obsproject.Studio")
 
@@ -213,6 +233,26 @@ exit 0
             self.assertEqual(payload["target_resolution"]["source"], "user_input_app_id")
             self.assertFalse(payload["target_resolution"]["canonicalized"])
             self.assertEqual(payload["execution_route"]["command"][-1], "com.obsproject.Studio")
+
+    def test_flatpak_install_carries_explicit_remote_into_policy_and_route(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("org.mozilla.Firefox|Firefox|flathub-beta",),
+                remotes=("flathub", "flathub-beta"),
+                name="Ubuntu",
+            )
+            payload = decision_record_to_dict(
+                plan_text("instalar firefox no flatpak flathub-beta", environ=env)
+            )
+            self.assertEqual(payload["request"]["source_coordinate"], "flathub-beta")
+            self.assertEqual(payload["policy"]["flatpak_effective_remote"], "flathub-beta")
+            self.assertEqual(payload["policy"]["flatpak_remote_origin"], "explicit")
+            self.assertEqual(payload["execution_route"]["flatpak_effective_remote"], "flathub-beta")
+            self.assertEqual(payload["execution_route"]["command"][-2], "flathub-beta")
 
     def test_flatpak_install_executes_with_pre_and_post_probe(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -310,6 +350,24 @@ exit 0
             self.assertNotIn("execution_route", payload)
             self.assertIn("bloqueado por resolução de alvo", message)
 
+    def test_flatpak_install_blocks_when_explicit_remote_is_not_observed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("firefox|Firefox",),
+                remotes=("flathub",),
+                name="Ubuntu",
+            )
+            payload = decision_record_to_dict(
+                plan_text("instalar firefox no flatpak flathub-beta", environ=env)
+            )
+            self.assertEqual(payload["policy"]["policy_outcome"], "block")
+            self.assertIn("flatpak_selected_remote_not_observed", payload["policy"]["trust_gaps"])
+            self.assertEqual(payload["policy"]["flatpak_effective_remote"], "flathub-beta")
+
     def test_flatpak_remove_noops_when_app_is_already_absent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -347,6 +405,54 @@ exit 0
             self.assertEqual(payload["target_resolution"]["resolved_target"], "com.obsproject.Studio")
             self.assertEqual(payload["execution_route"]["command"][-1], "com.obsproject.Studio")
             self.assertEqual(state_file.read_text(encoding="utf-8"), "")
+
+    def test_flatpak_remove_respects_explicit_remote_as_origin_constraint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("org.mozilla.Firefox|Firefox|flathub-beta",),
+                installed_apps=("org.mozilla.Firefox|flathub-beta",),
+                remotes=("flathub", "flathub-beta"),
+                name="Ubuntu",
+            )
+            exit_code, record, _message = perform_execution(
+                plan_text("remover firefox no flatpak flathub-beta", environ=env, confirmed=True),
+                environ=env,
+            )
+            payload = decision_record_to_dict(record)
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(payload["target_resolution"]["source"], "flatpak_list_user_origin")
+            self.assertEqual(payload["policy"]["flatpak_remove_origin_constraint"], "enabled")
+            self.assertEqual(payload["execution_route"]["flatpak_effective_remote"], "flathub-beta")
+            self.assertEqual(state_file.read_text(encoding="utf-8"), "")
+
+    def test_flatpak_remove_blocks_when_explicit_remote_does_not_match_origin(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=(
+                    "org.mozilla.Firefox|Firefox|flathub",
+                    "org.mozilla.Firefox|Firefox Beta|flathub-beta",
+                ),
+                installed_apps=("org.mozilla.Firefox|flathub",),
+                remotes=("flathub", "flathub-beta"),
+                name="Ubuntu",
+            )
+            exit_code, record, message = perform_execution(
+                plan_text("remover firefox no flatpak flathub-beta", environ=env, confirmed=True),
+                environ=env,
+            )
+            payload = decision_record_to_dict(record)
+            self.assertEqual(exit_code, 1)
+            self.assertEqual(payload["target_resolution"]["status"], "source_mismatch")
+            self.assertIn("bloqueado por resolução de alvo", message)
+            self.assertIn("org.mozilla.Firefox", state_file.read_text(encoding="utf-8"))
 
     def test_flatpak_remove_executes_via_cli_for_compound_name_without_quotes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

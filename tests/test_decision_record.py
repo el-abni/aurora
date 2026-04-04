@@ -256,6 +256,8 @@ class DecisionRecordTests(unittest.TestCase):
             self.assertIn("Target resolution", rendered)
             self.assertIn("resolved_target:         com.obsproject.Studio", rendered)
             self.assertIn("canonicalized:           true", rendered)
+            self.assertIn("flatpak_effective_remote: flathub", rendered)
+            self.assertIn("flatpak_remote_origin:   default", rendered)
 
     def test_decision_record_marks_normalized_query_resolution_for_hyphenated_name(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -268,8 +270,9 @@ class DecisionRecordTests(unittest.TestCase):
                 name="Ubuntu",
             )
             payload = decision_record_to_dict(plan_text("instalar obs-studio no flatpak", environ=env))
-            self.assertEqual(payload["target_resolution"]["source"], "flatpak_search_normalized_query")
+            self.assertEqual(payload["target_resolution"]["source"], "flatpak_remote_ls")
             self.assertEqual(payload["target_resolution"]["resolved_target"], "com.obsproject.Studio")
+            self.assertEqual(payload["policy"]["flatpak_effective_remote"], "flathub")
 
     def test_decision_record_exposes_host_package_target_resolution_for_compound_name(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

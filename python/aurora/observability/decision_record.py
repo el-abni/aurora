@@ -110,6 +110,23 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
                 record.policy.trust_signals,
                 "ppa_install_preparation:",
             )
+        if record.request.domain_kind == "user_software":
+            payload["policy"]["flatpak_effective_remote"] = _signal_value(
+                record.policy.trust_signals,
+                "flatpak_effective_remote:",
+            )
+            payload["policy"]["flatpak_remote_origin"] = _signal_value(
+                record.policy.trust_signals,
+                "flatpak_remote_origin:",
+            )
+            payload["policy"]["flatpak_observed_remotes"] = _signal_value(
+                record.policy.trust_signals,
+                "flatpak_observed_remotes:",
+            )
+            payload["policy"]["flatpak_remove_origin_constraint"] = _signal_value(
+                record.policy.trust_signals,
+                "flatpak_remove_origin_constraint:",
+            )
 
     if record.target_resolution is not None:
         payload["target_resolution"] = {
@@ -185,6 +202,24 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
                 payload["execution_route"]["ppa_install_preparation"] = _signal_value(
                     record.policy.trust_signals,
                     "ppa_install_preparation:",
+                )
+        if record.execution_route.route_name.startswith("flatpak."):
+            if record.policy is not None:
+                payload["execution_route"]["flatpak_effective_remote"] = _signal_value(
+                    record.policy.trust_signals,
+                    "flatpak_effective_remote:",
+                )
+                payload["execution_route"]["flatpak_remote_origin"] = _signal_value(
+                    record.policy.trust_signals,
+                    "flatpak_remote_origin:",
+                )
+                payload["execution_route"]["flatpak_observed_remotes"] = _signal_value(
+                    record.policy.trust_signals,
+                    "flatpak_observed_remotes:",
+                )
+                payload["execution_route"]["flatpak_remove_origin_constraint"] = _signal_value(
+                    record.policy.trust_signals,
+                    "flatpak_remove_origin_constraint:",
                 )
 
     if record.execution is not None:

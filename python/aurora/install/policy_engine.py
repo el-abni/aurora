@@ -16,6 +16,12 @@ from aurora.install.sources.copr import (
     observe_copr_package_origin,
     observe_copr_repository_state,
 )
+from aurora.install.sources.flatpak import (
+    flatpak_effective_remote,
+    flatpak_remote_origin,
+    flatpak_requested_remote,
+    observe_flatpak_remotes,
+)
 from aurora.install.sources.ppa import observe_ppa_capability, supported_ppa_distro_ids
 from aurora.linux.immutable_policy import host_package_block_reason
 
@@ -195,6 +201,7 @@ def _assess_user_software_policy(
     profile: HostProfile | None,
     *,
     confirmation_supplied: bool = False,
+    environ: dict[str, str] | None = None,
 ) -> PolicyAssessment | None:
     software_criticality = _user_software_software_criticality(request)
     reversal_level = _user_software_reversal_level(request.intent)
@@ -219,19 +226,38 @@ def _assess_user_software_policy(
         (item.split(":", 1)[1] for item in request.observations if item.startswith("source_hint:")),
         "flatpak",
     )
+    requested_remote = flatpak_requested_remote(request)
+    effective_remote = flatpak_effective_remote(request)
+    remote_origin = flatpak_remote_origin(request)
+    observed_remotes = observe_flatpak_remotes(profile, environ=environ)
     trust_signals = [
         "domain:user_software",
         "source_type:flatpak_remote",
         f"source_hint:{source_hint}",
         f"mutability:{profile.mutability}",
         f"software_criticality:{software_criticality}",
+        f"flatpak_remote_origin:{remote_origin}",
     ]
+    if requested_remote:
+        trust_signals.append(f"flatpak_requested_remote:{requested_remote}")
+    if effective_remote:
+        trust_signals.append(f"flatpak_effective_remote:{effective_remote}")
+    if observed_remotes:
+        trust_signals.append(f"flatpak_observed_remotes:{','.join(observed_remotes)}")
     trust_gaps: list[str] = []
+    if request.intent in {"instalar", "remover"}:
+        trust_signals.append("installation_scope:user")
+    if remote_origin == "default" and effective_remote:
+        trust_signals.append(f"flatpak_remote_default:{effective_remote}")
+    if request.intent == "remover" and requested_remote:
+        trust_signals.append("flatpak_remove_origin_constraint:enabled")
+    trust_gaps.append("flatpak_remote_management_not_opened")
     if request.intent == "procurar":
-        trust_gaps.append("flatpak_search_scope_not_generalized")
-    else:
-        trust_signals.extend(("installation_scope:user", "remote_default:flathub"))
-        trust_gaps.append("flatpak_remote_selection_not_generalized")
+        trust_gaps.append("flatpak_search_within_selected_remote_only")
+    elif request.intent == "instalar":
+        trust_gaps.append("flatpak_remote_auto_add_not_supported")
+    elif request.intent == "remover" and requested_remote:
+        trust_gaps.append("flatpak_remove_uses_remote_only_as_origin_constraint")
     if "flatpak" in profile.observed_package_tools:
         trust_signals.append("backend:flatpak_observed")
     if confirmation_supplied:
@@ -248,13 +274,50 @@ def _assess_user_software_policy(
         outcome = "block"
         trust_gaps.append("flatpak_backend_not_observed")
         reason = "o backend flatpak nao foi observado neste host."
-    elif request.intent == "instalar":
+    elif effective_remote and not observed_remotes:
+        outcome = "block"
+        trust_gaps.append("flatpak_remotes_not_observed")
         reason = (
-            "flatpak.instalar usa installation scope explicito de usuario e remote default flathub "
-            "nesta rodada."
+            "nao consegui observar remotes Flatpak neste host. "
+            "esta release so aceita search/install em remote explicitamente observavel."
         )
+    elif effective_remote and effective_remote not in observed_remotes:
+        outcome = "block"
+        trust_gaps.append("flatpak_selected_remote_not_observed")
+        if requested_remote:
+            reason = (
+                f"o remote Flatpak explicitamente pedido '{effective_remote}' nao foi observado neste host. "
+                "esta release nao faz add automatico nem descoberta ampla de remotes."
+            )
+        else:
+            reason = (
+                f"o remote default '{effective_remote}' nao foi observado neste host. "
+                "esta release nao faz add automatico de remotes."
+            )
+    elif request.intent == "procurar" and effective_remote:
+        reason = (
+            f"flatpak.procurar foi aceito no remote "
+            f"{'explicito' if requested_remote else 'default'} '{effective_remote}' ja observado neste host."
+        )
+    elif request.intent == "instalar":
+        if requested_remote:
+            reason = (
+                f"flatpak.instalar usa installation scope explicito de usuario no remote "
+                f"explicito '{effective_remote}', ja observado neste host."
+            )
+        else:
+            reason = (
+                f"flatpak.instalar usa installation scope explicito de usuario e assume o remote default "
+                f"'{effective_remote}', ja observado neste host."
+            )
     elif request.intent == "remover":
-        reason = "flatpak.remover usa installation scope explicito de usuario nesta rodada."
+        if requested_remote:
+            reason = (
+                f"flatpak.remover usa installation scope explicito de usuario e respeita o remote "
+                f"explicito '{requested_remote}' apenas como restricao de origin nesta rodada."
+            )
+        else:
+            reason = "flatpak.remover usa installation scope explicito de usuario nesta rodada."
 
     if outcome == "allow" and requires_confirmation and not confirmation_supplied:
         outcome = "require_confirmation"
@@ -808,5 +871,6 @@ def assess_policy(
             request,
             profile,
             confirmation_supplied=confirmation_supplied,
+            environ=environ,
         )
     return None

@@ -17,6 +17,8 @@ from aurora.install.sources.copr import (
     resolved_copr_target,
 )
 from aurora.install.sources.flatpak import (
+    flatpak_effective_remote,
+    flatpak_remote_origin,
     flatpak_target_resolution_blocks,
     resolve_flatpak_target,
     resolved_flatpak_target,
@@ -78,11 +80,38 @@ def _summary_for_request(request: SemanticRequest) -> str:
             return f"Remover o pacote do host '{request.target}'."
 
     if request.domain_kind == "user_software":
+        effective_remote = flatpak_effective_remote(request)
+        remote_origin = flatpak_remote_origin(request)
         if request.intent == "procurar":
+            if effective_remote:
+                if remote_origin == "default":
+                    return (
+                        f"Procurar o software do usuario '{request.target}' via flatpak "
+                        f"no remote default '{effective_remote}'."
+                    )
+                return (
+                    f"Procurar o software do usuario '{request.target}' via flatpak "
+                    f"no remote explicito '{effective_remote}'."
+                )
             return f"Procurar o software do usuario '{request.target}' via flatpak."
         if request.intent == "instalar":
+            if effective_remote:
+                if remote_origin == "default":
+                    return (
+                        f"Instalar o software do usuario '{request.target}' via flatpak "
+                        f"no remote default '{effective_remote}'."
+                    )
+                return (
+                    f"Instalar o software do usuario '{request.target}' via flatpak "
+                    f"no remote explicito '{effective_remote}'."
+                )
             return f"Instalar o software do usuario '{request.target}' via flatpak."
         if request.intent == "remover":
+            if effective_remote:
+                return (
+                    f"Remover o software do usuario '{request.target}' via flatpak "
+                    f"com restricao de remote '{effective_remote}'."
+                )
             return f"Remover o software do usuario '{request.target}' via flatpak."
 
     return "Sem acao aberta."

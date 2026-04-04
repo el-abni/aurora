@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import re
 
 from aurora.contracts.requests import SemanticRequest
+from aurora.install.sources.flatpak import flatpak_remote_name_is_explicit
 from aurora.install.sources.ppa import ppa_coordinate_is_explicit
 from aurora.semantics.entities import extract_package_target, extract_target_token_pairs
 from aurora.semantics.intent import canonicalize_intent
@@ -31,6 +32,16 @@ class _PpaSelection:
     source_coordinate: str = ""
     hint_found: bool = False
     reason: str = ""
+
+
+@dataclass(frozen=True)
+class _FlatpakSelection:
+    target: str = ""
+    source_coordinate: str = ""
+    hint_found: bool = False
+    reason: str = ""
+    hint_token: str = ""
+    source_coordinate_required: bool = False
 
 
 def _extract_source_target(action, *, hint_tokens: set[str]) -> str:
@@ -146,6 +157,82 @@ def _extract_ppa_selection(action) -> _PpaSelection:
     return _PpaSelection()
 
 
+def _extract_flatpak_selection(action) -> _FlatpakSelection:
+    pairs = extract_target_token_pairs(action)
+    for index in range(1, len(pairs)):
+        if pairs[index - 1][1] not in _SOURCE_PREPOSITIONS or pairs[index][1] not in _FLATPAK_HINT_TOKENS:
+            continue
+
+        target_pairs = pairs[: index - 1]
+        remote_pairs = pairs[index + 1 :]
+        hint_original, hint_normalized = pairs[index]
+        if not target_pairs:
+            return _FlatpakSelection(
+                hint_found=True,
+                hint_token=hint_normalized,
+                reason="faltou o alvo do software do usuario marcado via flatpak.",
+            )
+
+        if hint_normalized == "flathub":
+            if remote_pairs:
+                return _FlatpakSelection(
+                    target=" ".join(original for original, _normalized in target_pairs).strip(),
+                    hint_found=True,
+                    hint_token=hint_normalized,
+                    reason=(
+                        "o remote Flatpak explicito desta rodada precisa ser um nome unico e conservador, "
+                        "sem argumentos extras apos o hint."
+                    ),
+                    source_coordinate_required=True,
+                )
+            return _FlatpakSelection(
+                target=" ".join(original for original, _normalized in target_pairs).strip(),
+                source_coordinate=hint_original,
+                hint_found=True,
+                hint_token=hint_normalized,
+            )
+
+        if not remote_pairs:
+            return _FlatpakSelection(
+                target=" ".join(original for original, _normalized in target_pairs).strip(),
+                hint_found=True,
+                hint_token=hint_normalized,
+            )
+        if len(remote_pairs) != 1:
+            return _FlatpakSelection(
+                target=" ".join(original for original, _normalized in target_pairs).strip(),
+                hint_found=True,
+                hint_token=hint_normalized,
+                reason=(
+                    "o remote Flatpak explicito desta rodada precisa ser um nome unico e conservador, "
+                    "sem parsing amplo de argumentos."
+                ),
+                source_coordinate_required=True,
+            )
+
+        remote_original, remote_normalized = remote_pairs[0]
+        if not flatpak_remote_name_is_explicit(remote_normalized):
+            return _FlatpakSelection(
+                target=" ".join(original for original, _normalized in target_pairs).strip(),
+                hint_found=True,
+                hint_token=hint_normalized,
+                reason=(
+                    "o remote Flatpak explicito precisa ser um nome unico, conservador e ja observavel "
+                    "no host, sem URL nem coordenada ampla."
+                ),
+                source_coordinate_required=True,
+            )
+
+        return _FlatpakSelection(
+            target=" ".join(original for original, _normalized in target_pairs).strip(),
+            source_coordinate=remote_original,
+            hint_found=True,
+            hint_token=hint_normalized,
+        )
+
+    return _FlatpakSelection()
+
+
 def classify_text(text: str) -> SemanticRequest:
     phrase, actions = prepare_text(text)
     if not actions:
@@ -178,15 +265,40 @@ def classify_text(text: str) -> SemanticRequest:
     if intent in {"procurar", "instalar", "remover"}:
         requested_source = ""
         source_coordinate = ""
-        flatpak_hint = _source_hint(action, hint_tokens=_FLATPAK_HINT_TOKENS)
-        if flatpak_hint is not None:
-            target = _extract_source_target(action, hint_tokens=_FLATPAK_HINT_TOKENS)
-            observations = ("domain_selection:explicit_user_software", f"source_hint:{flatpak_hint}")
+        source_coordinate_required = False
+        flatpak_selection = _extract_flatpak_selection(action)
+        if flatpak_selection.hint_found:
+            target = flatpak_selection.target
+            source_coordinate = flatpak_selection.source_coordinate
+            source_coordinate_required = flatpak_selection.source_coordinate_required
+            observations = tuple(
+                item
+                for item in (
+                    "domain_selection:explicit_user_software",
+                    f"source_hint:{flatpak_selection.hint_token or 'flatpak'}",
+                    (
+                        f"flatpak_requested_remote:{source_coordinate}"
+                        if source_coordinate
+                        else "flatpak_requested_remote:-"
+                    ),
+                )
+                if item
+            )
             domain_kind = "user_software"
             requested_source = "flatpak"
-            missing_target_reason = "faltou o alvo do software do usuario marcado via flatpak."
+            missing_target_reason = (
+                flatpak_selection.reason or "faltou o alvo do software do usuario marcado via flatpak."
+            )
             consistent_reason = (
-                f"pedido explicitamente marcado como '{flatpak_hint}', entao foi enquadrado em user_software."
+                (
+                    "pedido explicitamente marcado como 'flatpak', com remote explicito, "
+                    "entao foi enquadrado em user_software."
+                )
+                if source_coordinate
+                else (
+                    f"pedido explicitamente marcado como '{flatpak_selection.hint_token or 'flatpak'}', "
+                    "entao foi enquadrado em user_software."
+                )
             )
         else:
             ppa_selection = _extract_ppa_selection(action)
@@ -249,6 +361,19 @@ def classify_text(text: str) -> SemanticRequest:
                 domain_kind=domain_kind,
                 requested_source=requested_source,
                 source_coordinate=source_coordinate,
+                status="BLOCKED",
+                reason=missing_target_reason,
+                observations=observations,
+            )
+        if requested_source == "flatpak" and source_coordinate_required and not source_coordinate:
+            return SemanticRequest(
+                original_text=action.original_action,
+                normalized_text=action.normalized_action,
+                intent=intent,
+                domain_kind=domain_kind,
+                requested_source=requested_source,
+                source_coordinate=source_coordinate,
+                target=target,
                 status="BLOCKED",
                 reason=missing_target_reason,
                 observations=observations,

@@ -15,8 +15,10 @@ from aurora.install.sources.aur import (
 )
 from aurora.install.sources.copr import copr_search_has_no_results, run_copr_search
 from aurora.install.sources.flatpak import (
+    flatpak_effective_remote,
     flatpak_mutation_reports_no_matching_ref,
     flatpak_search_has_no_results,
+    run_flatpak_search,
 )
 from aurora.linux.host_package import mutation_reports_no_matching_package, search_has_no_results
 from aurora.presentation.messages import (
@@ -253,6 +255,12 @@ def _execute_search(
         proc = run_copr_search(
             record.request.source_coordinate,
             route.command[-1],
+            environ=environ,
+        )
+    elif route.route_name == "flatpak.procurar":
+        proc = run_flatpak_search(
+            flatpak_effective_remote(record.request),
+            record.request.target,
             environ=environ,
         )
     else:

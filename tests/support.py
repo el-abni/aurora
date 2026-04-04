@@ -1186,23 +1186,68 @@ def setup_flatpak_testbed(
     distro_like: str,
     repo_apps: tuple[str, ...] = (),
     installed_apps: tuple[str, ...] = (),
+    remotes: tuple[str, ...] = ("flathub",),
     name: str = "",
 ) -> tuple[dict[str, str], Path]:
     bin_dir = root / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
     state_file = root / "flatpak-installed.txt"
+    state_origin_file = root / "flatpak-installed-origin.txt"
     repo_file = root / "flatpak-repo.txt"
-    normalized_repo_apps: list[tuple[str, str]] = []
+    remotes_file = root / "flatpak-remotes.txt"
+    normalized_repo_apps: list[tuple[str, str, str]] = []
+    repo_origins: dict[str, str] = {}
     for entry in repo_apps:
-        app_id, separator, name_value = entry.partition("|")
-        app_id = app_id.strip()
-        display_name = name_value.strip() if separator else app_id
-        normalized_repo_apps.append((app_id, display_name or app_id))
+        parts = [part.strip() for part in entry.split("|")]
+        app_id = parts[0] if parts else ""
+        display_name = parts[1] if len(parts) >= 2 and parts[1] else app_id
+        origin = parts[2] if len(parts) >= 3 and parts[2] else "flathub"
+        if not app_id:
+            continue
+        normalized_repo_apps.append((app_id, display_name or app_id, origin))
+        repo_origins.setdefault(app_id, origin)
 
-    state_file.write_text("\n".join(installed_apps) + ("\n" if installed_apps else ""), encoding="utf-8")
+    normalized_installed_apps: list[tuple[str, str]] = []
+    for entry in installed_apps:
+        parts = [part.strip() for part in entry.split("|")]
+        app_id = parts[0] if parts else ""
+        origin = parts[1] if len(parts) >= 2 and parts[1] else repo_origins.get(app_id, "flathub")
+        if not app_id:
+            continue
+        normalized_installed_apps.append((app_id, origin))
+
+    observed_remotes: list[str] = []
+    for remote in remotes:
+        remote_name = remote.strip()
+        if remote_name and remote_name not in observed_remotes:
+            observed_remotes.append(remote_name)
+    for _app_id, _display_name, origin in normalized_repo_apps:
+        if origin not in observed_remotes:
+            observed_remotes.append(origin)
+    for _app_id, origin in normalized_installed_apps:
+        if origin not in observed_remotes:
+            observed_remotes.append(origin)
+
+    state_file.write_text(
+        "\n".join(app_id for app_id, _origin in normalized_installed_apps)
+        + ("\n" if normalized_installed_apps else ""),
+        encoding="utf-8",
+    )
+    state_origin_file.write_text(
+        "\n".join(f"{app_id}\t{origin}" for app_id, origin in normalized_installed_apps)
+        + ("\n" if normalized_installed_apps else ""),
+        encoding="utf-8",
+    )
     repo_file.write_text(
-        "\n".join(f"{app_id}\t{display_name}" for app_id, display_name in normalized_repo_apps)
+        "\n".join(
+            f"{app_id}\t{display_name}\t{origin}"
+            for app_id, display_name, origin in normalized_repo_apps
+        )
         + ("\n" if normalized_repo_apps else ""),
+        encoding="utf-8",
+    )
+    remotes_file.write_text(
+        "\n".join(observed_remotes) + ("\n" if observed_remotes else ""),
         encoding="utf-8",
     )
     write_os_release(root, distro_id=distro_id, distro_like=distro_like, name=name or distro_id)
@@ -1213,7 +1258,9 @@ def setup_flatpak_testbed(
             f"""\
             #!/bin/sh
             state_file="{state_file}"
+            state_origin_file="{state_origin_file}"
             repo_file="{repo_file}"
+            remotes_file="{remotes_file}"
             action="$1"
             target=""
             remote=""
@@ -1221,38 +1268,79 @@ def setup_flatpak_testbed(
             has_state() {{
               /usr/bin/grep -qx "$1" "$state_file"
             }}
+            has_remote() {{
+              /usr/bin/grep -qx "$1" "$remotes_file"
+            }}
             has_repo() {{
               /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
+            }}
+            has_repo_in_remote() {{
+              /usr/bin/awk -F '\t' -v target="$1" -v remote="$2" '$1 == target && $3 == remote {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
             }}
             remove_state() {{
               tmp="$state_file.tmp"
               /usr/bin/grep -vx "$1" "$state_file" > "$tmp" || true
               /usr/bin/mv "$tmp" "$state_file"
             }}
+            remove_state_origin() {{
+              tmp="$state_origin_file.tmp"
+              /usr/bin/grep -v "^$1\t" "$state_origin_file" > "$tmp" || true
+              /usr/bin/mv "$tmp" "$state_origin_file"
+            }}
             search_key() {{
               printf "%s" "$1" | /usr/bin/tr '[:upper:]' '[:lower:]'
             }}
             repo_name() {{
-              /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ print $2; exit }}' "$repo_file"
+              /usr/bin/awk -F '\t' -v target="$1" -v remote="$2" '$1 == target && (!remote || $3 == remote) {{ print $2; exit }}' "$repo_file"
             }}
-            print_search_row() {{
+            state_origin() {{
+              /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ print $2; exit }}' "$state_origin_file"
+            }}
+            print_remote_row() {{
               app_id="$1"
               app_name="$2"
+              app_origin="$3"
               case "$columns" in
-                application,name)
-                  printf "%s\\t%s\\n" "$app_id" "$app_name"
+                application,name|application,name,origin)
+                  if [ "$columns" = "application,name,origin" ]; then
+                    printf "%s\\t%s\\t%s\\n" "$app_id" "$app_name" "$app_origin"
+                  else
+                    printf "%s\\t%s\\n" "$app_id" "$app_name"
+                  fi
+                  ;;
+                name)
+                  printf "%s\\n" "$app_name"
+                  ;;
+                application)
+                  printf "%s\\n" "$app_id"
+                  ;;
+                origin)
+                  printf "%s\\n" "$app_origin"
+                  ;;
+                application,name,version,branch,origin)
+                  printf "%s\\t%s\\t%s\\t%s\\t%s\\n" "$app_id" "$app_name" "1.0" "stable" "$app_origin"
+                  ;;
+                application,name,version,branch,remotes)
+                  printf "%s\\t%s\\t%s\\t%s\\t%s\\n" "$app_id" "$app_name" "1.0" "stable" "$app_origin"
+                  ;;
+                application,name,version,branch)
+                  printf "%s\\t%s\\t%s\\t%s\\n" "$app_id" "$app_name" "1.0" "stable"
                   ;;
                 *)
-                  printf "%s\\t%s\\t%s\\t%s\\t%s\\n" "$app_id" "$app_name" "1.0" "stable" "flathub"
+                  printf "%s\\t%s\\t%s\\t%s\\t%s\\n" "$app_id" "$app_name" "1.0" "stable" "$app_origin"
                   ;;
               esac
             }}
             print_list_row() {{
               app_id="$1"
               app_name="$2"
+              app_origin="$3"
               case "$columns" in
                 application,name)
                   printf "%s\\t%s\\n" "$app_id" "$app_name"
+                  ;;
+                application,name,origin)
+                  printf "%s\\t%s\\t%s\\n" "$app_id" "$app_name" "$app_origin"
                   ;;
                 *)
                   printf "%s\\t%s\\n" "$app_id" "$app_name"
@@ -1261,24 +1349,50 @@ def setup_flatpak_testbed(
             }}
             for arg in "$@"; do
               case "$arg" in
-                search|info|list|install|uninstall|--show-ref|--user|--system|--noninteractive|-y|--app)
+                search|remote-ls|remotes|info|list|install|uninstall|--show-ref|--user|--system|--noninteractive|-y|--app)
                   ;;
                 --columns=*)
                   columns="${{arg#--columns=}}"
                   ;;
-                flathub)
-                  remote="$arg"
-                  ;;
                 *)
-                  target="$arg"
+                  if [ "$action" = "remote-ls" ] && [ -z "$remote" ]; then
+                    remote="$arg"
+                  elif [ "$action" = "install" ] && [ -z "$remote" ]; then
+                    remote="$arg"
+                  else
+                    target="$arg"
+                  fi
                   ;;
               esac
             done
             case "$action" in
+              remotes)
+                while IFS= read -r remote_name; do
+                  [ -n "$remote_name" ] || continue
+                  case "$columns" in
+                    name|*)
+                      printf "%s\\n" "$remote_name"
+                      ;;
+                  esac
+                done < "$remotes_file"
+                exit 0
+                ;;
+              remote-ls)
+                if ! has_remote "$remote"; then
+                  echo "error: Remote '$remote' not found" >&2
+                  exit 1
+                fi
+                while IFS="$(printf '\\t')" read -r app_id app_name app_origin; do
+                  [ -n "$app_id" ] || continue
+                  [ "$app_origin" = "$remote" ] || continue
+                  print_remote_row "$app_id" "$app_name" "$app_origin"
+                done < "$repo_file"
+                exit 0
+                ;;
               search)
                 query_key="$(search_key "$target")"
                 found=1
-                while IFS="$(printf '\\t')" read -r app_id app_name; do
+                while IFS="$(printf '\\t')" read -r app_id app_name app_origin; do
                   [ -n "$app_id" ] || continue
                   app_key="$(search_key "$app_id")"
                   name_key="$(search_key "$app_name")"
@@ -1290,7 +1404,7 @@ def setup_flatpak_testbed(
                     *"$query_key"*) match=0 ;;
                   esac
                   if [ "$match" -eq 0 ]; then
-                    print_search_row "$app_id" "$app_name"
+                    print_remote_row "$app_id" "$app_name" "$app_origin"
                     found=0
                   fi
                 done < "$repo_file"
@@ -1311,11 +1425,12 @@ def setup_flatpak_testbed(
               list)
                 while IFS= read -r app_id; do
                   [ -n "$app_id" ] || continue
-                  app_name="$(repo_name "$app_id")"
+                  app_origin="$(state_origin "$app_id")"
+                  app_name="$(repo_name "$app_id" "$app_origin")"
                   if [ -z "$app_name" ]; then
                     app_name="$app_id"
                   fi
-                  print_list_row "$app_id" "$app_name"
+                  print_list_row "$app_id" "$app_name" "$app_origin"
                 done < "$state_file"
                 exit 0
                 ;;
@@ -1323,11 +1438,12 @@ def setup_flatpak_testbed(
                 if has_state "$target"; then
                   exit 0
                 fi
-                if [ "$remote" != "flathub" ] || ! has_repo "$target"; then
+                if ! has_remote "$remote" || ! has_repo_in_remote "$target" "$remote"; then
                   echo "error: No remote refs found for '$target'" >&2
                   exit 1
                 fi
                 echo "$target" >> "$state_file"
+                printf "%s\\t%s\\n" "$target" "$remote" >> "$state_origin_file"
                 echo "installed $target"
                 exit 0
                 ;;
@@ -1337,6 +1453,7 @@ def setup_flatpak_testbed(
                   exit 1
                 fi
                 remove_state "$target"
+                remove_state_origin "$target"
                 echo "uninstalled $target"
                 exit 0
                 ;;
