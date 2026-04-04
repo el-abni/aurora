@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.3.3
+# Architecture - Aurora v0.3.4
 
 ## Tese curta
 
@@ -71,7 +71,7 @@ Mantém a superfície pública:
 - mensagens de confirmação;
 - mensagens de resultado.
 
-## Rotas abertas na v0.3.3
+## Rotas abertas na v0.3.4
 
 ### `host_package`
 
@@ -126,8 +126,10 @@ Comportamento garantido:
 - a frente só abre em Fedora mutável com `dnf copr` observado;
 - `copr.procurar` consulta apenas o repositório explicitamente pedido;
 - a busca pode refinar a consulta humana para forma package-like apenas dentro do repositório explícito;
-- `copr.instalar` executa um passo preparatório explícito para habilitar o repositório pedido e depois instala o pacote;
-- `copr.remover` remove o pacote do host, mas não desabilita o repositório;
+- `copr.instalar` observa se o repositório explícito já estava habilitado e só planeja `enable` quando isso for necessário ou quando o estado prévio não puder ser observado com confiança;
+- `copr.remover` exige verificação de proveniência RPM via `from_repo` do pacote instalado, comparada com os `repoids` do repo file do COPR explícito;
+- `copr.remover` bloqueia quando essa proveniência não puder ser demonstrada com honestidade;
+- nenhuma rota COPR faz disable automático, cleanup heurístico ou lifecycle amplo do repositório;
 - mutação exige confirmação explícita;
 - o nome do pacote precisa vir de forma exata neste primeiro corte;
 - não existe busca global, descoberta mágica de repositório ou fallback implícito de pedido nu para COPR.
@@ -149,12 +151,12 @@ Comportamento garantido:
 
 ## Fronteiras deliberadas
 
-A `v0.3.3` continua pequena de propósito:
+A `v0.3.4` continua pequena de propósito:
 
 - pedido nu continua em `host_package`;
 - `AUR` não vira fallback mágico;
 - helper AUR observado fora do contrato não vira suporte implícito;
-- `COPR` abre `procurar` apenas dentro do repositório explícito, sem descoberta automática nem busca global;
+- `COPR` abre `procurar` apenas dentro do repositório explícito, observa lifecycle apenas no corte mínimo de `enable` e continua sem descoberta automática nem busca global;
 - `flatpak` não generaliza seleção de remote além do default `flathub`;
 - `user_software` não abre outras fontes além de `flatpak`;
 - hosts imutáveis reais continuam fora da superfície operacional.

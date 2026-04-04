@@ -1,5 +1,30 @@
 # Changelog
 
+## 🌌 Aurora v0.3.4
+
+Fechamento pequeno da honestidade operacional de COPR em mutação, adicionando proveniência RPM na remoção e lifecycle limitado de repositório sem abrir descoberta automática, cleanup heurístico ou disable mágico.
+
+### Adicionado
+- verificação de proveniência RPM em `copr.remover`, comparando `from_repo` do pacote instalado com os `repoids` observados no repo file do COPR explícito.
+- observação explícita do estado habilitado do repositório COPR informado para expor se ele já estava ativo ou se precisou de `enable`.
+- observabilidade dedicada para estado do repositório, decisão de `enable` e status da proveniência RPM em `decision_record` e `aurora dev`.
+
+### Alterado
+- `copr.instalar` agora trata `enable` de forma idempotente: se o repositório explícito já estiver habilitado, a rota não planeja novo `enable`; se estiver desabilitado, planeja apenas o `enable` mínimo.
+- `copr.remover` deixou de fingir segurança: quando a origem RPM do pacote instalado não fecha com o repositório COPR explícito, a Aurora bloqueia cedo e explica a limitação.
+- README, help e docs técnicas passam a refletir a `v0.3.4` como release pública atual.
+
+### Continua fora da v0.3.4
+- descoberta automática de repositório COPR a partir do nome do pacote;
+- busca global no universo COPR;
+- canonicalização ampla de pacote fora do repositório explícito;
+- disable automático, cleanup heurístico e lifecycle amplo do repositório COPR;
+- helpers AUR além de `paru` e `yay`;
+- passthrough interativo para `aur.remover`;
+- PPA, AppImage e GitHub Releases;
+- `rpm-ostree`, toolbox, distrobox e `ujust`;
+- hosts imutáveis reais como superfície operacional.
+
 ## 🌌 Aurora v0.3.3
 
 Fechamento contido da frente COPR para abrir `copr.procurar` por repositório explícito, sem descoberta automática de fonte nem busca global no universo COPR.

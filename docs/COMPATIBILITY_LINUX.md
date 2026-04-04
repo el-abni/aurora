@@ -1,4 +1,4 @@
-# Compatibilidade Linux - Aurora v0.3.3
+# Compatibilidade Linux - Aurora v0.3.4
 
 ## Matriz atual de `host_package`
 
@@ -31,7 +31,7 @@
 
 ## `user_software` via `flatpak`
 
-Na `v0.3.3`, `flatpak` continua sendo a frente explícita de software do usuário.
+Na `v0.3.4`, `flatpak` continua sendo a frente explícita de software do usuário.
 
 Leitura correta desta frente:
 
@@ -53,8 +53,10 @@ Leitura operacional da frente COPR:
 
 - `copr.procurar` consulta apenas o repositório explicitamente pedido;
 - `copr.procurar` pode refinar a consulta humana para forma package-like só dentro desse escopo explícito;
-- `copr.instalar` habilita explicitamente o repositório pedido antes da instalação;
-- `copr.remover` remove o pacote, mas não desabilita o repositório;
+- `copr.instalar` observa se o repositório já estava habilitado e só faz `enable` explícito quando necessário;
+- `copr.remover` verifica a origem RPM do pacote instalado via `from_repo` contra o repositório explícito antes de permitir a mutação;
+- `copr.remover` bloqueia quando a origem RPM não puder ser demonstrada com honestidade;
+- nenhuma rota COPR faz disable automático ou cleanup heurístico do repositório;
 - a coordenada `owner/project` é obrigatória;
 - o nome do pacote continua precisando ser exato para mutação nesta rodada;
 - não existe descoberta mágica de repositório, busca global no universo COPR ou canonicalização por busca fora do repositório explícito.

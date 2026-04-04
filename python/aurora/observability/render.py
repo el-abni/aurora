@@ -9,6 +9,13 @@ from aurora.install.sources.aur import (
 from aurora.presentation.formatting import field
 
 
+def _signal_value(signals: tuple[str, ...], prefix: str) -> str | None:
+    for signal in signals:
+        if signal.startswith(prefix):
+            return signal.split(":", 1)[1]
+    return None
+
+
 def _scope_label(record: DecisionRecord) -> str:
     if record.request.domain_kind == "user_software":
         return "software do usuario"
@@ -103,6 +110,28 @@ def render_decision_record(record: DecisionRecord) -> str:
                     field("out_of_contract_aur_helpers", out_of_contract),
                 ]
             )
+        if record.request.requested_source == "copr":
+            lines.extend(
+                [
+                    field(
+                        "copr_repository_state",
+                        _signal_value(record.policy.trust_signals, "copr_repository_state:") or "-",
+                    ),
+                    field(
+                        "copr_repository_enable_action",
+                        _signal_value(record.policy.trust_signals, "copr_repository_enable_action:")
+                        or "-",
+                    ),
+                    field(
+                        "copr_package_origin",
+                        _signal_value(record.policy.trust_signals, "copr_package_origin:") or "-",
+                    ),
+                    field(
+                        "copr_package_from_repo",
+                        _signal_value(record.policy.trust_signals, "copr_package_from_repo:") or "-",
+                    ),
+                ]
+            )
 
     if record.target_resolution is not None:
         lines.extend(
@@ -174,6 +203,42 @@ def render_decision_record(record: DecisionRecord) -> str:
         )
         if record.execution_route.route_name.startswith("aur."):
             lines.append(field("selected_aur_helper", record.execution_route.backend_name or "-"))
+        if record.execution_route.route_name.startswith("copr."):
+            lines.extend(
+                [
+                    field(
+                        "copr_enable_planned",
+                        str(bool(record.execution_route.pre_commands)).lower(),
+                    ),
+                    field(
+                        "copr_repository_state",
+                        (
+                            _signal_value(record.policy.trust_signals, "copr_repository_state:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                    field(
+                        "copr_package_origin",
+                        (
+                            _signal_value(record.policy.trust_signals, "copr_package_origin:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                    field(
+                        "copr_package_from_repo",
+                        (
+                            _signal_value(record.policy.trust_signals, "copr_package_from_repo:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                ]
+            )
 
     if record.execution is not None:
         lines.extend(

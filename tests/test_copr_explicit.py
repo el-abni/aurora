@@ -67,11 +67,14 @@ class CoprExplicitTests(unittest.TestCase):
             self.assertEqual(payload["policy"]["trust_level"], "third_party_repository")
             self.assertEqual(payload["policy"]["policy_outcome"], "require_confirmation")
             self.assertIn("copr_repo:atim/obs-studio", payload["policy"]["trust_signals"])
+            self.assertEqual(payload["policy"]["copr_repository_state"], "disabled")
+            self.assertEqual(payload["policy"]["copr_repository_enable_action"], "explicit_enable")
             self.assertEqual(payload["request"]["source_coordinate"], "atim/obs-studio")
             self.assertEqual(
                 payload["execution_route"]["pre_commands"],
                 [["sudo", "dnf", "-y", "copr", "enable", "atim/obs-studio"]],
             )
+            self.assertTrue(payload["execution_route"]["copr_enable_planned"])
             self.assertEqual(payload["execution_route"]["command"], ["sudo", "dnf", "install", "-y", "obs-studio"])
 
     def test_copr_blocks_when_dnf_copr_capability_is_not_observed(self) -> None:
@@ -230,10 +233,38 @@ class CoprExplicitTests(unittest.TestCase):
             self.assertEqual(payload["execution"]["post_probe"]["package_present"], True)
             self.assertEqual(state_file.read_text(encoding="utf-8").strip(), "obs-studio")
             self.assertEqual(enabled_repo_file.read_text(encoding="utf-8").strip(), "atim/obs-studio")
-            self.assertEqual(
-                commands_file.read_text(encoding="utf-8").splitlines(),
-                ["copr --help", "-y copr enable atim/obs-studio", "install -y obs-studio"],
+            commands = commands_file.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(commands[0], "copr --help")
+            self.assertEqual(commands.count("copr list --enabled"), 2)
+            self.assertEqual(commands[-2:], ["-y copr enable atim/obs-studio", "install -y obs-studio"])
+
+    def test_copr_install_skips_enable_when_repository_is_already_enabled(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file, enabled_repo_file, commands_file = setup_copr_testbed(
+                root,
+                copr_repo="atim/obs-studio",
+                repo_packages=("obs-studio",),
             )
+            enabled_repo_file.write_text("atim/obs-studio\n", encoding="utf-8")
+            payload = decision_record_to_dict(
+                plan_text("instalar obs-studio do copr atim/obs-studio", environ=env, confirmed=True)
+            )
+            self.assertEqual(payload["policy"]["copr_repository_state"], "enabled")
+            self.assertEqual(payload["policy"]["copr_repository_enable_action"], "not_needed")
+            self.assertEqual(payload["execution_route"]["pre_commands"], [])
+            self.assertFalse(payload["execution_route"]["copr_enable_planned"])
+            exit_code, record, _message = perform_execution(
+                plan_text("instalar obs-studio do copr atim/obs-studio", environ=env, confirmed=True),
+                environ=env,
+            )
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(state_file.read_text(encoding="utf-8").strip(), "obs-studio")
+            commands = commands_file.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(commands[0], "copr --help")
+            self.assertEqual(commands.count("copr list --enabled"), 4)
+            self.assertNotIn("-y copr enable atim/obs-studio", commands)
+            self.assertEqual(commands[-1], "install -y obs-studio")
 
     def test_copr_remove_executes_and_keeps_repository_observable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -243,6 +274,7 @@ class CoprExplicitTests(unittest.TestCase):
                 copr_repo="atim/obs-studio",
                 repo_packages=("obs-studio",),
                 installed_packages=("obs-studio",),
+                installed_package_origins=("obs-studio|copr:atim:obs-studio",),
             )
             enabled_repo_file.write_text("atim/obs-studio\n", encoding="utf-8")
             exit_code, record, _message = perform_execution(
@@ -255,8 +287,48 @@ class CoprExplicitTests(unittest.TestCase):
             self.assertEqual(payload["execution"]["status"], "executed")
             self.assertEqual(payload["execution"]["pre_probe"]["package_present"], True)
             self.assertEqual(payload["execution"]["post_probe"]["package_present"], False)
+            self.assertEqual(payload["policy"]["copr_package_origin"], "verified")
+            self.assertEqual(payload["policy"]["copr_package_from_repo"], "copr:atim:obs-studio")
             self.assertEqual(state_file.read_text(encoding="utf-8"), "")
             self.assertEqual(enabled_repo_file.read_text(encoding="utf-8").strip(), "atim/obs-studio")
+
+    def test_copr_remove_blocks_when_rpm_origin_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file, enabled_repo_file, _commands_file = setup_copr_testbed(
+                root,
+                copr_repo="atim/obs-studio",
+                repo_packages=("obs-studio",),
+                installed_packages=("obs-studio",),
+            )
+            enabled_repo_file.write_text("atim/obs-studio\n", encoding="utf-8")
+            payload = decision_record_to_dict(
+                plan_text("remover obs-studio do copr atim/obs-studio", environ=env, confirmed=True)
+            )
+            self.assertEqual(payload["outcome"], "blocked")
+            self.assertEqual(payload["policy"]["policy_outcome"], "block")
+            self.assertEqual(payload["policy"]["copr_package_origin"], "origin_missing")
+            self.assertIn("copr_package_origin_not_reported", payload["policy"]["trust_gaps"])
+
+    def test_copr_remove_blocks_when_rpm_origin_points_to_another_repo(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file, enabled_repo_file, _commands_file = setup_copr_testbed(
+                root,
+                copr_repo="atim/obs-studio",
+                repo_packages=("obs-studio",),
+                installed_packages=("obs-studio",),
+                installed_package_origins=("obs-studio|copr:someone:else",),
+            )
+            enabled_repo_file.write_text("atim/obs-studio\n", encoding="utf-8")
+            payload = decision_record_to_dict(
+                plan_text("remover obs-studio do copr atim/obs-studio", environ=env, confirmed=True)
+            )
+            self.assertEqual(payload["outcome"], "blocked")
+            self.assertEqual(payload["policy"]["policy_outcome"], "block")
+            self.assertEqual(payload["policy"]["copr_package_origin"], "mismatch")
+            self.assertEqual(payload["policy"]["copr_package_from_repo"], "copr:someone:else")
+            self.assertIn("copr_package_origin_mismatch", payload["policy"]["trust_gaps"])
 
     def test_dev_record_exposes_repository_coordinate_and_pre_commands(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -274,7 +346,30 @@ class CoprExplicitTests(unittest.TestCase):
             self.assertIn("source_coordinate:       atim/obs-studio", rendered)
             self.assertIn("source_type:             copr_repository", rendered)
             self.assertIn("scope_label:             pacote do host via COPR", rendered)
+            self.assertIn("copr_repository_state:   disabled", rendered)
+            self.assertIn("copr_repository_enable_action: explicit_enable", rendered)
+            self.assertIn("copr_enable_planned:     true", rendered)
             self.assertIn("pre_commands:            sudo dnf -y copr enable atim/obs-studio", rendered)
+
+    def test_dev_record_exposes_verified_rpm_origin_for_copr_remove(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file, enabled_repo_file, _commands_file = setup_copr_testbed(
+                root,
+                copr_repo="atim/obs-studio",
+                repo_packages=("obs-studio",),
+                installed_packages=("obs-studio",),
+                installed_package_origins=("obs-studio|copr:atim:obs-studio",),
+            )
+            enabled_repo_file.write_text("atim/obs-studio\n", encoding="utf-8")
+            rendered = render_dev_report(
+                "remover obs-studio do copr atim/obs-studio --confirm",
+                environ=env,
+            )
+            self.assertIn("copr_repository_state:   enabled", rendered)
+            self.assertIn("copr_package_origin:     verified", rendered)
+            self.assertIn("copr_package_from_repo:  copr:atim:obs-studio", rendered)
+            self.assertIn("verificou a origem RPM", rendered)
 
     def test_dev_record_exposes_repository_restriction_for_copr_search(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -293,7 +388,7 @@ class CoprExplicitTests(unittest.TestCase):
             self.assertIn("route_name:              copr.procurar", rendered)
             self.assertIn("consulted_target:        obs-studio", rendered)
             self.assertIn("copr_search_scope:explicit_repository_only", rendered)
-            self.assertIn("restrita ao repositório explicitamente informado", rendered)
+            self.assertIn("restrita ao repositorio explicitamente informado", rendered)
 
 
 if __name__ == "__main__":

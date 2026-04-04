@@ -737,7 +737,9 @@ def setup_copr_testbed(
     copr_repo: str,
     repo_packages: tuple[str, ...] = (),
     installed_packages: tuple[str, ...] = (),
+    installed_package_origins: tuple[str, ...] = (),
     copr_available: bool = True,
+    repo_state_observable: bool = True,
     distro_id: str = "fedora",
     distro_like: str = "fedora",
     version_id: str = "42",
@@ -747,20 +749,33 @@ def setup_copr_testbed(
     bin_dir.mkdir(parents=True, exist_ok=True)
     state_file = root / "installed.txt"
     repo_file = root / "copr-repo.txt"
+    provenance_file = root / "installed-provenance.txt"
     enabled_repo_file = root / "enabled-copr.txt"
     commands_file = root / "commands.txt"
     copr_web_root = root / "copr-web"
     normalized_repo_packages: list[tuple[str, str]] = []
+    normalized_installed_origins: list[tuple[str, str]] = []
     for entry in repo_packages:
         package_name, separator, label_value = entry.partition("|")
         package_name = package_name.strip()
         display_label = label_value.strip() if separator else "pacote COPR de teste"
         normalized_repo_packages.append((package_name, display_label or "pacote COPR de teste"))
+    for entry in installed_package_origins:
+        package_name, separator, from_repo = entry.partition("|")
+        package_name = package_name.strip()
+        if not package_name:
+            continue
+        normalized_installed_origins.append((package_name, from_repo.strip()))
 
     state_file.write_text("\n".join(installed_packages) + ("\n" if installed_packages else ""), encoding="utf-8")
     repo_file.write_text(
         "\n".join(f"{package_name}\t{display_label}" for package_name, display_label in normalized_repo_packages)
         + ("\n" if normalized_repo_packages else ""),
+        encoding="utf-8",
+    )
+    provenance_file.write_text(
+        "\n".join(f"{package_name}\t{from_repo}" for package_name, from_repo in normalized_installed_origins)
+        + ("\n" if normalized_installed_origins else ""),
         encoding="utf-8",
     )
     enabled_repo_file.write_text("", encoding="utf-8")
@@ -773,13 +788,14 @@ def setup_copr_testbed(
         name=name,
     )
     owner, project = copr_repo.split("/", 1)
+    repoid = f"copr:{owner}:{project}"
     repo_slug = f"{owner}-{project}"
     repo_download_dir = copr_web_root / "coprs" / owner / project / "repo" / f"fedora-{version_id}"
     repo_download_dir.mkdir(parents=True, exist_ok=True)
     (repo_download_dir / f"{repo_slug}-fedora-{version_id}.repo").write_text(
         textwrap.dedent(
             f"""\
-            [copr:{owner}:{project}]
+            [{repoid}]
             name=COPR {copr_repo}
             baseurl=file://{repo_file}
             enabled=1
@@ -797,10 +813,13 @@ def setup_copr_testbed(
             #!/bin/sh
             state_file="{state_file}"
             repo_file="{repo_file}"
+            provenance_file="{provenance_file}"
             enabled_repo_file="{enabled_repo_file}"
             commands_file="{commands_file}"
             requested_repo="{copr_repo}"
+            requested_repoid="{repoid}"
             copr_available="{1 if copr_available else 0}"
+            repo_state_observable="{1 if repo_state_observable else 0}"
             printf "%s\\n" "$*" >> "$commands_file"
             reposdir=""
             while [ "$#" -gt 0 ]; do
@@ -831,6 +850,9 @@ def setup_copr_testbed(
             has_repo() {{
               /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
             }}
+            repo_origin() {{
+              /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ print $2; exit }}' "$provenance_file"
+            }}
             repo_enabled() {{
               /usr/bin/grep -qx "$requested_repo" "$enabled_repo_file"
             }}
@@ -844,6 +866,27 @@ def setup_copr_testbed(
               tmp="$state_file.tmp"
               /usr/bin/grep -vx "$1" "$state_file" > "$tmp" || true
               /usr/bin/mv "$tmp" "$state_file"
+            }}
+            set_origin() {{
+              pkg="$1"
+              origin="$2"
+              tmp="$provenance_file.tmp"
+              if [ -f "$provenance_file" ]; then
+                /usr/bin/awk -F '\t' -v target="$pkg" '$1 != target {{ print $0 }}' "$provenance_file" > "$tmp"
+              else
+                : > "$tmp"
+              fi
+              printf "%s\t%s\\n" "$pkg" "$origin" >> "$tmp"
+              /usr/bin/mv "$tmp" "$provenance_file"
+            }}
+            remove_origin() {{
+              tmp="$provenance_file.tmp"
+              if [ -f "$provenance_file" ]; then
+                /usr/bin/awk -F '\t' -v target="$1" '$1 != target {{ print $0 }}' "$provenance_file" > "$tmp"
+              else
+                : > "$tmp"
+              fi
+              /usr/bin/mv "$tmp" "$provenance_file"
             }}
             case "$action" in
               copr)
@@ -862,7 +905,29 @@ def setup_copr_testbed(
                     echo "enabled $repo"
                     exit 0
                     ;;
+                  list)
+                    if [ "$repo_state_observable" != "1" ]; then
+                      echo "failed to list enabled COPR repositories" >&2
+                      exit 1
+                    fi
+                    if [ "$3" = "--enabled" ] && [ -s "$enabled_repo_file" ]; then
+                      /usr/bin/cat "$enabled_repo_file"
+                    fi
+                    exit 0
+                    ;;
                 esac
+                ;;
+              repoquery)
+                if [ "$2" != "--installed" ]; then
+                  exit 1
+                fi
+                if ! has_state "$target"; then
+                  echo "No package matched" >&2
+                  exit 1
+                fi
+                origin="$(repo_origin "$target")"
+                printf "%s\t%s\\n" "$target" "$origin"
+                exit 0
                 ;;
               search)
                 if ! repo_file_present; then
@@ -906,6 +971,7 @@ def setup_copr_testbed(
                   exit 1
                 fi
                 echo "$target" >> "$state_file"
+                set_origin "$target" "$requested_repoid"
                 echo "installed $target"
                 exit 0
                 ;;
@@ -915,6 +981,7 @@ def setup_copr_testbed(
                   exit 1
                 fi
                 remove_state "$target"
+                remove_origin "$target"
                 echo "removed $target"
                 exit 0
                 ;;

@@ -173,6 +173,7 @@ def plan_request(
                     request,
                     profile,
                     target=_resolved_target(request, target_resolution),
+                    environ=environ,
                 )
             )
 

@@ -22,7 +22,7 @@ Comandos públicos:
 - aurora --help
 - aurora --version
 
-Contrato público da v0.3.3:
+Contrato público da v0.3.4:
 - produto 100% Python;
 - launchers oficiais: aurora e auro;
 - domínios ativos: host_package e user_software;
@@ -35,6 +35,8 @@ Contrato público da v0.3.3:
 - COPR so entra por frase marcada com copr e owner/project explicito;
 - copr.procurar consulta apenas o repositorio explicitamente pedido;
 - COPR abre procurar/instalar/remover em Fedora mutavel com dnf copr observado;
+- copr.instalar observa se o repositorio ja estava habilitado e so faz enable quando necessario;
+- copr.remover exige origem RPM demonstravel antes da mutacao;
 - pedidos com flatpak/flathub vão para user_software.
 
 Confirmação:
@@ -50,13 +52,15 @@ Compatibilidade:
 - helper AUR observado fora do contrato continua bloqueado e não amplia a superfície pública;
 - COPR explícito: Fedora mutável com dnf copr observado, consulta restrita ao repositório owner/project explícito;
 - copr.procurar pode refinar a consulta para forma package-like só dentro do repositório pedido;
-- copr.instalar habilita o repositório pedido antes da instalação; copr.remover não desabilita o repositório nesta release;
+- copr.instalar observa o estado do repositório e só mantém enable quando necessário;
+- copr.remover verifica `from_repo` antes da mutação e bloqueia quando a origem não fecha;
+- nenhuma rota COPR faz disable automático do repositório nesta release;
 - flatpak: depende do backend estar presente no host e atua no escopo do usuário.
 
-Fora da v0.3.3:
+Fora da v0.3.4:
 - fallback automático de pedido nu para AUR;
 - descoberta automática de repositório COPR, busca global no universo COPR e canonicalização ampla de pacote por busca;
-- lifecycle amplo de repositório COPR e validação de origem na remoção;
+- lifecycle amplo de repositório COPR, disable automático e cleanup heurístico;
 - helpers AUR além de paru e yay, e passthrough interativo para aur.remover;
 - remotes flatpak além do default flathub;
 - PPA, AppImage e GitHub Releases;

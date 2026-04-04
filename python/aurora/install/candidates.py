@@ -14,6 +14,7 @@ def build_route_candidates(
     profile: HostProfile | None,
     *,
     target: str | None = None,
+    environ: dict[str, str] | None = None,
 ) -> tuple[ExecutionRoute, ...]:
     if profile is None:
         return ()
@@ -21,7 +22,7 @@ def build_route_candidates(
     route = None
     if request.domain_kind == "host_package":
         if request.requested_source == "copr":
-            route = build_copr_candidate(request, profile, target=target)
+            route = build_copr_candidate(request, profile, target=target, environ=environ)
         elif request.requested_source == "aur":
             route = build_aur_candidate(request, profile, target=target)
         else:

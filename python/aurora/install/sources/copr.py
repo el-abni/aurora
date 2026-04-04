@@ -28,7 +28,14 @@ _COPR_NO_RESULTS_MARKERS = (
     "nenhum pacote encontrado",
     "nenhuma correspondencia encontrada",
 )
+_COPR_NOT_INSTALLED_MARKERS = (
+    "no package matched",
+    "no packages matched",
+    "is not installed",
+    "not installed",
+)
 _COPR_BASE_URL_ENV = "AURORA_COPR_BASE_URL"
+_COPR_REPO_SECTION_RE = re.compile(r"^\[(?P<repoid>[^\]]+)\]\s*$")
 
 
 @dataclass(frozen=True)
@@ -37,6 +44,35 @@ class CoprCapabilityProbe:
     gap: str = ""
     reason: str = ""
     command: tuple[str, ...] = ("dnf", "copr", "--help")
+    exit_code: int | None = None
+    stdout: str = ""
+    stderr: str = ""
+
+
+@dataclass(frozen=True)
+class CoprRepositoryStateProbe:
+    observed: bool
+    status: str = "not_checked"
+    enabled: bool | None = None
+    gap: str = ""
+    reason: str = ""
+    command: tuple[str, ...] = ("dnf", "copr", "list", "--enabled")
+    exit_code: int | None = None
+    stdout: str = ""
+    stderr: str = ""
+
+
+@dataclass(frozen=True)
+class CoprPackageOriginProbe:
+    observed: bool
+    status: str = "not_checked"
+    package_present: bool | None = None
+    verified: bool | None = None
+    from_repo: str = ""
+    expected_repoids: tuple[str, ...] = ()
+    gap: str = ""
+    reason: str = ""
+    command: tuple[str, ...] = ()
     exit_code: int | None = None
     stdout: str = ""
     stderr: str = ""
@@ -104,6 +140,344 @@ def _repo_file_url(
     return (
         f"{base_url}/coprs/{owner}/{project}/repo/fedora-{releasever}/"
         f"{slug}-fedora-{releasever}.repo"
+    )
+
+
+def _fetch_repo_file_contents(
+    repository: str,
+    *,
+    environ: dict[str, str] | None = None,
+) -> tuple[str, str, bytes]:
+    releasever = _requested_releasever(environ)
+    if not releasever:
+        raise OSError(
+            "nao consegui determinar o VERSION_ID do host para consultar o repositorio COPR pedido."
+        )
+    repo_file_url = _repo_file_url(repository, releasever, environ=environ)
+    with urllib_request.urlopen(repo_file_url, timeout=15) as response:
+        return releasever, repo_file_url, response.read()
+
+
+def _repoids_from_repo_file_contents(contents: str) -> tuple[str, ...]:
+    repoids: list[str] = []
+    for raw_line in contents.splitlines():
+        match = _COPR_REPO_SECTION_RE.match(raw_line.strip())
+        if match is None:
+            continue
+        repoid = match.group("repoid").strip()
+        if repoid and repoid not in repoids:
+            repoids.append(repoid)
+    return tuple(repoids)
+
+
+def _output_mentions_repository(output: str, repository: str) -> bool:
+    normalized_repository = repository.strip().lower()
+    if not normalized_repository:
+        return False
+    for raw_line in output.splitlines():
+        line = raw_line.strip().lower()
+        if not line:
+            continue
+        if normalized_repository == line:
+            return True
+        if normalized_repository in line:
+            return True
+    return False
+
+
+def _origin_probe_command(target: str) -> tuple[str, ...]:
+    return (
+        "dnf",
+        "repoquery",
+        "--installed",
+        "--queryformat",
+        "%{name}\t%{from_repo}",
+        target,
+    )
+
+
+def observe_copr_repository_state(
+    profile: HostProfile | None,
+    repository: str,
+    *,
+    environ: dict[str, str] | None = None,
+) -> CoprRepositoryStateProbe:
+    if not repository.strip():
+        return CoprRepositoryStateProbe(
+            observed=False,
+            status="repository_missing",
+            gap="copr_repository_coordinate_missing",
+            reason="faltou a coordenada explicita do repositorio COPR no formato owner/project.",
+        )
+
+    if profile is None:
+        return CoprRepositoryStateProbe(
+            observed=False,
+            status="profile_unavailable",
+            gap="host_profile_unavailable",
+            reason="o host profile nao esta disponivel para observar o estado do repositorio COPR.",
+        )
+
+    if profile.linux_family != "fedora":
+        return CoprRepositoryStateProbe(
+            observed=False,
+            status="linux_family_not_supported",
+            gap="copr_linux_family_not_supported",
+            reason="a observacao de estado do repositorio COPR so faz sentido em hosts Fedora nesta rodada.",
+        )
+
+    if "dnf" not in profile.package_backends:
+        return CoprRepositoryStateProbe(
+            observed=False,
+            status="dnf_not_observed",
+            gap="copr_dnf_backend_not_observed",
+            reason="a observacao de estado do repositorio COPR depende de dnf observado neste host.",
+        )
+
+    path = None if environ is None else environ.get("PATH", os.environ.get("PATH"))
+    if shutil.which("dnf", path=path) is None:
+        return CoprRepositoryStateProbe(
+            observed=False,
+            status="dnf_not_observed",
+            gap="copr_dnf_backend_not_observed",
+            reason="o backend dnf nao esta disponivel para observar o estado do repositorio COPR.",
+        )
+
+    command = ("dnf", "copr", "list", "--enabled")
+    proc = subprocess.run(command, text=True, capture_output=True, check=False, env=environ)
+    if proc.returncode != 0:
+        return CoprRepositoryStateProbe(
+            observed=False,
+            status="probe_failed",
+            gap="copr_repository_state_not_observed",
+            reason=(
+                f"nao consegui observar se o repositorio COPR '{repository}' ja estava habilitado "
+                "via 'dnf copr list --enabled'."
+            ),
+            command=command,
+            exit_code=proc.returncode,
+            stdout=proc.stdout,
+            stderr=proc.stderr,
+        )
+
+    enabled = _output_mentions_repository("\n".join((proc.stdout, proc.stderr)), repository)
+    if enabled:
+        return CoprRepositoryStateProbe(
+            observed=True,
+            status="enabled",
+            enabled=True,
+            reason=(
+                f"o repositorio COPR '{repository}' ja aparece em 'dnf copr list --enabled'."
+            ),
+            command=command,
+            exit_code=proc.returncode,
+            stdout=proc.stdout,
+            stderr=proc.stderr,
+        )
+
+    return CoprRepositoryStateProbe(
+        observed=True,
+        status="disabled",
+        enabled=False,
+        reason=(
+            f"o repositorio COPR '{repository}' nao aparece em 'dnf copr list --enabled' "
+            "e sera tratado como desabilitado nesta rodada."
+        ),
+        command=command,
+        exit_code=proc.returncode,
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )
+
+
+def observe_copr_package_origin(
+    profile: HostProfile | None,
+    repository: str,
+    target: str,
+    *,
+    environ: dict[str, str] | None = None,
+) -> CoprPackageOriginProbe:
+    command = _origin_probe_command(target)
+    if not repository.strip():
+        return CoprPackageOriginProbe(
+            observed=False,
+            status="repository_missing",
+            gap="copr_repository_coordinate_missing",
+            reason="faltou a coordenada explicita do repositorio COPR no formato owner/project.",
+            command=command,
+        )
+
+    if profile is None:
+        return CoprPackageOriginProbe(
+            observed=False,
+            status="profile_unavailable",
+            gap="host_profile_unavailable",
+            reason="o host profile nao esta disponivel para verificar a origem RPM do pacote.",
+            command=command,
+        )
+
+    if profile.linux_family != "fedora":
+        return CoprPackageOriginProbe(
+            observed=False,
+            status="linux_family_not_supported",
+            gap="copr_linux_family_not_supported",
+            reason="a verificacao de origem RPM para COPR so faz sentido em hosts Fedora nesta rodada.",
+            command=command,
+        )
+
+    if "dnf" not in profile.package_backends:
+        return CoprPackageOriginProbe(
+            observed=False,
+            status="dnf_not_observed",
+            gap="copr_dnf_backend_not_observed",
+            reason="a verificacao de origem RPM para COPR depende de dnf observado neste host.",
+            command=command,
+        )
+
+    path = None if environ is None else environ.get("PATH", os.environ.get("PATH"))
+    if shutil.which("dnf", path=path) is None:
+        return CoprPackageOriginProbe(
+            observed=False,
+            status="dnf_not_observed",
+            gap="copr_dnf_backend_not_observed",
+            reason="o backend dnf nao esta disponivel para verificar a origem RPM do pacote.",
+            command=command,
+        )
+
+    proc = subprocess.run(command, text=True, capture_output=True, check=False, env=environ)
+    combined_output = "\n".join(part.strip().lower() for part in (proc.stdout, proc.stderr) if part.strip())
+    if proc.returncode != 0:
+        if any(marker in combined_output for marker in _COPR_NOT_INSTALLED_MARKERS):
+            return CoprPackageOriginProbe(
+                observed=True,
+                status="not_installed",
+                package_present=False,
+                verified=None,
+                reason=(
+                    f"o pacote '{target}' nao aparece como instalado; a verificacao de origem RPM "
+                    "nao foi necessaria."
+                ),
+                command=command,
+                exit_code=proc.returncode,
+                stdout=proc.stdout,
+                stderr=proc.stderr,
+            )
+        return CoprPackageOriginProbe(
+            observed=False,
+            status="probe_failed",
+            package_present=None,
+            verified=None,
+            gap="copr_package_origin_probe_failed",
+            reason=(
+                f"nao consegui verificar a origem RPM do pacote '{target}' via "
+                "'dnf repoquery --installed'."
+            ),
+            command=command,
+            exit_code=proc.returncode,
+            stdout=proc.stdout,
+            stderr=proc.stderr,
+        )
+
+    from_repo = ""
+    for raw_line in proc.stdout.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        columns = line.split("\t", 1)
+        from_repo = columns[1].strip() if len(columns) == 2 else ""
+        if from_repo:
+            break
+
+    if not from_repo:
+        return CoprPackageOriginProbe(
+            observed=True,
+            status="origin_missing",
+            package_present=True,
+            verified=False,
+            gap="copr_package_origin_not_reported",
+            reason=(
+                f"o pacote '{target}' esta instalado, mas 'dnf repoquery --installed' nao expos "
+                "um campo from_repo confiavel para comparar com o repositorio COPR pedido."
+            ),
+            command=command,
+            exit_code=proc.returncode,
+            stdout=proc.stdout,
+            stderr=proc.stderr,
+        )
+
+    try:
+        _releasever, repo_file_url, repo_file_bytes = _fetch_repo_file_contents(repository, environ=environ)
+        expected_repoids = _repoids_from_repo_file_contents(repo_file_bytes.decode("utf-8"))
+    except (OSError, TimeoutError, UnicodeDecodeError, urllib_error.URLError) as exc:
+        return CoprPackageOriginProbe(
+            observed=False,
+            status="repo_file_unavailable",
+            package_present=True,
+            verified=False,
+            from_repo=from_repo,
+            gap="copr_package_origin_reference_not_observed",
+            reason=(
+                f"o pacote '{target}' reportou from_repo '{from_repo}', mas nao consegui obter o "
+                f"repo file de referencia do repositorio COPR '{repository}' para comparar. detalhe: {exc}"
+            ),
+            command=command,
+            exit_code=proc.returncode,
+            stdout=proc.stdout,
+            stderr=repo_file_url if 'repo_file_url' in locals() else proc.stderr,
+        )
+
+    if not expected_repoids:
+        return CoprPackageOriginProbe(
+            observed=False,
+            status="repo_ids_missing",
+            package_present=True,
+            verified=False,
+            from_repo=from_repo,
+            gap="copr_package_origin_reference_not_observed",
+            reason=(
+                f"o repo file do repositorio COPR '{repository}' nao expos repoid suficiente para "
+                f"comparar com o from_repo '{from_repo}'."
+            ),
+            command=command,
+            exit_code=proc.returncode,
+            stdout=proc.stdout,
+            stderr=proc.stderr,
+        )
+
+    if from_repo in expected_repoids:
+        return CoprPackageOriginProbe(
+            observed=True,
+            status="verified",
+            package_present=True,
+            verified=True,
+            from_repo=from_repo,
+            expected_repoids=expected_repoids,
+            reason=(
+                f"o pacote '{target}' reportou from_repo '{from_repo}', compativel com o repo file "
+                f"do repositorio COPR explicito '{repository}'."
+            ),
+            command=command,
+            exit_code=proc.returncode,
+            stdout=proc.stdout,
+            stderr=proc.stderr,
+        )
+
+    return CoprPackageOriginProbe(
+        observed=True,
+        status="mismatch",
+        package_present=True,
+        verified=False,
+        from_repo=from_repo,
+        expected_repoids=expected_repoids,
+        gap="copr_package_origin_mismatch",
+        reason=(
+            f"o pacote '{target}' reportou from_repo '{from_repo}', que nao corresponde aos repoids "
+            f"observados para o repositorio COPR explicito '{repository}'."
+        ),
+        command=command,
+        exit_code=proc.returncode,
+        stdout=proc.stdout,
+        stderr=proc.stderr,
     )
 
 
@@ -194,23 +568,12 @@ def run_copr_search(
     *,
     environ: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    releasever = _requested_releasever(environ)
     command = ("dnf", "--disablerepo=*", "--setopt=reposdir=<copr_repo_tempdir>", "search", query)
-    if not releasever:
-        return subprocess.CompletedProcess(
-            command,
-            66,
-            "",
-            "nao consegui determinar o VERSION_ID do host para consultar o repositório COPR pedido.",
-        )
-
-    repo_file_url = _repo_file_url(repository, releasever, environ=environ)
     try:
+        releasever, repo_file_url, repo_file_contents = _fetch_repo_file_contents(repository, environ=environ)
         with tempfile.TemporaryDirectory(prefix="aurora-copr-search-") as repo_dir:
             repo_file_name = f"{_repository_slug(repository)}-fedora-{releasever}.repo"
             repo_file_path = os.path.join(repo_dir, repo_file_name)
-            with urllib_request.urlopen(repo_file_url, timeout=15) as response:
-                repo_file_contents = response.read()
             with open(repo_file_path, "wb") as handle:
                 handle.write(repo_file_contents)
             runtime_command = (
@@ -280,8 +643,8 @@ def resolve_copr_target(
                 canonicalized=True,
                 reason=(
                     f"o alvo humano '{target}' foi refinado para a consulta COPR '{consulted_target}' "
-                    f"dentro do repositório explícito '{repository}' para reduzir ruído de busca, "
-                    "sem promover isso a resolução automática de pacote."
+                    f"dentro do repositorio explicito '{repository}' para reduzir ruido de busca, "
+                    "sem promover isso a resolucao automatica de pacote."
                 ),
             )
         return TargetResolution(
@@ -292,8 +655,8 @@ def resolve_copr_target(
             source="copr_repo_search_query_direct",
             canonicalized=False,
             reason=(
-                f"o alvo de busca COPR '{target}' foi consultado diretamente dentro do repositório "
-                f"explícito '{repository}'."
+                f"o alvo de busca COPR '{target}' foi consultado diretamente dentro do repositorio "
+                f"explicito '{repository}'."
             ),
         )
 
@@ -340,9 +703,10 @@ def copr_target_resolution_blocks(request: SemanticRequest, resolution: TargetRe
 
 def build_copr_candidate(
     request: SemanticRequest,
-    _profile: HostProfile,
+    profile: HostProfile,
     *,
     target: str | None = None,
+    environ: dict[str, str] | None = None,
 ) -> ExecutionRoute | None:
     if request.domain_kind != "host_package" or request.requested_source != "copr":
         return None
@@ -354,12 +718,16 @@ def build_copr_candidate(
         return None
 
     mutation_target = target.strip() if target is not None and target.strip() else request.target
+    repository_state = (
+        observe_copr_repository_state(profile, repository, environ=environ)
+        if request.intent in {"instalar", "remover"}
+        else None
+    )
     notes = (
         "COPR entra como fonte explicita de terceiro nesta rodada.",
         f"repositorio COPR pedido: {repository}.",
-        "esta frente nao faz descoberta automatica de repositório nem busca global de pacote.",
-        "qualquer consulta fica restrita ao repositório explicitamente informado.",
-        "o lifecycle do repositorio COPR nao e gerenciado automaticamente nesta rodada.",
+        "esta frente nao faz descoberta automatica de repositorio nem busca global de pacote.",
+        "qualquer consulta fica restrita ao repositorio explicitamente informado.",
     )
 
     if request.intent == "procurar":
@@ -373,18 +741,48 @@ def build_copr_candidate(
             requires_privilege_escalation=False,
             notes=notes
             + (
-                "a consulta usa apenas o repo file do repositório pedido para o Fedora atual, sem habilitar o repositório no host.",
+                "a consulta usa apenas o repo file do repositorio pedido para o Fedora atual, sem habilitar o repositorio no host.",
+                "o lifecycle do repositorio fica fora da rota de busca; nao ha enable, disable nem cleanup automatico.",
             ),
         )
 
     if request.intent == "instalar":
+        pre_commands: tuple[tuple[str, ...], ...] = ()
+        pre_command_required_commands: tuple[tuple[str, ...], ...] = ()
+        install_notes: tuple[str, ...]
+        if repository_state is not None and repository_state.observed and repository_state.enabled is True:
+            install_notes = (
+                repository_state.reason,
+                "nenhum pre-command de enable foi planejado porque o repositorio ja estava habilitado.",
+            )
+        else:
+            pre_commands = (("sudo", "dnf", "-y", "copr", "enable", repository),)
+            pre_command_required_commands = (("sudo", "dnf"),)
+            if repository_state is not None and repository_state.observed and repository_state.enabled is False:
+                install_notes = (
+                    repository_state.reason,
+                    "enable explicito planejado como passo preparatorio minimo e idempotente.",
+                )
+            else:
+                install_notes = (
+                    (
+                        repository_state.reason
+                        if repository_state is not None
+                        else ""
+                    )
+                    or (
+                        f"o estado do repositorio COPR '{repository}' nao pode ser observado com "
+                        "confianca antes da mutacao."
+                    ),
+                    "enable explicito mantido como guarda idempotente porque o estado previo do repositorio nao foi observado.",
+                )
         state_probe_command, state_probe_required_commands = _state_probe_for_mutation(mutation_target)
         return ExecutionRoute(
             route_name="copr.instalar",
             action_name="instalar",
             backend_name="dnf",
-            pre_commands=(("sudo", "dnf", "-y", "copr", "enable", repository),),
-            pre_command_required_commands=(("sudo", "dnf"),),
+            pre_commands=pre_commands,
+            pre_command_required_commands=pre_command_required_commands,
             command=("sudo", "dnf", "install", "-y", mutation_target),
             required_commands=("sudo", "dnf"),
             state_probe_command=state_probe_command,
@@ -394,10 +792,14 @@ def build_copr_candidate(
             notes=notes
             + (
                 "state probe via rpm -q para confirmar o estado final do pacote do host.",
-                "a instalacao habilita explicitamente o repositorio pedido antes de instalar o pacote.",
+            )
+            + install_notes
+            + (
+                "nao ha disable automatico, cleanup heuristico nem garbage collection de repositorio nesta rodada.",
             ),
         )
 
+    provenance = observe_copr_package_origin(profile, repository, mutation_target, environ=environ)
     state_probe_command, state_probe_required_commands = _state_probe_for_mutation(mutation_target)
     return ExecutionRoute(
         route_name="copr.remover",
@@ -412,6 +814,12 @@ def build_copr_candidate(
         notes=notes
         + (
             "state probe via rpm -q para confirmar o estado final do pacote do host.",
-            "a remocao atua no pacote instalado e nao desabilita o repositorio COPR nesta rodada.",
+            (
+                repository_state.reason
+                if repository_state is not None and repository_state.reason
+                else f"o estado habilitado do repositorio COPR '{repository}' nao foi observado com confianca."
+            ),
+            provenance.reason,
+            "a remocao atua apenas no pacote instalado e nao faz disable automatico do repositorio COPR nesta rodada.",
         ),
     )

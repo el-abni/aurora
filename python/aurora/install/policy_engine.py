@@ -8,7 +8,11 @@ from aurora.install.sources.aur import (
     supported_aur_helper,
     supported_aur_helpers,
 )
-from aurora.install.sources.copr import observe_copr_capability
+from aurora.install.sources.copr import (
+    observe_copr_capability,
+    observe_copr_package_origin,
+    observe_copr_repository_state,
+)
 from aurora.linux.immutable_policy import host_package_block_reason
 
 _CRITICAL_PACKAGE_NAMES = {
@@ -464,6 +468,16 @@ def _assess_copr_policy(
         "copr",
     )
     capability = observe_copr_capability(profile, environ=environ)
+    repository_state = (
+        observe_copr_repository_state(profile, repository, environ=environ)
+        if request.intent in {"instalar", "remover"}
+        else None
+    )
+    provenance = (
+        observe_copr_package_origin(profile, repository, request.target.strip(), environ=environ)
+        if request.intent == "remover" and request.target.strip()
+        else None
+    )
     trust_signals = [
         "domain:host_package",
         "source_type:copr_repository",
@@ -479,16 +493,23 @@ def _assess_copr_policy(
         trust_signals.append(f"observed_backends:{','.join(profile.package_backends)}")
     if capability.observed:
         trust_signals.append("copr_capability:dnf_copr_observed")
+    if repository_state is not None and repository_state.observed:
+        trust_signals.append(f"copr_repository_state:{repository_state.status}")
+    if request.intent == "instalar":
+        if repository_state is not None and repository_state.observed and repository_state.enabled is True:
+            trust_signals.append("copr_repository_enable_action:not_needed")
+        else:
+            trust_signals.append("copr_repository_enable_action:explicit_enable")
     if request.intent == "procurar":
         trust_signals.append("copr_search_scope:explicit_repository_only")
+    if provenance is not None:
+        trust_signals.append(f"copr_package_origin:{provenance.status}")
+        if provenance.from_repo:
+            trust_signals.append(f"copr_package_from_repo:{provenance.from_repo}")
     if confirmation_supplied:
         trust_signals.append("confirmation:explicit")
 
     trust_gaps = ["copr_third_party_source_requires_human_review"]
-    if request.intent == "remover":
-        trust_gaps.append("copr_package_origin_not_verified_on_remove")
-    if request.intent in {"instalar", "remover"}:
-        trust_gaps.append("copr_repository_lifecycle_not_managed")
 
     outcome = "allow"
     reason = "COPR explicito foi aceito como fonte contida de terceiro em Fedora mutavel nesta rodada."
@@ -512,26 +533,62 @@ def _assess_copr_policy(
     elif not repository:
         outcome = "block"
         trust_gaps.append("copr_repository_coordinate_missing")
-        reason = "faltou a coordenada explicita do repositório COPR no formato owner/project."
+        reason = "faltou a coordenada explicita do repositorio COPR no formato owner/project."
     elif not capability.observed:
         outcome = "block"
         trust_gaps.append(capability.gap or "copr_dnf_plugin_not_observed")
         reason = capability.reason
     elif request.intent == "procurar":
         reason = (
-            "copr.procurar consulta apenas o repositório explicitamente pedido e nao faz "
-            "descoberta automatica nem busca global de repositórios nesta rodada."
+            "copr.procurar consulta apenas o repositorio explicitamente pedido e nao faz "
+            "descoberta automatica nem busca global de repositorios nesta rodada."
         )
     elif request.intent == "instalar":
-        reason = (
-            "copr.instalar habilita explicitamente o repositório pedido antes de instalar o pacote "
-            "e exige confirmacao explicita nesta rodada."
-        )
+        if repository_state is not None and repository_state.observed and repository_state.enabled is True:
+            reason = (
+                "copr.instalar observou que o repositorio explicito ja estava habilitado e segue "
+                "sem novo enable, mantendo a mutacao idempotente e explicavel."
+            )
+        elif repository_state is not None and repository_state.observed and repository_state.enabled is False:
+            reason = (
+                "copr.instalar observou o repositorio explicito como desabilitado e planeja apenas "
+                "o enable minimo antes da instalacao, sem abrir cleanup ou lifecycle amplo."
+            )
+        else:
+            trust_gaps.append(
+                repository_state.gap if repository_state is not None and repository_state.gap else "copr_repository_state_not_observed"
+            )
+            reason = (
+                "copr.instalar depende do repositorio explicito e manteve apenas o enable minimo "
+                "como guarda idempotente, porque o estado previo do repo nao foi observado com confianca."
+            )
     elif request.intent == "remover":
-        reason = (
-            "copr.remover remove o pacote do host e preserva a honestidade de que o lifecycle do "
-            "repositório e a verificacao de origem ficam fora deste primeiro corte."
-        )
+        if repository_state is not None and repository_state.observed:
+            trust_signals.append(f"copr_repository_state_on_remove:{repository_state.status}")
+        elif repository_state is not None and repository_state.gap:
+            trust_gaps.append(repository_state.gap)
+
+        if provenance is None:
+            trust_gaps.append("copr_package_origin_not_verified")
+            outcome = "block"
+            reason = (
+                "copr.remover exige verificacao de origem RPM nesta rodada, mas nao consegui montar "
+                "o probe de proveniencia do pacote."
+            )
+        elif provenance.status == "verified":
+            reason = (
+                "copr.remover verificou a origem RPM do pacote instalado contra o repo explicito "
+                "antes de permitir a mutacao."
+            )
+        elif provenance.status == "not_installed":
+            reason = (
+                "copr.remover observou que o pacote ja nao esta instalado; a verificacao de origem "
+                "RPM nao foi necessaria antes do no-op."
+            )
+        else:
+            outcome = "block"
+            trust_gaps.append(provenance.gap or "copr_package_origin_not_verified")
+            reason = provenance.reason
 
     if outcome == "allow" and requires_confirmation and not confirmation_supplied:
         outcome = "require_confirmation"

@@ -8,6 +8,13 @@ from aurora.install.sources.aur import (
 )
 
 
+def _signal_value(signals: tuple[str, ...], prefix: str) -> str | None:
+    for signal in signals:
+        if signal.startswith(prefix):
+            return signal.split(":", 1)[1]
+    return None
+
+
 def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
     payload: dict[str, object] = {
         "request": {
@@ -69,6 +76,23 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
                 if record.host_profile is not None
                 else []
             )
+        if record.request.requested_source == "copr":
+            payload["policy"]["copr_repository_state"] = _signal_value(
+                record.policy.trust_signals,
+                "copr_repository_state:",
+            )
+            payload["policy"]["copr_repository_enable_action"] = _signal_value(
+                record.policy.trust_signals,
+                "copr_repository_enable_action:",
+            )
+            payload["policy"]["copr_package_origin"] = _signal_value(
+                record.policy.trust_signals,
+                "copr_package_origin:",
+            )
+            payload["policy"]["copr_package_from_repo"] = _signal_value(
+                record.policy.trust_signals,
+                "copr_package_from_repo:",
+            )
 
     if record.target_resolution is not None:
         payload["target_resolution"] = {
@@ -107,6 +131,25 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
         }
         if record.execution_route.route_name.startswith("aur."):
             payload["execution_route"]["selected_aur_helper"] = record.execution_route.backend_name
+        if record.execution_route.route_name.startswith("copr."):
+            payload["execution_route"]["copr_enable_planned"] = bool(record.execution_route.pre_commands)
+            if record.policy is not None:
+                payload["execution_route"]["copr_repository_state"] = _signal_value(
+                    record.policy.trust_signals,
+                    "copr_repository_state:",
+                )
+                payload["execution_route"]["copr_repository_enable_action"] = _signal_value(
+                    record.policy.trust_signals,
+                    "copr_repository_enable_action:",
+                )
+                payload["execution_route"]["copr_package_origin"] = _signal_value(
+                    record.policy.trust_signals,
+                    "copr_package_origin:",
+                )
+                payload["execution_route"]["copr_package_from_repo"] = _signal_value(
+                    record.policy.trust_signals,
+                    "copr_package_from_repo:",
+                )
 
     if record.execution is not None:
         payload["execution"] = {
