@@ -58,21 +58,22 @@ def git_ls_files() -> list[str]:
 
 
 def main() -> int:
-    ensure(VERSION == "v0.3.1", "VERSION precisa estar promovido para v0.3.1 no fechamento desta release")
+    ensure(VERSION == "v0.3.2", "VERSION precisa estar promovido para v0.3.2 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v0.3.1")
+    ok("VERSION promovido para v0.3.2")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
-    ensure("## 🌌 Aurora v0.3.1" in changelog, "CHANGELOG.md precisa abrir a release publica v0.3.1")
-    ensure("em progresso" not in changelog_normalized, "CHANGELOG.md nao pode manter a v0.3.1 como em progresso")
-    ensure("## 🌌 Aurora v0.3.0" in changelog, "CHANGELOG.md precisa preservar a release publica v0.3.0")
+    ensure("## 🌌 Aurora v0.3.2" in changelog, "CHANGELOG.md precisa abrir a release publica v0.3.2")
+    ensure("em progresso" not in changelog_normalized, "CHANGELOG.md nao pode manter a v0.3.2 como em progresso")
+    ensure("## 🌌 Aurora v0.3.1" in changelog, "CHANGELOG.md precisa preservar a release publica v0.3.1")
     ensure("aur.procurar" in changelog, "CHANGELOG.md precisa citar a rota aur.procurar")
     ensure("copr.instalar" in changelog, "CHANGELOG.md precisa citar a rota copr.instalar")
     ensure("owner/project" in changelog, "CHANGELOG.md precisa citar a coordenada owner/project")
     ensure("user_software" in changelog, "CHANGELOG.md precisa citar user_software")
     ensure("flatpak" in changelog_normalized, "CHANGELOG.md precisa citar flatpak")
     ensure("aur" in changelog_normalized, "CHANGELOG.md precisa citar a frente AUR")
+    ensure("yay" in changelog_normalized, "CHANGELOG.md precisa citar o helper yay")
     ensure("copr" in changelog_normalized, "CHANGELOG.md precisa citar a frente COPR")
     assert_no_auroboros("CHANGELOG.md", changelog)
     ok("CHANGELOG.md alinhado ao estado atual da linha")
@@ -93,6 +94,7 @@ def main() -> int:
     ensure("do copr" in readme_normalized, "README.md precisa mostrar a sintaxe explicita de COPR")
     ensure("owner/project" in readme, "README.md precisa citar a coordenada owner/project")
     ensure("interativo" in readme_normalized, "README.md precisa explicar o fluxo interativo do helper AUR")
+    ensure("yay" in readme_normalized, "README.md precisa citar o helper yay")
     assert_no_auroboros("README.md", readme)
     ok("README.md alinhado ao release")
 
@@ -116,6 +118,7 @@ def main() -> int:
         ensure(route_name in architecture, f"ARCHITECTURE precisa listar a rota {route_name}")
     ensure("owner/project" in architecture, "ARCHITECTURE precisa citar a coordenada owner/project")
     ensure("interativo" in architecture_normalized, "ARCHITECTURE precisa registrar o handoff interativo do helper")
+    ensure("yay" in architecture_normalized, "ARCHITECTURE precisa citar o helper yay")
     assert_no_auroboros("docs/ARCHITECTURE.md", architecture)
     ok("docs/ARCHITECTURE.md alinhado")
 
@@ -131,6 +134,7 @@ def main() -> int:
         "user_software",
         "aur",
         "paru",
+        "yay",
         "copr",
         "owner/project",
     ):
@@ -167,6 +171,7 @@ def main() -> int:
     ensure("flatpak" in policy_normalized, "INSTALLATION_POLICY precisa citar flatpak")
     ensure("--yes" in policy, "INSTALLATION_POLICY precisa citar --yes como alias de confirmacao")
     ensure("interativo" in policy_normalized, "INSTALLATION_POLICY precisa explicar o fluxo interativo de aur.instalar")
+    ensure("yay" in policy_normalized, "INSTALLATION_POLICY precisa citar o helper yay")
     assert_no_auroboros("docs/INSTALLATION_POLICY.md", policy)
     ok("docs/INSTALLATION_POLICY.md alinhado")
 
@@ -190,6 +195,7 @@ def main() -> int:
     ensure("user_software" in help_text, "resources/help.txt precisa citar user_software")
     ensure("host_package.search/instalar/remover" in help_text, "resources/help.txt precisa listar as rotas reais de host_package")
     ensure("aur" in help_normalized, "resources/help.txt precisa citar AUR como rota real")
+    ensure("yay" in help_normalized, "resources/help.txt precisa citar o helper yay")
     ensure("copr" in help_normalized, "resources/help.txt precisa citar COPR como rota real")
     ensure("flatpak" in help_normalized, "resources/help.txt precisa citar flatpak como rota real")
     ensure("--confirm" in help_text, "resources/help.txt precisa citar --confirm")

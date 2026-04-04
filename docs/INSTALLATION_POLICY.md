@@ -1,8 +1,8 @@
-# Installation Policy - Aurora v0.3.1
+# Installation Policy - Aurora v0.3.2
 
 ## Escopo real da política
 
-Na `v0.3.1`, a política operacional da Aurora governa dois domínios e quatro fontes reais:
+Na `v0.3.2`, a política operacional da Aurora governa dois domínios e quatro fontes reais:
 
 - `host_package` com `source_type=host_package_manager`;
 - `host_package` explicitamente marcado com `source_type=aur_repository`;
@@ -39,11 +39,12 @@ Os campos ativos desta release são:
 - pedido explicitamente marcado com `aur` continua no escopo de pacote do host, mas com fonte separada;
 - `source_type=aur_repository`;
 - `trust_level=third_party_build`;
-- usa helper AUR aceito de forma explícita e pequena nesta rodada;
+- usa apenas os helpers AUR aceitos de forma explícita e pequena nesta rodada: `paru` e `yay`;
+- quando ambos estão observados, a seleção segue a ordem do contrato: `paru`, depois `yay`;
 - `aur.instalar` e `aur.remover` exigem confirmação explícita;
 - `aur.instalar` pode entregar o terminal ao helper para revisão/build interativos e volta para validação por probe quando o helper termina;
 - `aur.remover` permanece no caminho não interativo desta release;
-- continua bloqueado fora de Arch mutável, sem `pacman` observado ou sem helper aceito.
+- continua bloqueado fora de Arch mutável, sem `pacman` observado, sem helper aceito ou com helper observado fora do contrato como único helper disponível.
 
 ### `COPR` explícito
 
@@ -79,7 +80,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v0.3.1`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v0.3.2`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -131,10 +132,11 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 
 ## O que ainda não está aberto
 
-Continuam fora da `v0.3.1`:
+Continuam fora da `v0.3.2`:
 
 - seleção de remote além do default `flathub`;
 - `copr.procurar`, descoberta automática de repositório COPR e validação de origem RPM na remoção;
+- helpers AUR além de `paru` e `yay`, e passthrough interativo para `aur.remover`;
 - PPA, AppImage e GitHub Releases;
 - `rpm-ostree`, toolbox, distrobox e `ujust`.
 

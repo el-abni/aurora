@@ -76,6 +76,106 @@ def write_os_release(
     return path
 
 
+def _aur_helper_stub_body(
+    helper_name: str,
+    *,
+    aur_state_file: Path,
+    native_state_file: Path,
+    repo_file: Path,
+) -> str:
+    return textwrap.dedent(
+        f"""\
+        #!/bin/sh
+        helper_name="{helper_name}"
+        aur_state_file="{aur_state_file}"
+        native_state_file="{native_state_file}"
+        repo_file="{repo_file}"
+        action="$1"
+        target=""
+        has_aur_state() {{
+          /usr/bin/grep -qx "$1" "$aur_state_file"
+        }}
+        has_native_state() {{
+          /usr/bin/grep -qx "$1" "$native_state_file"
+        }}
+        has_repo() {{
+          /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
+        }}
+        remove_state() {{
+          tmp="$aur_state_file.tmp"
+          /usr/bin/grep -vx "$1" "$aur_state_file" > "$tmp" || true
+          /usr/bin/mv "$tmp" "$aur_state_file"
+        }}
+        search_key() {{
+          printf "%s" "$1" | /usr/bin/tr '[:upper:]' '[:lower:]'
+        }}
+        for arg in "$@"; do
+          case "$arg" in
+            -Ss|-S|-Rns|--aur|--needed|--noconfirm|--)
+              ;;
+            *)
+              target="$arg"
+              ;;
+          esac
+        done
+        case "$action" in
+          -Ss)
+            query_key="$(search_key "$target")"
+            found=1
+            while IFS="$(printf '\\t')" read -r package_name display_label; do
+              [ -n "$package_name" ] || continue
+              package_key="$(search_key "$package_name")"
+              label_key="$(search_key "$display_label")"
+              match=1
+              case "$package_key" in
+                *"$query_key"*) match=0 ;;
+              esac
+              case "$label_key" in
+                *"$query_key"*) match=0 ;;
+              esac
+              if [ "$match" -eq 0 ]; then
+                echo "aur/$package_name 1.0-1"
+                echo "    $display_label"
+                found=0
+              fi
+            done < "$repo_file"
+            if [ "$found" -eq 0 ]; then
+              exit 0
+            fi
+            echo "no packages found" >&2
+            exit 1
+            ;;
+          -S)
+            if has_aur_state "$target"; then
+              exit 0
+            fi
+            if has_native_state "$target"; then
+              echo "target already installed from official repos: $target" >&2
+              exit 1
+            fi
+            if ! has_repo "$target"; then
+              echo "target not found: $target" >&2
+              exit 1
+            fi
+            echo "$target" >> "$aur_state_file"
+            echo "installed $target via $helper_name"
+            exit 0
+            ;;
+          -Rns)
+            if ! has_aur_state "$target"; then
+              echo "package not found: $target" >&2
+              exit 1
+            fi
+            remove_state "$target"
+            echo "removed $target via $helper_name"
+            exit 0
+            ;;
+        esac
+        exit 1
+        """
+    )
+
+
 def setup_host_package_testbed(
     root: Path,
     *,
@@ -606,107 +706,20 @@ def setup_aur_testbed(
         ),
     )
 
-    if "paru" in helpers:
-        write_stub(
-            bin_dir,
-            "paru",
-            textwrap.dedent(
-                f"""\
-                #!/bin/sh
-                aur_state_file="{aur_state_file}"
-                native_state_file="{native_state_file}"
-                repo_file="{repo_file}"
-                action="$1"
-                target=""
-                has_aur_state() {{
-                  /usr/bin/grep -qx "$1" "$aur_state_file"
-                }}
-                has_native_state() {{
-                  /usr/bin/grep -qx "$1" "$native_state_file"
-                }}
-                has_repo() {{
-                  /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
-                }}
-                repo_label() {{
-                  /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ print $2; exit }}' "$repo_file"
-                }}
-                remove_state() {{
-                  tmp="$aur_state_file.tmp"
-                  /usr/bin/grep -vx "$1" "$aur_state_file" > "$tmp" || true
-                  /usr/bin/mv "$tmp" "$aur_state_file"
-                }}
-                search_key() {{
-                  printf "%s" "$1" | /usr/bin/tr '[:upper:]' '[:lower:]'
-                }}
-                for arg in "$@"; do
-                  case "$arg" in
-                    -Ss|-S|-Rns|--aur|--needed|--noconfirm|--)
-                      ;;
-                    *)
-                      target="$arg"
-                      ;;
-                  esac
-                done
-                case "$action" in
-                  -Ss)
-                    query_key="$(search_key "$target")"
-                    found=1
-                    while IFS="$(printf '\\t')" read -r package_name display_label; do
-                      [ -n "$package_name" ] || continue
-                      package_key="$(search_key "$package_name")"
-                      label_key="$(search_key "$display_label")"
-                      match=1
-                      case "$package_key" in
-                        *"$query_key"*) match=0 ;;
-                      esac
-                      case "$label_key" in
-                        *"$query_key"*) match=0 ;;
-                      esac
-                      if [ "$match" -eq 0 ]; then
-                        echo "aur/$package_name 1.0-1"
-                        echo "    $display_label"
-                        found=0
-                      fi
-                    done < "$repo_file"
-                    if [ "$found" -eq 0 ]; then
-                      exit 0
-                    fi
-                    echo "no packages found" >&2
-                    exit 1
-                    ;;
-                  -S)
-                    if has_aur_state "$target"; then
-                      exit 0
-                    fi
-                    if has_native_state "$target"; then
-                      echo "target already installed from official repos: $target" >&2
-                      exit 1
-                    fi
-                    if ! has_repo "$target"; then
-                      echo "target not found: $target" >&2
-                      exit 1
-                    fi
-                    echo "$target" >> "$aur_state_file"
-                    echo "installed $target"
-                    exit 0
-                    ;;
-                  -Rns)
-                    if ! has_aur_state "$target"; then
-                      echo "package not found: $target" >&2
-                      exit 1
-                    fi
-                    remove_state "$target"
-                    echo "removed $target"
-                    exit 0
-                    ;;
-                esac
-                exit 1
-                """
-            ),
-        )
-
-    if "yay" in helpers:
-        write_stub(bin_dir, "yay", "#!/bin/sh\nexit 0\n")
+    for helper_name in helpers:
+        if helper_name in {"paru", "yay"}:
+            write_stub(
+                bin_dir,
+                helper_name,
+                _aur_helper_stub_body(
+                    helper_name,
+                    aur_state_file=aur_state_file,
+                    native_state_file=native_state_file,
+                    repo_file=repo_file,
+                ),
+            )
+            continue
+        write_stub(bin_dir, helper_name, "#!/bin/sh\nexit 0\n")
 
     env = {
         "PATH": str(bin_dir),

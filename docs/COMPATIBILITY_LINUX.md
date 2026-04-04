@@ -1,4 +1,4 @@
-# Compatibilidade Linux - Aurora v0.3.1
+# Compatibilidade Linux - Aurora v0.3.2
 
 ## Matriz atual de `host_package`
 
@@ -14,8 +14,9 @@
 
 | Perfil Linux | Estado | Escopo real |
 | --- | --- | --- |
-| Arch e derivadas mutáveis com `paru` observado | suportado agora | procurar, instalar com fluxo interativo do helper, remover |
+| Arch e derivadas mutáveis com `paru` ou `yay` observado | suportado agora | procurar, instalar com fluxo interativo do helper, remover |
 | Arch mutável sem helper aceito | bloqueado por política | sem rota executável |
+| Arch mutável só com helper AUR fora do contrato observado | bloqueado por política | sem rota executável |
 | Demais famílias Linux | fora do recorte | sem rota executável |
 | Atomic / imutáveis | bloqueado por política | sem mutação via AUR |
 
@@ -30,7 +31,7 @@
 
 ## `user_software` via `flatpak`
 
-Na `v0.3.1`, `flatpak` continua sendo a frente explícita de software do usuário.
+Na `v0.3.2`, `flatpak` continua sendo a frente explícita de software do usuário.
 
 Leitura correta desta frente:
 
@@ -44,6 +45,8 @@ Leitura operacional da frente AUR:
 
 - `aur.instalar` pode entrar no fluxo interativo real do helper aceito;
 - `aur.remover` permanece fora do passthrough interativo nesta release;
+- quando `paru` e `yay` aparecem juntos, a Aurora escolhe `paru` por ser o primeiro helper suportado na ordem do contrato;
+- helper AUR observado fora do contrato continua visível na observabilidade, mas bloqueado como rota;
 - ambos continuam auditados com rota explícita e probes coerentes.
 
 Leitura operacional da frente COPR:

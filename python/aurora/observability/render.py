@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 from aurora.contracts.decisions import DecisionRecord
+from aurora.install.sources.aur import (
+    observed_out_of_contract_aur_helpers,
+    supported_aur_helper,
+    supported_aur_helpers,
+)
 from aurora.presentation.formatting import field
 
 
@@ -82,6 +87,22 @@ def render_decision_record(record: DecisionRecord) -> str:
                 field("policy_reason", record.policy.reason),
             ]
         )
+        if record.request.requested_source == "aur":
+            observed_helpers = (
+                ", ".join(record.host_profile.observed_third_party_package_tools)
+                if record.host_profile is not None and record.host_profile.observed_third_party_package_tools
+                else "-"
+            )
+            out_of_contract = ", ".join(observed_out_of_contract_aur_helpers(record.host_profile)) or "-"
+            selected_helper = supported_aur_helper(record.host_profile) or "-"
+            lines.extend(
+                [
+                    field("observed_aur_helpers", observed_helpers),
+                    field("supported_aur_helpers", ", ".join(supported_aur_helpers())),
+                    field("selected_aur_helper", selected_helper),
+                    field("out_of_contract_aur_helpers", out_of_contract),
+                ]
+            )
 
     if record.target_resolution is not None:
         lines.extend(
@@ -151,6 +172,8 @@ def render_decision_record(record: DecisionRecord) -> str:
                 field("notes", "; ".join(record.execution_route.notes) or "-"),
             ]
         )
+        if record.execution_route.route_name.startswith("aur."):
+            lines.append(field("selected_aur_helper", record.execution_route.backend_name or "-"))
 
     if record.execution is not None:
         lines.extend(

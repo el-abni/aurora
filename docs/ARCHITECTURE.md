@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.3.1
+# Architecture - Aurora v0.3.2
 
 ## Tese curta
 
@@ -71,7 +71,7 @@ Mantém a superfície pública:
 - mensagens de confirmação;
 - mensagens de resultado.
 
-## Rotas abertas na v0.3.1
+## Rotas abertas na v0.3.2
 
 ### `host_package`
 
@@ -99,11 +99,13 @@ Primeira fonte terceira real:
 Comportamento garantido:
 
 - `AUR` só entra por pedido explícito;
-- usa helper aceito explicitamente nesta rodada;
+- usa apenas helpers aceitos explicitamente nesta rodada: `paru` e `yay`;
+- se ambos estiverem observados, a seleção segue a ordem do contrato: `paru`, depois `yay`;
 - `aur.instalar` e `aur.remover` usam probe via `pacman -Qm`;
 - `aur.instalar` usa handoff interativo quando o helper entra em revisão/build;
 - depois do helper interativo retornar, a Aurora volta para validar o estado final por probe;
 - `aur.remover` permanece no caminho não interativo desta release;
+- helper observado fora do contrato não vira rota executável e continua só como observação auditável;
 - resolução de alvo separa pacote `foreign` de pacote oficial do host;
 - mutação exige confirmação explícita;
 - `--confirm` e `--yes` contam como confirmação explícita também quando entram inline na frase;
@@ -144,10 +146,11 @@ Comportamento garantido:
 
 ## Fronteiras deliberadas
 
-A `v0.3.1` continua pequena de propósito:
+A `v0.3.2` continua pequena de propósito:
 
 - pedido nu continua em `host_package`;
 - `AUR` não vira fallback mágico;
+- helper AUR observado fora do contrato não vira suporte implícito;
 - `COPR` não abre `procurar`, não descobre repositório e não canoniza pacote por busca;
 - `flatpak` não generaliza seleção de remote além do default `flathub`;
 - `user_software` não abre outras fontes além de `flatpak`;

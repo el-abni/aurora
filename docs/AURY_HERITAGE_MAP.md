@@ -1,8 +1,8 @@
-# Aury Heritage Map - Aurora v0.3.1
+# Aury Heritage Map - Aurora v0.3.2
 
 ## Objetivo
 
-Este mapa registra o que a Aurora herdou da Aury, o que foi refatorado e o que não migrou para o contrato público atual da `v0.3.1`.
+Este mapa registra o que a Aurora herdou da Aury, o que foi refatorado e o que não migrou para o contrato público atual da `v0.3.2`.
 
 ## Mapa por área
 
@@ -29,10 +29,11 @@ Não entrou no contrato atual:
 - linguagem pública da Aury por inércia;
 - qualquer dependência de runtime no checkout da Aury.
 
-## O que continua fora da v0.3.1
+## O que continua fora da v0.3.2
 
 - fallback automático de pedido nu para AUR;
-- helpers AUR além de `paru`;
+- helpers AUR além de `paru` e `yay`;
+- passthrough interativo para `aur.remover`;
 - `copr.procurar`, descoberta automática de repositório COPR e lifecycle amplo do repositório;
 - PPA, AppImage e GitHub Releases;
 - `rpm-ostree`, toolbox, distrobox e `ujust`;

@@ -3,7 +3,11 @@ from __future__ import annotations
 from aurora.contracts.host import HostProfile
 from aurora.contracts.policy import PolicyAssessment
 from aurora.contracts.requests import SemanticRequest
-from aurora.install.sources.aur import observed_out_of_contract_aur_helpers, supported_aur_helper
+from aurora.install.sources.aur import (
+    observed_out_of_contract_aur_helpers,
+    supported_aur_helper,
+    supported_aur_helpers,
+)
 from aurora.install.sources.copr import observe_copr_capability
 from aurora.linux.immutable_policy import host_package_block_reason
 
@@ -289,6 +293,8 @@ def _assess_aur_policy(
     software_criticality = _aur_software_criticality(request)
     reversal_level = _aur_reversal_level(request.intent)
     requires_confirmation = request.intent in {"instalar", "remover"}
+    supported_helpers = supported_aur_helpers()
+    supported_helpers_label = ", ".join(supported_helpers)
 
     if profile is None:
         return PolicyAssessment(
@@ -310,6 +316,7 @@ def _assess_aur_policy(
         "aur",
     )
     helper = supported_aur_helper(profile)
+    observed_helpers = profile.observed_third_party_package_tools
     out_of_contract_helpers = observed_out_of_contract_aur_helpers(profile)
     trust_signals = [
         "domain:host_package",
@@ -319,13 +326,21 @@ def _assess_aur_policy(
         f"linux_family:{profile.linux_family}",
         f"mutability:{profile.mutability}",
         f"software_criticality:{software_criticality}",
+        f"aur_helpers_supported:{supported_helpers_label}",
     ]
     if profile.package_backends:
         trust_signals.append(f"observed_backends:{','.join(profile.package_backends)}")
-    if profile.observed_third_party_package_tools:
+    if observed_helpers:
         trust_signals.append(
-            f"observed_third_party_package_tools:{','.join(profile.observed_third_party_package_tools)}"
+            f"observed_third_party_package_tools:{','.join(observed_helpers)}"
         )
+        supported_observed_helpers = tuple(
+            helper_name for helper_name in supported_helpers if helper_name in observed_helpers
+        )
+        if supported_observed_helpers:
+            trust_signals.append(
+                f"aur_supported_helpers_observed:{','.join(supported_observed_helpers)}"
+            )
     if helper is not None:
         trust_signals.append(f"aur_helper_selected:{helper}")
     if out_of_contract_helpers:
@@ -358,21 +373,22 @@ def _assess_aur_policy(
         reason = "AUR explicito depende de pacman observado para probe e separacao entre native e foreign."
     elif helper is None:
         outcome = "block"
-        if profile.observed_third_party_package_tools:
+        if observed_helpers:
             trust_gaps.append("aur_supported_helper_not_observed")
+            observed_helpers_label = ", ".join(observed_helpers)
             reason = (
-                "observei helper(s) AUR fora do contrato desta rodada, mas a frente explicita aceita "
-                "apenas paru neste primeiro corte."
+                f"observei helper(s) AUR no host ({observed_helpers_label}), mas a frente explicita aceita "
+                f"apenas {supported_helpers_label} nesta rodada."
             )
         else:
             trust_gaps.append("aur_helper_not_observed")
-            reason = "nenhum helper AUR aceito nesta rodada foi observado no host."
+            reason = f"nenhum helper AUR suportado nesta rodada ({supported_helpers_label}) foi observado no host."
     elif request.intent == "procurar":
-        reason = "aur.procurar foi aceito como leitura explicita do AUR via paru nesta rodada."
+        reason = f"aur.procurar foi aceito como leitura explicita do AUR via {helper} nesta rodada."
     else:
         reason = (
             "mutacoes AUR exigem confirmacao explicita e continuam sinalizadas como fonte terceira "
-            "nesta rodada."
+            f"nesta rodada. helper selecionado: {helper}."
         )
 
     if outcome == "allow" and requires_confirmation and not confirmation_supplied:

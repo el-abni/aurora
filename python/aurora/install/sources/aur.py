@@ -12,7 +12,7 @@ from aurora.contracts.execution import ExecutionRoute
 from aurora.contracts.host import HostProfile
 from aurora.contracts.requests import SemanticRequest
 
-_SUPPORTED_AUR_HELPERS = ("paru",)
+_SUPPORTED_AUR_HELPERS = ("paru", "yay")
 _AUR_NO_RESULTS_MARKERS = (
     "no packages found",
     "no matches found",
@@ -53,6 +53,10 @@ def supported_aur_helper(profile: HostProfile | None) -> str | None:
         if helper in profile.observed_third_party_package_tools:
             return helper
     return None
+
+
+def supported_aur_helpers() -> tuple[str, ...]:
+    return _SUPPORTED_AUR_HELPERS
 
 
 def observed_out_of_contract_aur_helpers(profile: HostProfile | None) -> tuple[str, ...]:
@@ -627,15 +631,27 @@ def _mutation_target(request: SemanticRequest, target: str | None) -> str:
     return request.target
 
 
-def _route_notes(helper: str) -> tuple[str, ...]:
-    return (
+def _route_notes(
+    helper: str,
+    *,
+    observed_helpers: tuple[str, ...],
+    out_of_contract_helpers: tuple[str, ...],
+) -> tuple[str, ...]:
+    supported_helpers = ", ".join(_SUPPORTED_AUR_HELPERS)
+    notes = [
         "AUR entra como fonte explicita de terceiro nesta rodada.",
-        f"helper aceito nesta rodada: {helper}.",
+        f"helpers aceitos nesta rodada: {supported_helpers}.",
+        f"helper escolhido para esta rota: {helper} (primeiro helper suportado observado na ordem do contrato).",
         "busca pode refinar a consulta para a forma package-like quando isso reduz ruido sem resolver o pacote automaticamente.",
         "mutacao usa resolved_target apenas quando a correspondencia exata fecha de forma confiavel.",
         "state probe via pacman -Qm para confirmar pacote foreign.",
         "o pedido explicito de AUR nao sofre fallback para host_package oficial.",
-    )
+    ]
+    if observed_helpers:
+        notes.append(f"helpers AUR observados no host: {', '.join(observed_helpers)}.")
+    if out_of_contract_helpers:
+        notes.append(f"helpers AUR observados fora do contrato: {', '.join(out_of_contract_helpers)}.")
+    return tuple(notes)
 
 
 def build_aur_candidate(
@@ -652,7 +668,11 @@ def build_aur_candidate(
         return None
 
     mutation_target = _mutation_target(request, target)
-    notes = _route_notes(helper)
+    notes = _route_notes(
+        helper,
+        observed_helpers=profile.observed_third_party_package_tools,
+        out_of_contract_helpers=observed_out_of_contract_aur_helpers(profile),
+    )
 
     if request.intent == "procurar":
         return ExecutionRoute(

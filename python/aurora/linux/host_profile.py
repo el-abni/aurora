@@ -9,7 +9,7 @@ from .probes import detect_available_commands, read_os_release, split_like
 
 HOST_PACKAGE_BACKENDS = ("pacman", "apt-cache", "apt-get", "dnf", "zypper")
 OBSERVED_PACKAGE_TOOLS = ("flatpak", "rpm-ostree")
-OBSERVED_THIRD_PARTY_PACKAGE_TOOLS = ("paru", "yay")
+OBSERVED_THIRD_PARTY_PACKAGE_TOOLS = ("paru", "yay", "pikaur")
 ARCH_FAMILY_IDS = {"arch", "archlinux", "artix", "cachyos", "endeavouros", "manjaro"}
 DEBIAN_FAMILY_IDS = {"debian", "ubuntu", "linuxmint", "pop", "neon", "raspbian", "elementary"}
 FEDORA_FAMILY_IDS = {"fedora", "rhel", "centos", "rocky", "almalinux", "nobara", "bazzite", "bluefin", "aurora"}

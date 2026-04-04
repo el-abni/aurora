@@ -36,17 +36,20 @@ class AurExplicitTests(unittest.TestCase):
         self.assertEqual(request.requested_source, "")
         self.assertIn("domain_selection:default_host_package", request.observations)
 
-    def test_aur_search_executes_when_paru_is_present(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            env, _aur_state, _native_state = setup_aur_testbed(
-                root,
-                repo_packages=("google-chrome|Google Chrome",),
-            )
-            proc = run_module("procurar", "google", "chrome", "no", "aur", env=env)
-            self.assertEqual(proc.returncode, 0)
-            self.assertIn("backend 'paru'", proc.stdout)
-            self.assertIn("google-chrome", proc.stdout)
+    def test_aur_search_executes_with_supported_helper(self) -> None:
+        for helper_name in ("paru", "yay"):
+            with self.subTest(helper=helper_name):
+                with tempfile.TemporaryDirectory() as tmp:
+                    root = Path(tmp)
+                    env, _aur_state, _native_state = setup_aur_testbed(
+                        root,
+                        repo_packages=("google-chrome|Google Chrome",),
+                        helpers=(helper_name,),
+                    )
+                    proc = run_module("procurar", "google", "chrome", "no", "aur", env=env)
+                    self.assertEqual(proc.returncode, 0)
+                    self.assertIn(f"backend '{helper_name}'", proc.stdout)
+                    self.assertIn("google-chrome", proc.stdout)
 
     def test_aur_search_refines_spaced_target_to_package_like_query(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -167,15 +170,31 @@ exit 1
             self.assertIn("aur_helper_not_observed", payload["policy"]["trust_gaps"])
             self.assertEqual(payload["request"]["requested_source"], "aur")
 
-    def test_explicit_aur_request_blocks_when_only_yay_is_observed(self) -> None:
+    def test_explicit_aur_request_blocks_when_only_out_of_contract_helper_is_observed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            env, _aur_state, _native_state = setup_aur_testbed(root, helpers=("yay",))
+            env, _aur_state, _native_state = setup_aur_testbed(root, helpers=("pikaur",))
             payload = decision_record_to_dict(plan_text("procurar yay no aur", environ=env))
             self.assertEqual(payload["policy"]["policy_outcome"], "block")
             self.assertIn("aur_supported_helper_not_observed", payload["policy"]["trust_gaps"])
             self.assertIn("aur_helper_out_of_contract_observed", payload["policy"]["trust_gaps"])
-            self.assertEqual(payload["host_profile"]["observed_third_party_package_tools"], ["yay"])
+            self.assertEqual(payload["host_profile"]["observed_third_party_package_tools"], ["pikaur"])
+            self.assertEqual(payload["policy"]["observed_aur_helpers"], ["pikaur"])
+            self.assertEqual(payload["policy"]["supported_aur_helpers"], ["paru", "yay"])
+            self.assertIsNone(payload["policy"]["selected_aur_helper"])
+            self.assertEqual(payload["policy"]["out_of_contract_aur_helpers"], ["pikaur"])
+
+    def test_explicit_aur_request_prefers_paru_when_both_supported_helpers_are_observed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _aur_state, _native_state = setup_aur_testbed(root, helpers=("paru", "yay"))
+            payload = decision_record_to_dict(plan_text("procurar yay no aur", environ=env))
+            self.assertEqual(payload["policy"]["policy_outcome"], "allow")
+            self.assertEqual(payload["policy"]["observed_aur_helpers"], ["paru", "yay"])
+            self.assertEqual(payload["policy"]["supported_aur_helpers"], ["paru", "yay"])
+            self.assertEqual(payload["policy"]["selected_aur_helper"], "paru")
+            self.assertEqual(payload["execution_route"]["backend_name"], "paru")
+            self.assertEqual(payload["execution_route"]["selected_aur_helper"], "paru")
 
     def test_aur_install_requires_confirmation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -401,6 +420,37 @@ exit 1
             self.assertTrue(payload["execution"]["interactive_passthrough"])
             self.assertIn("google-chrome", aur_state_file.read_text(encoding="utf-8"))
 
+    def test_aur_install_executes_with_yay_when_it_is_the_only_supported_helper(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, aur_state_file, _native_state = setup_aur_testbed(
+                root,
+                repo_packages=("google-chrome|Google Chrome",),
+                helpers=("yay",),
+            )
+            observed_commands: list[tuple[str, ...]] = []
+
+            def fake_interactive_runner(args: tuple[str, ...]) -> subprocess.CompletedProcess[str]:
+                observed_commands.append(tuple(args))
+                with aur_state_file.open("a", encoding="utf-8") as handle:
+                    handle.write("google-chrome\n")
+                return subprocess.CompletedProcess(args, 0, "", "")
+
+            exit_code, record, _message = perform_execution(
+                plan_text("instalar google chrome no aur", environ=env, confirmed=True),
+                interactive_runner=fake_interactive_runner,
+                environ=env,
+            )
+            payload = decision_record_to_dict(record)
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(
+                observed_commands,
+                [("yay", "-S", "--aur", "--needed", "--noconfirm", "--", "google-chrome")],
+            )
+            self.assertEqual(payload["policy"]["selected_aur_helper"], "yay")
+            self.assertEqual(payload["execution_route"]["selected_aur_helper"], "yay")
+            self.assertEqual(payload["execution_route"]["command"][-1], "google-chrome")
+
     def test_aur_install_cli_announces_interactive_handoff(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -603,6 +653,10 @@ exit 1
             self.assertIn("route_name:              aur.procurar", rendered)
             self.assertIn("scope_label:             pacote AUR no host", rendered)
             self.assertIn("consulted_target:", rendered)
+            self.assertIn("observed_aur_helpers:", rendered)
+            self.assertIn("supported_aur_helpers:", rendered)
+            self.assertIn("selected_aur_helper:", rendered)
+            self.assertIn("paru, yay", rendered)
 
 
 if __name__ == "__main__":

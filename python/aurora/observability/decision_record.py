@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 from aurora.contracts.decisions import DecisionRecord
+from aurora.install.sources.aur import (
+    observed_out_of_contract_aur_helpers,
+    supported_aur_helper,
+    supported_aur_helpers,
+)
 
 
 def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
@@ -49,6 +54,21 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "reversal_level": record.policy.reversal_level,
             "reason": record.policy.reason,
         }
+        if record.request.requested_source == "aur":
+            payload["policy"]["observed_aur_helpers"] = (
+                list(record.host_profile.observed_third_party_package_tools)
+                if record.host_profile is not None
+                else []
+            )
+            payload["policy"]["supported_aur_helpers"] = list(supported_aur_helpers())
+            payload["policy"]["selected_aur_helper"] = (
+                supported_aur_helper(record.host_profile) if record.host_profile is not None else None
+            )
+            payload["policy"]["out_of_contract_aur_helpers"] = (
+                list(observed_out_of_contract_aur_helpers(record.host_profile))
+                if record.host_profile is not None
+                else []
+            )
 
     if record.target_resolution is not None:
         payload["target_resolution"] = {
@@ -85,6 +105,8 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "interactive_passthrough": record.execution_route.interactive_passthrough,
             "notes": list(record.execution_route.notes),
         }
+        if record.execution_route.route_name.startswith("aur."):
+            payload["execution_route"]["selected_aur_helper"] = record.execution_route.backend_name
 
     if record.execution is not None:
         payload["execution"] = {

@@ -21,7 +21,7 @@ Comandos públicos:
 - aurora --help
 - aurora --version
 
-Contrato público da v0.3.1:
+Contrato público da v0.3.2:
 - produto 100% Python;
 - launchers oficiais: aurora e auro;
 - domínios ativos: host_package e user_software;
@@ -29,6 +29,8 @@ Contrato público da v0.3.1:
 - rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.instalar/remover e flatpak.procurar/instalar/remover;
 - pedidos nus continuam em host_package;
 - AUR so entra por frase marcada com aur;
+- AUR aceita apenas os helpers paru e yay nesta rodada;
+- se ambos estiverem observados, a rota escolhe paru antes de yay pela ordem do contrato;
 - COPR so entra por frase marcada com copr e owner/project explicito;
 - COPR abre apenas instalar/remover em Fedora mutavel com dnf copr observado;
 - pedidos com flatpak/flathub vão para user_software.
@@ -41,17 +43,18 @@ Confirmação:
 Compatibilidade:
 - host_package: Arch, Debian/Ubuntu, Fedora e OpenSUSE mutáveis;
 - host_package em Atomic/imutáveis: bloqueado por política;
-- AUR explícito: Arch mutável com helper paru observado;
+- AUR explícito: Arch mutável com helper paru ou yay observado;
 - aur.instalar pode entregar o terminal ao helper para revisão/build interativos; aur.remover permanece não interativo nesta release;
+- helper AUR observado fora do contrato continua bloqueado e não amplia a superfície pública;
 - COPR explícito: Fedora mutável com dnf copr observado, nome real de pacote e repositório owner/project explícito;
 - copr.instalar habilita o repositório pedido antes da instalação; copr.remover não desabilita o repositório nesta release;
 - flatpak: depende do backend estar presente no host e atua no escopo do usuário.
 
-Fora da v0.3.1:
+Fora da v0.3.2:
 - fallback automático de pedido nu para AUR;
 - copr.procurar, descoberta automática de repositório COPR e canonicalização de pacote por busca;
 - lifecycle amplo de repositório COPR e validação de origem na remoção;
-- helpers AUR além de paru e passthrough interativo para aur.remover;
+- helpers AUR além de paru e yay, e passthrough interativo para aur.remover;
 - remotes flatpak além do default flathub;
 - PPA, AppImage e GitHub Releases;
 - rpm-ostree, toolbox, distrobox e ujust;

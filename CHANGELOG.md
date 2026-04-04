@@ -1,5 +1,28 @@
 # Changelog
 
+## 🌌 Aurora v0.3.2
+
+Fechamento contido da frente AUR sobre a base já aberta da `v0.3.1`, sem reintroduzir fallback mágico nem diluir a fronteira entre `host_package` e fonte explícita de terceiro.
+
+### Adicionado
+- `yay` como segundo helper AUR deliberadamente suportado ao lado de `paru`.
+- observabilidade dedicada para helpers AUR observados, helpers AUR suportados nesta rodada, helper AUR selecionado e helpers observados fora do contrato.
+- bloqueio honesto quando o host observa apenas helper AUR fora do contrato, sem promover esse helper a rota executável.
+
+### Alterado
+- a frente AUR agora escolhe automaticamente o primeiro helper suportado observado na ordem do contrato: `paru`, depois `yay`.
+- `decision_record`, `aurora dev` e notas de rota passam a explicar de forma direta o helper observado no host, o helper suportado nesta rodada e o helper escolhido para a rota.
+- README, help e docs técnicas passam a refletir a `v0.3.2` como release pública atual.
+
+### Continua fora da v0.3.2
+- fallback automático de pedido nu para AUR;
+- helpers AUR além de `paru` e `yay`;
+- passthrough interativo para `aur.remover`;
+- `copr.procurar`, descoberta automática de repositório COPR e lifecycle amplo do repositório;
+- PPA, AppImage e GitHub Releases;
+- `rpm-ostree`, toolbox, distrobox e `ujust`;
+- hosts imutáveis reais como superfície operacional.
+
 ## 🌌 Aurora v0.3.1
 
 Fechamento público da release que abre COPR como fonte explícita de terceiro em Fedora mutável, sem reabrir a espinha já consolidada da `v0.3.0`.
