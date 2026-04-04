@@ -7,6 +7,7 @@ from aurora.install.sources.aur import build_aur_candidate
 from aurora.install.sources.copr import build_copr_candidate
 from aurora.install.sources.flatpak import build_flatpak_candidate
 from aurora.install.sources.host_package import build_host_package_candidate
+from aurora.install.sources.ppa import build_ppa_candidate
 
 
 def build_route_candidates(
@@ -21,7 +22,9 @@ def build_route_candidates(
 
     route = None
     if request.domain_kind == "host_package":
-        if request.requested_source == "copr":
+        if request.requested_source == "ppa":
+            route = build_ppa_candidate(request, profile, target=target)
+        elif request.requested_source == "copr":
             route = build_copr_candidate(request, profile, target=target, environ=environ)
         elif request.requested_source == "aur":
             route = build_aur_candidate(request, profile, target=target)

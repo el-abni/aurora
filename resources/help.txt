@@ -14,6 +14,8 @@ Comandos públicos:
 - aurora procurar <pacote> do copr <owner>/<project>
 - aurora instalar <pacote> do copr <owner>/<project> --confirm
 - aurora remover <pacote> do copr <owner>/<project> --confirm
+- aurora instalar <pacote> do ppa <ppa:owner/name> --confirm
+- aurora remover <pacote> do ppa <ppa:owner/name>
 - aurora procurar <software> no flatpak
 - aurora instalar <software> no flatpak
 - aurora remover <software> no flatpak
@@ -22,27 +24,27 @@ Comandos públicos:
 - aurora --help
 - aurora --version
 
-Contrato público da v0.3.4:
+Contrato público da v0.4.0:
 - produto 100% Python;
 - launchers oficiais: aurora e auro;
 - domínios ativos: host_package e user_software;
-- fontes reais: host_package_manager, aur_repository, copr_repository e flatpak_remote;
-- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.procurar/instalar/remover e flatpak.procurar/instalar/remover;
+- fontes reais: host_package_manager, aur_repository, copr_repository, ppa_repository e flatpak_remote;
+- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.procurar/instalar/remover, ppa.instalar e flatpak.procurar/instalar/remover;
 - pedidos nus continuam em host_package;
 - AUR so entra por frase marcada com aur;
-- AUR aceita apenas os helpers paru e yay nesta rodada;
-- se ambos estiverem observados, a rota escolhe paru antes de yay pela ordem do contrato;
 - COPR so entra por frase marcada com copr e owner/project explicito;
-- copr.procurar consulta apenas o repositorio explicitamente pedido;
+- PPA so entra por frase marcada com ppa e coordenada canonica ppa:owner/name;
+- AUR aceita apenas os helpers paru e yay nesta rodada;
 - COPR abre procurar/instalar/remover em Fedora mutavel com dnf copr observado;
-- copr.instalar observa se o repositorio ja estava habilitado e so faz enable quando necessario;
-- copr.remover exige origem RPM demonstravel antes da mutacao;
-- pedidos com flatpak/flathub vão para user_software.
+- PPA abre apenas ppa.instalar em Ubuntu mutavel com add-apt-repository, apt-get e dpkg observados;
+- ppa.instalar planeja add-apt-repository, apt-get update e apt-get install como passos preparatorios explicitos;
+- ppa.remover continua bloqueado por honestidade nesta release;
+- pedidos com flatpak/flathub vao para user_software.
 
 Confirmação:
 - use --confirm ou --yes quando a Aurora pedir confirmação explícita;
 - isso também vale quando o marcador entra inline numa frase passada como texto único, inclusive em aurora dev;
-- isso cobre mutações sensíveis de host_package, mutações reais via AUR, mutações reais via COPR e remoções reais via flatpak.
+- isso cobre mutações sensíveis de host_package, mutações reais via AUR, mutações reais via COPR, ppa.instalar e remoções reais via flatpak.
 
 Compatibilidade:
 - host_package: Arch, Debian/Ubuntu, Fedora e OpenSUSE mutáveis;
@@ -51,19 +53,21 @@ Compatibilidade:
 - aur.instalar pode entregar o terminal ao helper para revisão/build interativos; aur.remover permanece não interativo nesta release;
 - helper AUR observado fora do contrato continua bloqueado e não amplia a superfície pública;
 - COPR explícito: Fedora mutável com dnf copr observado, consulta restrita ao repositório owner/project explícito;
-- copr.procurar pode refinar a consulta para forma package-like só dentro do repositório pedido;
-- copr.instalar observa o estado do repositório e só mantém enable quando necessário;
-- copr.remover verifica `from_repo` antes da mutação e bloqueia quando a origem não fecha;
-- nenhuma rota COPR faz disable automático do repositório nesta release;
+- copr.remover verifica from_repo antes da mutação e bloqueia quando a origem não fecha;
+- PPA explícito: Ubuntu mutável com ppa:owner/name explícito, add-apt-repository, apt-get e dpkg observados;
+- Debian puro e outras derivadas Debian-like continuam bloqueados na frente PPA;
 - flatpak: depende do backend estar presente no host e atua no escopo do usuário.
 
-Fora da v0.3.4:
+Fora da v0.4.0:
 - fallback automático de pedido nu para AUR;
-- descoberta automática de repositório COPR, busca global no universo COPR e canonicalização ampla de pacote por busca;
-- lifecycle amplo de repositório COPR, disable automático e cleanup heurístico;
-- helpers AUR além de paru e yay, e passthrough interativo para aur.remover;
+- descoberta automática de repositório COPR;
+- descoberta automática de PPA ou inferência de PPA a partir do nome do pacote;
+- ppa.procurar, ppa.remover real, remove-apt-repository e lifecycle amplo de PPA;
+- tratamento de apt repo genérico como se fosse PPA;
+- promessa ampla para Debian-like fora de Ubuntu mutável;
 - remotes flatpak além do default flathub;
-- PPA, AppImage e GitHub Releases;
+- helpers AUR além de paru e yay, e passthrough interativo para aur.remover;
+- AppImage e GitHub Releases;
 - rpm-ostree, toolbox, distrobox e ujust;
 - suporte operacional real a hosts imutáveis;
 - manutenção ampla do host, arquivos e rede.

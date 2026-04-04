@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import shutil
+
 from aurora.contracts.host import HostProfile
 from aurora.contracts.policy import PolicyAssessment
 from aurora.contracts.requests import SemanticRequest
@@ -13,6 +16,7 @@ from aurora.install.sources.copr import (
     observe_copr_package_origin,
     observe_copr_repository_state,
 )
+from aurora.install.sources.ppa import observe_ppa_capability, supported_ppa_distro_ids
 from aurora.linux.immutable_policy import host_package_block_reason
 
 _CRITICAL_PACKAGE_NAMES = {
@@ -429,6 +433,162 @@ def _copr_reversal_level(intent: str) -> str:
     return "third_party_host_removal"
 
 
+def _ppa_software_criticality(_request: SemanticRequest) -> str:
+    return "medium"
+
+
+def _ppa_reversal_level(intent: str) -> str:
+    if intent == "instalar":
+        return "third_party_host_change"
+    return "third_party_host_removal"
+
+
+def _assess_ppa_policy(
+    request: SemanticRequest,
+    profile: HostProfile | None,
+    *,
+    confirmation_supplied: bool = False,
+    environ: dict[str, str] | None = None,
+) -> PolicyAssessment | None:
+    software_criticality = _ppa_software_criticality(request)
+    reversal_level = _ppa_reversal_level(request.intent)
+    requires_confirmation = request.intent == "instalar"
+    repository = request.source_coordinate.strip()
+    supported_distros = supported_ppa_distro_ids()
+    supported_distros_label = ",".join(supported_distros)
+
+    if profile is None:
+        return PolicyAssessment(
+            domain_kind="host_package",
+            source_type="ppa_repository",
+            trust_level="third_party_repository",
+            software_criticality=software_criticality,
+            trust_signals=tuple(
+                signal
+                for signal in (
+                    "source_request:ppa",
+                    f"ppa_coordinate:{repository}" if repository else "",
+                    f"ppa_supported_distros:{supported_distros_label}",
+                )
+                if signal
+            ),
+            trust_gaps=("host_profile_unavailable", "ppa_third_party_source_requires_human_review"),
+            policy_outcome="block",
+            requires_confirmation=requires_confirmation,
+            confirmation_supplied=confirmation_supplied,
+            reversal_level=reversal_level,
+            reason="o host profile nao esta disponivel para validar a rota PPA.",
+        )
+
+    source_hint = next(
+        (item.split(":", 1)[1] for item in request.observations if item.startswith("source_hint:")),
+        "ppa",
+    )
+    capability = observe_ppa_capability(profile, environ=environ)
+    path = None if environ is None else environ.get("PATH", os.environ.get("PATH"))
+    dpkg_observed = shutil.which("dpkg", path=path) is not None
+
+    trust_signals = [
+        "domain:host_package",
+        "source_type:ppa_repository",
+        "source_request:ppa",
+        f"source_hint:{source_hint}",
+        f"linux_family:{profile.linux_family}",
+        f"distro_id:{profile.distro_id}",
+        f"mutability:{profile.mutability}",
+        f"software_criticality:{software_criticality}",
+        f"ppa_supported_distros:{supported_distros_label}",
+    ]
+    if repository:
+        trust_signals.append(f"ppa_coordinate:{repository}")
+    if profile.package_backends:
+        trust_signals.append(f"observed_backends:{','.join(profile.package_backends)}")
+    if "apt-get" in profile.package_backends:
+        trust_signals.append("ppa_backend:apt_get_observed")
+    if capability.observed:
+        trust_signals.append("ppa_capability:add_apt_repository_observed")
+    if dpkg_observed:
+        trust_signals.append("ppa_state_probe:dpkg_observed")
+    if request.intent == "instalar":
+        trust_signals.append("ppa_install_preparation:add_repository,apt_get_update")
+    if confirmation_supplied:
+        trust_signals.append("confirmation:explicit")
+
+    trust_gaps = ["ppa_third_party_source_requires_human_review"]
+    if request.intent == "instalar":
+        trust_gaps.append("ppa_repository_state_not_observed_by_design")
+
+    outcome = "allow"
+    reason = "PPA explicito foi aceito como fonte contida de terceiro em Ubuntu mutavel nesta rodada."
+
+    if request.status != "CONSISTENT":
+        outcome = "block"
+        trust_gaps.append("request_not_consistent")
+        reason = request.reason
+    elif profile.linux_family != "debian":
+        outcome = "block"
+        trust_gaps.append("ppa_linux_family_not_supported")
+        reason = "PPA explicito nesta rodada so abre em Ubuntu mutavel dentro da familia Debian."
+    elif profile.distro_id not in supported_distros:
+        outcome = "block"
+        trust_gaps.append("ppa_distro_not_supported")
+        reason = (
+            "PPA explicito nesta rodada ficou contido a Ubuntu mutavel com coordenada canonica "
+            "e capacidades observaveis; outros Debian-like continuam bloqueados por honestidade."
+        )
+    elif profile.mutability == "atomic":
+        outcome = "block"
+        trust_gaps.append("ppa_blocked_on_atomic_host")
+        reason = "PPA explicito continua bloqueado em hosts Atomic/imutaveis nesta rodada."
+    elif "apt-get" not in profile.package_backends:
+        outcome = "block"
+        trust_gaps.append("ppa_apt_get_not_observed")
+        reason = "a frente PPA depende de apt-get observado neste host Ubuntu."
+    elif not repository:
+        outcome = "block"
+        trust_gaps.append("ppa_coordinate_missing")
+        reason = "faltou a coordenada explicita do PPA no formato canonico ppa:owner/name."
+    elif not capability.observed:
+        outcome = "block"
+        trust_gaps.append(capability.gap or "ppa_add_repository_not_observed")
+        reason = capability.reason
+    elif not dpkg_observed:
+        outcome = "block"
+        trust_gaps.append("ppa_dpkg_not_observed")
+        reason = "a confirmacao de estado para PPA depende de dpkg observado neste host."
+    elif request.intent == "instalar":
+        reason = (
+            "ppa.instalar planeja add-apt-repository e apt-get update como passos preparatorios "
+            "explicitos antes do apt-get install, sem observar lifecycle amplo do PPA."
+        )
+    elif request.intent == "remover":
+        outcome = "block"
+        trust_gaps.extend(("ppa_removal_not_opened", "ppa_package_origin_not_verifiable"))
+        reason = (
+            "ppa.remover continua bloqueado nesta rodada: a Aurora ainda nao demonstra proveniencia "
+            "APT suficiente por PPA e nao abre cleanup/lifecycle amplo do repositorio."
+        )
+
+    if outcome == "allow" and requires_confirmation and not confirmation_supplied:
+        outcome = "require_confirmation"
+        trust_gaps.append("confirmation_missing_for_ppa_install")
+        reason = "a mutacao explicitamente marcada como PPA exige confirmacao explicita nesta rodada."
+
+    return PolicyAssessment(
+        domain_kind="host_package",
+        source_type="ppa_repository",
+        trust_level="third_party_repository",
+        software_criticality=software_criticality,
+        trust_signals=tuple(trust_signals),
+        trust_gaps=tuple(trust_gaps),
+        policy_outcome=outcome,
+        requires_confirmation=requires_confirmation,
+        confirmation_supplied=confirmation_supplied,
+        reversal_level=reversal_level,
+        reason=reason,
+    )
+
+
 def _assess_copr_policy(
     request: SemanticRequest,
     profile: HostProfile | None,
@@ -617,6 +777,13 @@ def assess_policy(
     confirmation_supplied: bool = False,
     environ: dict[str, str] | None = None,
 ) -> PolicyAssessment | None:
+    if request.domain_kind == "host_package" and request.requested_source == "ppa":
+        return _assess_ppa_policy(
+            request,
+            profile,
+            confirmation_supplied=confirmation_supplied,
+            environ=environ,
+        )
     if request.domain_kind == "host_package" and request.requested_source == "copr":
         return _assess_copr_policy(
             request,

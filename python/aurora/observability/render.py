@@ -19,6 +19,8 @@ def _signal_value(signals: tuple[str, ...], prefix: str) -> str | None:
 def _scope_label(record: DecisionRecord) -> str:
     if record.request.domain_kind == "user_software":
         return "software do usuario"
+    if record.request.domain_kind == "host_package" and record.request.requested_source == "ppa":
+        return "pacote do host via PPA"
     if record.request.domain_kind == "host_package" and record.request.requested_source == "copr":
         return "pacote do host via COPR"
     if record.request.domain_kind == "host_package" and record.request.requested_source == "aur":
@@ -64,6 +66,8 @@ def render_decision_record(record: DecisionRecord) -> str:
                 "",
                 "Host profile",
                 field("linux_family", record.host_profile.linux_family_label),
+                field("distro_id", record.host_profile.distro_id or "-"),
+                field("distro_like", ", ".join(record.host_profile.distro_like) or "-"),
                 field("mutability", record.host_profile.mutability_label),
                 field("support_tier", record.host_profile.support_tier_label),
                 field("compatibility", record.host_profile.compatibility_frontier_label),
@@ -129,6 +133,27 @@ def render_decision_record(record: DecisionRecord) -> str:
                     field(
                         "copr_package_from_repo",
                         _signal_value(record.policy.trust_signals, "copr_package_from_repo:") or "-",
+                    ),
+                ]
+            )
+        if record.request.requested_source == "ppa":
+            lines.extend(
+                [
+                    field(
+                        "ppa_supported_distros",
+                        _signal_value(record.policy.trust_signals, "ppa_supported_distros:") or "-",
+                    ),
+                    field(
+                        "ppa_capability",
+                        _signal_value(record.policy.trust_signals, "ppa_capability:") or "-",
+                    ),
+                    field(
+                        "ppa_state_probe",
+                        _signal_value(record.policy.trust_signals, "ppa_state_probe:") or "-",
+                    ),
+                    field(
+                        "ppa_install_preparation",
+                        _signal_value(record.policy.trust_signals, "ppa_install_preparation:") or "-",
                     ),
                 ]
             )
@@ -232,6 +257,42 @@ def render_decision_record(record: DecisionRecord) -> str:
                         "copr_package_from_repo",
                         (
                             _signal_value(record.policy.trust_signals, "copr_package_from_repo:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                ]
+            )
+        if record.execution_route.route_name.startswith("ppa."):
+            lines.extend(
+                [
+                    field(
+                        "ppa_preparation_planned",
+                        str(bool(record.execution_route.pre_commands)).lower(),
+                    ),
+                    field(
+                        "ppa_supported_distros",
+                        (
+                            _signal_value(record.policy.trust_signals, "ppa_supported_distros:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                    field(
+                        "ppa_capability",
+                        (
+                            _signal_value(record.policy.trust_signals, "ppa_capability:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                    field(
+                        "ppa_install_preparation",
+                        (
+                            _signal_value(record.policy.trust_signals, "ppa_install_preparation:")
                             if record.policy is not None
                             else "-"
                         )

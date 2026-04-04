@@ -1,12 +1,13 @@
-# Installation Policy - Aurora v0.3.4
+# Installation Policy - Aurora v0.4.0
 
 ## Escopo real da política
 
-Na `v0.3.4`, a política operacional da Aurora governa dois domínios e quatro fontes reais:
+Na `v0.4.0`, a política operacional da Aurora governa dois domínios e cinco fontes reais:
 
 - `host_package` com `source_type=host_package_manager`;
 - `host_package` explicitamente marcado com `source_type=aur_repository`;
 - `host_package` explicitamente marcado com `source_type=copr_repository`;
+- `host_package` explicitamente marcado com `source_type=ppa_repository`;
 - `user_software` com `source_type=flatpak_remote`.
 
 A política existe para explicitar contrato, risco e limite da rota. Ela não existe para simular amplitude.
@@ -39,12 +40,11 @@ Os campos ativos desta release são:
 - pedido explicitamente marcado com `aur` continua no escopo de pacote do host, mas com fonte separada;
 - `source_type=aur_repository`;
 - `trust_level=third_party_build`;
-- usa apenas os helpers AUR aceitos de forma explícita e pequena nesta rodada: `paru` e `yay`;
-- quando ambos estão observados, a seleção segue a ordem do contrato: `paru`, depois `yay`;
+- usa apenas `paru` e `yay`;
 - `aur.instalar` e `aur.remover` exigem confirmação explícita;
-- `aur.instalar` pode entregar o terminal ao helper para revisão/build interativos e volta para validação por probe quando o helper termina;
+- `aur.instalar` pode entregar o terminal ao helper para revisão/build interativos;
 - `aur.remover` permanece no caminho não interativo desta release;
-- continua bloqueado fora de Arch mutável, sem `pacman` observado, sem helper aceito ou com helper observado fora do contrato como único helper disponível.
+- continua bloqueado fora de Arch mutável, sem `pacman` observado, sem helper aceito ou com helper fora do contrato como único helper disponível.
 
 ### `COPR` explícito
 
@@ -56,11 +56,24 @@ Os campos ativos desta release são:
 - `copr.instalar` e `copr.remover` exigem confirmação explícita;
 - a frente só abre em Fedora mutável com `dnf` e capacidade `dnf copr` observados;
 - `copr.procurar` pode refinar a consulta humana para forma package-like apenas dentro do repositório explícito;
-- `copr.instalar` observa se o repositório explícito já estava habilitado e só mantém `enable` como passo preparatório quando isso for realmente necessário ou quando o estado prévio não puder ser observado;
+- `copr.instalar` observa se o repositório explícito já estava habilitado e só mantém `enable` quando necessário;
 - `copr.remover` só permite mutação quando a origem RPM do pacote instalado fecha com o repositório explícito;
-- a proveniência RPM em `copr.remover` usa `dnf repoquery --installed` com `from_repo`, confrontado com os `repoids` do repo file do COPR explícito;
-- não existe disable automático, cleanup heurístico nem lifecycle amplo do repositório;
-- não existe descoberta automática de repositório, busca global no universo COPR nem canonicalização ampla de nome de pacote fora desse escopo explícito.
+- a proveniência RPM em `copr.remover` usa `dnf repoquery --installed` com `from_repo`;
+- não existe disable automático, cleanup heurístico nem lifecycle amplo do repositório.
+
+### `PPA` explícito
+
+- pedido explicitamente marcado com `ppa` continua no escopo de pacote do host, mas com fonte separada;
+- a frase precisa trazer a coordenada canônica `ppa:owner/name`;
+- `source_type=ppa_repository`;
+- `trust_level=third_party_repository`;
+- `ppa.instalar` exige confirmação explícita;
+- a frente só abre em Ubuntu mutável com `add-apt-repository`, `apt-get` e `dpkg` observados;
+- `ppa.instalar` planeja `add-apt-repository`, `apt-get update` e `apt-get install` como passos preparatórios explícitos;
+- a política mantém o gap `ppa_repository_state_not_observed_by_design` para deixar claro que esta release não abre lifecycle amplo de repositório;
+- `ppa.remover` continua em `block`, porque a Aurora ainda não demonstra proveniência APT suficiente por PPA;
+- Debian puro e outras derivadas Debian-like continuam bloqueados nesta frente;
+- URL genérica de apt repo não entra como PPA.
 
 ### `user_software`
 
@@ -83,7 +96,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v0.3.4`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v0.4.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -93,8 +106,6 @@ Nesta release, a taxonomia continua pequena e pragmática:
 - `medium`
 - `high`
 - `sensitive`
-
-Ela sustenta decisão operacional. Não pretende ser modelo universal de software.
 
 ### `reversal_level`
 
@@ -126,23 +137,25 @@ Registra o peso de reversão esperado da mutação, por exemplo:
   resultado típico: `allow`
 - `aurora instalar yt-dlp do copr atim/ytdlp`
   resultado típico: `require_confirmation`
-- `aurora remover yt-dlp do copr atim/ytdlp`
-  resultado típico: `require_confirmation` quando a origem RPM do pacote instalado fecha com o repo explícito; fora disso, `block`
+- `aurora instalar obs-studio do ppa ppa:obsproject/obs-studio`
+  resultado típico: `require_confirmation`
+- `aurora remover obs-studio do ppa ppa:obsproject/obs-studio`
+  resultado típico: `block`
 - `aurora procurar firefox no flatpak`
   resultado típico: `allow`
-- `aurora instalar firefox no flatpak`
-  resultado típico: `allow`
-- `aurora remover firefox no flatpak`
-  resultado típico: `require_confirmation`
 
 ## O que ainda não está aberto
 
-Continuam fora da `v0.3.4`:
+Continuam fora da `v0.4.0`:
 
+- descoberta automática de repositório COPR;
+- descoberta automática de PPA ou inferência por nome do pacote;
+- `ppa.procurar`, `ppa.remover` real, `remove-apt-repository` e cleanup/lifecycle amplo;
+- tratamento de apt repo genérico como se fosse PPA;
+- promessa ampla para Debian-like fora do recorte Ubuntu mutável;
 - seleção de remote além do default `flathub`;
-- descoberta automática de repositório COPR, busca global no universo COPR e disable automático/cleanup amplo do repositório;
 - helpers AUR além de `paru` e `yay`, e passthrough interativo para `aur.remover`;
-- PPA, AppImage e GitHub Releases;
+- AppImage e GitHub Releases;
 - `rpm-ostree`, toolbox, distrobox e `ujust`.
 
-Se `flatpak`, helper AUR ou capacidade COPR aparecerem no host sem pedido explícito, isso continua sendo apenas observação e não muda o default de `host_package`.
+Se `flatpak`, helper AUR, capacidade COPR ou `add-apt-repository` aparecerem no host sem pedido explícito, isso continua sendo apenas observação e não muda o default de `host_package`.

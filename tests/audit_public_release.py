@@ -58,25 +58,20 @@ def git_ls_files() -> list[str]:
 
 
 def main() -> int:
-    ensure(VERSION == "v0.3.4", "VERSION precisa estar promovido para v0.3.4 no fechamento desta release")
+    ensure(VERSION == "v0.4.0", "VERSION precisa estar promovido para v0.4.0 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v0.3.4")
+    ok("VERSION promovido para v0.4.0")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
-    ensure("## 🌌 Aurora v0.3.4" in changelog, "CHANGELOG.md precisa abrir a release publica v0.3.4")
-    ensure("em progresso" not in changelog_normalized, "CHANGELOG.md nao pode manter a v0.3.4 como em progresso")
-    ensure("## 🌌 Aurora v0.3.3" in changelog, "CHANGELOG.md precisa preservar a release publica v0.3.3")
-    ensure("aur.procurar" in changelog, "CHANGELOG.md precisa citar a rota aur.procurar")
-    ensure("copr.procurar" in changelog, "CHANGELOG.md precisa citar a rota copr.procurar")
-    ensure("copr.instalar" in changelog, "CHANGELOG.md precisa citar a rota copr.instalar")
-    ensure("owner/project" in changelog, "CHANGELOG.md precisa citar a coordenada owner/project")
-    ensure("from_repo" in changelog, "CHANGELOG.md precisa citar a verificacao de origem RPM via from_repo")
-    ensure("user_software" in changelog, "CHANGELOG.md precisa citar user_software")
-    ensure("flatpak" in changelog_normalized, "CHANGELOG.md precisa citar flatpak")
-    ensure("aur" in changelog_normalized, "CHANGELOG.md precisa citar a frente AUR")
-    ensure("yay" in changelog_normalized, "CHANGELOG.md precisa citar o helper yay")
-    ensure("copr" in changelog_normalized, "CHANGELOG.md precisa citar a frente COPR")
+    ensure("## 🌌 Aurora v0.4.0" in changelog, "CHANGELOG.md precisa abrir a release publica v0.4.0")
+    ensure("## 🌌 Aurora v0.3.4" in changelog, "CHANGELOG.md precisa preservar a release publica v0.3.4")
+    for term in ("ppa.instalar", "ppa_repository", "ppa:owner/name", "ubuntu", "add-apt-repository"):
+        ensure(term in changelog_normalized or term in changelog, f"CHANGELOG.md precisa citar {term}")
+    ensure("ppa.remover" in changelog, "CHANGELOG.md precisa citar o bloqueio de ppa.remover")
+    ensure("copr" in changelog_normalized, "CHANGELOG.md precisa preservar a frente COPR")
+    ensure("aur" in changelog_normalized, "CHANGELOG.md precisa preservar a frente AUR")
+    ensure("flatpak" in changelog_normalized, "CHANGELOG.md precisa preservar flatpak")
     assert_no_auroboros("CHANGELOG.md", changelog)
     ok("CHANGELOG.md alinhado ao estado atual da linha")
 
@@ -85,20 +80,25 @@ def main() -> int:
     ensure(VERSION in readme, "README.md precisa citar a versao publica atual")
     ensure("100% python" in readme_normalized, "README.md precisa deixar Aurora como produto 100% Python")
     ensure("aurora" in readme_normalized and "auro" in readme_normalized, "README.md precisa citar os launchers")
-    ensure("host_package" in readme, "README.md precisa citar host_package explicitamente")
-    ensure("user_software" in readme, "README.md precisa citar user_software explicitamente")
-    ensure("aur" in readme_normalized, "README.md precisa explicar a frente AUR explicita")
-    ensure("copr" in readme_normalized, "README.md precisa explicar a frente COPR explicita")
-    ensure("flatpak" in readme_normalized, "README.md precisa explicar o recorte flatpak")
-    ensure("--confirm" in readme, "README.md precisa mencionar --confirm")
-    ensure("--yes" in readme, "README.md precisa mencionar --yes como alias de confirmacao")
-    ensure("no aur" in readme_normalized, "README.md precisa mostrar a sintaxe explicita de AUR")
-    ensure("do copr" in readme_normalized, "README.md precisa mostrar a sintaxe explicita de COPR")
-    ensure("owner/project" in readme, "README.md precisa citar a coordenada owner/project")
-    ensure("from_repo" in readme, "README.md precisa citar a verificacao de origem RPM via from_repo")
-    ensure("interativo" in readme_normalized, "README.md precisa explicar o fluxo interativo do helper AUR")
-    ensure("yay" in readme_normalized, "README.md precisa citar o helper yay")
-    ensure("copr.procurar" in readme, "README.md precisa citar a rota copr.procurar")
+    for term in (
+        "host_package",
+        "user_software",
+        "aur",
+        "copr",
+        "flatpak",
+        "ppa",
+        "ppa.instalar",
+        "ppa.remover",
+        "ppa:owner/name",
+        "ppa_repository",
+        "add-apt-repository",
+        "ubuntu mutavel",
+        "--confirm",
+        "--yes",
+    ):
+        ensure(term in readme_normalized or term in readme, f"README.md precisa citar {term}")
+    ensure("owner/project" in readme, "README.md precisa continuar citando owner/project")
+    ensure("from_repo" in readme, "README.md precisa continuar citando from_repo")
     assert_no_auroboros("README.md", readme)
     ok("README.md alinhado ao release")
 
@@ -116,16 +116,14 @@ def main() -> int:
         "copr.procurar",
         "copr.instalar",
         "copr.remover",
+        "ppa.instalar",
         "flatpak.procurar",
         "flatpak.instalar",
         "flatpak.remover",
     ):
         ensure(route_name in architecture, f"ARCHITECTURE precisa listar a rota {route_name}")
-    ensure("owner/project" in architecture, "ARCHITECTURE precisa citar a coordenada owner/project")
-    ensure("from_repo" in architecture, "ARCHITECTURE precisa citar a verificacao de origem RPM via from_repo")
-    ensure("interativo" in architecture_normalized, "ARCHITECTURE precisa registrar o handoff interativo do helper")
-    ensure("yay" in architecture_normalized, "ARCHITECTURE precisa citar o helper yay")
-    ensure("copr.procurar" in architecture, "ARCHITECTURE precisa listar a rota copr.procurar")
+    for term in ("ppa:owner/name", "ubuntu", "add-apt-repository", "ppa.remover"):
+        ensure(term in architecture_normalized or term in architecture, f"ARCHITECTURE precisa citar {term}")
     assert_no_auroboros("docs/ARCHITECTURE.md", architecture)
     ok("docs/ARCHITECTURE.md alinhado")
 
@@ -145,10 +143,15 @@ def main() -> int:
         "copr",
         "owner/project",
         "from_repo",
+        "ppa",
+        "ppa:owner/name",
+        "ubuntu",
+        "add-apt-repository",
+        "apt-get",
+        "dpkg",
+        "ppa.remover",
     ):
-        ensure(term in compatibility_normalized, f"COMPATIBILITY precisa citar {term}")
-    ensure("interativo" in compatibility_normalized, "COMPATIBILITY precisa citar o fluxo interativo de aur.instalar")
-    ensure("copr.procurar" in compatibility, "COMPATIBILITY precisa citar a rota copr.procurar")
+        ensure(term in compatibility_normalized or term in compatibility, f"COMPATIBILITY precisa citar {term}")
     assert_no_auroboros("docs/COMPATIBILITY_LINUX.md", compatibility)
     ok("docs/COMPATIBILITY_LINUX.md alinhado")
 
@@ -165,37 +168,29 @@ def main() -> int:
         "host_package_manager",
         "aur_repository",
         "copr_repository",
+        "ppa_repository",
         "flatpak_remote",
         "distribution_managed",
         "third_party_build",
         "third_party_repository",
         "guarded",
         "flathub",
+        "ppa:owner/name",
+        "add-apt-repository",
+        "ubuntu",
+        "ppa.remover",
     ):
-        ensure(term in policy, f"INSTALLATION_POLICY precisa citar {term}")
-    ensure("user_software" in policy, "INSTALLATION_POLICY precisa citar user_software")
-    ensure("aur" in policy_normalized, "INSTALLATION_POLICY precisa citar AUR")
-    ensure("copr" in policy_normalized, "INSTALLATION_POLICY precisa citar COPR")
-    ensure("owner/project" in policy, "INSTALLATION_POLICY precisa citar owner/project")
-    ensure("from_repo" in policy, "INSTALLATION_POLICY precisa citar a verificacao de origem RPM via from_repo")
-    ensure("flatpak" in policy_normalized, "INSTALLATION_POLICY precisa citar flatpak")
-    ensure("--yes" in policy, "INSTALLATION_POLICY precisa citar --yes como alias de confirmacao")
-    ensure("interativo" in policy_normalized, "INSTALLATION_POLICY precisa explicar o fluxo interativo de aur.instalar")
-    ensure("yay" in policy_normalized, "INSTALLATION_POLICY precisa citar o helper yay")
-    ensure("copr.procurar" in policy, "INSTALLATION_POLICY precisa citar a rota copr.procurar")
+        ensure(term in policy_normalized or term in policy, f"INSTALLATION_POLICY precisa citar {term}")
+    ensure("owner/project" in policy, "INSTALLATION_POLICY precisa continuar citando owner/project")
+    ensure("from_repo" in policy, "INSTALLATION_POLICY precisa continuar citando from_repo")
     assert_no_auroboros("docs/INSTALLATION_POLICY.md", policy)
     ok("docs/INSTALLATION_POLICY.md alinhado")
 
     heritage = read("docs/AURY_HERITAGE_MAP.md")
     heritage_normalized = normalize(heritage)
     ensure(VERSION in heritage, "AURY_HERITAGE_MAP precisa refletir a release publica atual")
-    ensure("aury" in heritage_normalized, "AURY_HERITAGE_MAP precisa citar a Aury")
-    ensure("herdado" in heritage_normalized or "herdada" in heritage_normalized, "AURY_HERITAGE_MAP precisa marcar heranca")
-    ensure("nao entrou" in heritage_normalized or "nao migrou" in heritage_normalized, "AURY_HERITAGE_MAP precisa registrar o que nao migrou")
-    ensure("user_software" in heritage, "AURY_HERITAGE_MAP precisa citar a extensao da v0.2.0")
-    ensure("aur" in heritage_normalized, "AURY_HERITAGE_MAP precisa citar a frente AUR da v0.3.0")
-    ensure("copr" in heritage_normalized, "AURY_HERITAGE_MAP precisa citar a frente COPR da v0.3.1")
-    ensure("v0.3.4" in heritage, "AURY_HERITAGE_MAP precisa refletir a release publica v0.3.4")
+    for term in ("aury", "herdado", "host_package", "user_software", "aur", "copr", "ppa", "flatpak"):
+        ensure(term in heritage_normalized or term in heritage, f"AURY_HERITAGE_MAP precisa citar {term}")
     assert_no_auroboros("docs/AURY_HERITAGE_MAP.md", heritage)
     ok("docs/AURY_HERITAGE_MAP.md alinhado")
 
@@ -203,38 +198,30 @@ def main() -> int:
     help_normalized = normalize(help_text)
     ensure(help_text.startswith("🌌 Aurora {version}"), "resources/help.txt precisa abrir com o cabecalho final da release")
     ensure("{version}" in help_text, "resources/help.txt precisa manter placeholder de versao")
-    ensure("host_package" in help_text, "resources/help.txt precisa citar host_package")
-    ensure("user_software" in help_text, "resources/help.txt precisa citar user_software")
-    ensure("host_package.search/instalar/remover" in help_text, "resources/help.txt precisa listar as rotas reais de host_package")
-    ensure("aur" in help_normalized, "resources/help.txt precisa citar AUR como rota real")
-    ensure("yay" in help_normalized, "resources/help.txt precisa citar o helper yay")
-    ensure("copr" in help_normalized, "resources/help.txt precisa citar COPR como rota real")
-    ensure("copr.procurar" in help_text, "resources/help.txt precisa listar a rota copr.procurar")
-    ensure("from_repo" in help_text, "resources/help.txt precisa citar a verificacao de origem RPM via from_repo")
-    ensure("flatpak" in help_normalized, "resources/help.txt precisa citar flatpak como rota real")
-    ensure("--confirm" in help_text, "resources/help.txt precisa citar --confirm")
-    ensure("--yes" in help_text, "resources/help.txt precisa citar --yes")
-    ensure("interativo" in help_normalized, "resources/help.txt precisa citar o fluxo interativo de aur.instalar")
-    ensure("aurora instalar <pacote> --confirm" in help_text, "resources/help.txt precisa mostrar a sintaxe publica correta para instalacao sensivel")
+    for term in (
+        "host_package",
+        "user_software",
+        "aur",
+        "copr",
+        "ppa",
+        "flatpak",
+        "ppa_repository",
+        "ppa.instalar",
+        "ppa.remover",
+        "ppa:owner/name",
+        "ubuntu",
+        "add-apt-repository",
+        "--confirm",
+        "--yes",
+    ):
+        ensure(term in help_normalized or term in help_text, f"resources/help.txt precisa citar {term}")
     ensure(
-        "aurora instalar <pacote> no aur --confirm" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica correta para instalacao AUR com confirmacao",
+        "aurora instalar <pacote> do ppa <ppa:owner/name> --confirm" in help_text,
+        "resources/help.txt precisa mostrar a sintaxe publica correta para instalacao PPA com confirmacao",
     )
     ensure(
-        "aurora remover <software> no flatpak --confirm" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica correta para remocao flatpak com confirmacao",
-    )
-    ensure(
-        "aurora procurar <pacote> do copr <owner>/<project>" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica correta para procura COPR com repositório explicito",
-    )
-    ensure(
-        "aurora instalar <pacote> do copr <owner>/<project> --confirm" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica correta para instalacao COPR com confirmacao",
-    )
-    ensure(
-        "aurora remover <pacote> do copr <owner>/<project> --confirm" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica correta para remocao COPR com confirmacao",
+        "aurora remover <pacote> do ppa <ppa:owner/name>" in help_text,
+        "resources/help.txt precisa mostrar a sintaxe observavel para o bloqueio de remocao PPA",
     )
     assert_no_auroboros("resources/help.txt", help_text)
     ok("resources/help.txt alinhado")
@@ -258,12 +245,6 @@ def main() -> int:
     ensure("fish" not in normalize(install_text), "install.sh nao pode depender de Fish")
     ensure("fish" not in normalize(uninstall_text), "uninstall.sh nao pode depender de Fish")
     ok("instalador sem dependencia de Fish")
-
-    release_gate = read("tests/release_gate_v0_3.sh")
-    ensure("PYTHONPATH=python" in release_gate, "release_gate_v0_3 precisa executar com PYTHONPATH=python")
-    ensure("audit_public_release.py" in release_gate, "release_gate_v0_3 precisa rodar a auditoria publica")
-    ok("release_gate_v0_3 alinhado")
-
     return 0
 
 

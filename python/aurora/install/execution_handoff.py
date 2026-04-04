@@ -126,6 +126,10 @@ def _is_copr_source(record: DecisionRecord) -> bool:
     return record.request.domain_kind == "host_package" and record.request.requested_source == "copr"
 
 
+def _is_ppa_source(record: DecisionRecord) -> bool:
+    return record.request.domain_kind == "host_package" and record.request.requested_source == "ppa"
+
+
 def _is_aur_source(record: DecisionRecord) -> bool:
     return record.request.domain_kind == "host_package" and record.request.requested_source == "aur"
 
@@ -133,6 +137,8 @@ def _is_aur_source(record: DecisionRecord) -> bool:
 def _target_label(record: DecisionRecord) -> str:
     if _is_copr_source(record):
         return "pacote do COPR"
+    if _is_ppa_source(record):
+        return "pacote do PPA"
     if _is_aur_source(record):
         return "pacote AUR"
     return "software" if _is_user_software(record) else "pacote"
@@ -141,6 +147,8 @@ def _target_label(record: DecisionRecord) -> str:
 def _location_label(record: DecisionRecord) -> str:
     if _is_copr_source(record):
         return "neste host via COPR"
+    if _is_ppa_source(record):
+        return "neste host via PPA"
     if _is_aur_source(record):
         return "como pacote AUR neste host"
     return "na instalação do usuário" if _is_user_software(record) else "neste host"
@@ -151,6 +159,10 @@ def _probe_summary(record: DecisionRecord, package_present: bool) -> str:
         if package_present:
             return "pacote presente no host para a rota COPR."
         return "pacote ausente no host para a rota COPR."
+    if _is_ppa_source(record):
+        if package_present:
+            return "pacote presente no host para a rota PPA."
+        return "pacote ausente no host para a rota PPA."
     if _is_user_software(record):
         if package_present:
             return "software presente na instalação do usuário."

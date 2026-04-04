@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import re
 
 from aurora.contracts.requests import SemanticRequest
+from aurora.install.sources.ppa import ppa_coordinate_is_explicit
 from aurora.semantics.entities import extract_package_target, extract_target_token_pairs
 from aurora.semantics.intent import canonicalize_intent
 from aurora.semantics.pipeline import prepare_text
@@ -11,12 +12,21 @@ from aurora.semantics.pipeline import prepare_text
 _FLATPAK_HINT_TOKENS = {"flatpak", "flathub"}
 _AUR_HINT_TOKENS = {"aur"}
 _COPR_HINT_TOKENS = {"copr"}
+_PPA_HINT_TOKENS = {"ppa"}
 _SOURCE_PREPOSITIONS = {"com", "do", "da", "em", "na", "no", "pela", "pelo", "usando", "via"}
 _COPR_REPOSITORY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 @dataclass(frozen=True)
 class _CoprSelection:
+    target: str = ""
+    source_coordinate: str = ""
+    hint_found: bool = False
+    reason: str = ""
+
+
+@dataclass(frozen=True)
+class _PpaSelection:
     target: str = ""
     source_coordinate: str = ""
     hint_found: bool = False
@@ -96,6 +106,46 @@ def _extract_copr_selection(action) -> _CoprSelection:
     return _CoprSelection()
 
 
+def _extract_ppa_selection(action) -> _PpaSelection:
+    pairs = extract_target_token_pairs(action)
+    for index in range(1, len(pairs)):
+        if pairs[index - 1][1] not in _SOURCE_PREPOSITIONS or pairs[index][1] not in _PPA_HINT_TOKENS:
+            continue
+
+        target_pairs = pairs[: index - 1]
+        coordinate_pairs = pairs[index + 1 :]
+        if not target_pairs:
+            return _PpaSelection(
+                hint_found=True,
+                reason="faltou o alvo do pacote do host marcado via ppa.",
+            )
+        if len(coordinate_pairs) != 1:
+            return _PpaSelection(
+                target=" ".join(original for original, _normalized in target_pairs).strip(),
+                hint_found=True,
+                reason="faltou a coordenada explicita do PPA no formato canonico ppa:owner/name.",
+            )
+
+        coordinate_original, coordinate_normalized = coordinate_pairs[0]
+        if not ppa_coordinate_is_explicit(coordinate_normalized):
+            return _PpaSelection(
+                target=" ".join(original for original, _normalized in target_pairs).strip(),
+                hint_found=True,
+                reason=(
+                    "a coordenada do PPA precisa ser explicita e conservadora "
+                    "no formato canonico ppa:owner/name."
+                ),
+            )
+
+        return _PpaSelection(
+            target=" ".join(original for original, _normalized in target_pairs).strip(),
+            source_coordinate=coordinate_original,
+            hint_found=True,
+        )
+
+    return _PpaSelection()
+
+
 def classify_text(text: str) -> SemanticRequest:
     phrase, actions = prepare_text(text)
     if not actions:
@@ -139,40 +189,57 @@ def classify_text(text: str) -> SemanticRequest:
                 f"pedido explicitamente marcado como '{flatpak_hint}', entao foi enquadrado em user_software."
             )
         else:
-            copr_selection = _extract_copr_selection(action)
-            if copr_selection.hint_found:
-                target = copr_selection.target
-                source_coordinate = copr_selection.source_coordinate
+            ppa_selection = _extract_ppa_selection(action)
+            if ppa_selection.hint_found:
+                target = ppa_selection.target
+                source_coordinate = ppa_selection.source_coordinate
                 observations = (
                     "domain_selection:explicit_host_package_source",
-                    "source_hint:copr",
-                    f"copr_repo:{source_coordinate}" if source_coordinate else "copr_repo:-",
+                    "source_hint:ppa",
+                    f"ppa_coordinate:{source_coordinate}" if source_coordinate else "ppa_coordinate:-",
                 )
                 domain_kind = "host_package"
-                requested_source = "copr"
-                missing_target_reason = copr_selection.reason or "faltou o alvo do pacote do host marcado via copr."
+                requested_source = "ppa"
+                missing_target_reason = ppa_selection.reason or "faltou o alvo do pacote do host marcado via ppa."
                 consistent_reason = (
-                    "pedido explicitamente marcado como 'copr', entao foi enquadrado em host_package "
-                    "com fonte separada COPR e repositório explicito."
+                    "pedido explicitamente marcado como 'ppa', entao foi enquadrado em host_package "
+                    "com fonte separada PPA e coordenada explicita."
                 )
             else:
-                aur_hint = _source_hint(action, hint_tokens=_AUR_HINT_TOKENS)
-                if aur_hint is not None:
-                    target = _extract_source_target(action, hint_tokens=_AUR_HINT_TOKENS)
-                    observations = ("domain_selection:explicit_host_package_source", f"source_hint:{aur_hint}")
+                copr_selection = _extract_copr_selection(action)
+                if copr_selection.hint_found:
+                    target = copr_selection.target
+                    source_coordinate = copr_selection.source_coordinate
+                    observations = (
+                        "domain_selection:explicit_host_package_source",
+                        "source_hint:copr",
+                        f"copr_repo:{source_coordinate}" if source_coordinate else "copr_repo:-",
+                    )
                     domain_kind = "host_package"
-                    requested_source = "aur"
-                    missing_target_reason = "faltou o alvo do pacote do host marcado via aur."
+                    requested_source = "copr"
+                    missing_target_reason = copr_selection.reason or "faltou o alvo do pacote do host marcado via copr."
                     consistent_reason = (
-                        "pedido explicitamente marcado como 'aur', entao foi enquadrado em host_package "
-                        "com fonte separada AUR."
+                        "pedido explicitamente marcado como 'copr', entao foi enquadrado em host_package "
+                        "com fonte separada COPR e repositório explicito."
                     )
                 else:
-                    target = extract_package_target(action)
-                    observations = ("domain_selection:default_host_package",)
-                    domain_kind = "host_package"
-                    missing_target_reason = "faltou o alvo do pacote do host."
-                    consistent_reason = "pedido enquadrado no dominio host_package por default seguro desta rodada."
+                    aur_hint = _source_hint(action, hint_tokens=_AUR_HINT_TOKENS)
+                    if aur_hint is not None:
+                        target = _extract_source_target(action, hint_tokens=_AUR_HINT_TOKENS)
+                        observations = ("domain_selection:explicit_host_package_source", f"source_hint:{aur_hint}")
+                        domain_kind = "host_package"
+                        requested_source = "aur"
+                        missing_target_reason = "faltou o alvo do pacote do host marcado via aur."
+                        consistent_reason = (
+                            "pedido explicitamente marcado como 'aur', entao foi enquadrado em host_package "
+                            "com fonte separada AUR."
+                        )
+                    else:
+                        target = extract_package_target(action)
+                        observations = ("domain_selection:default_host_package",)
+                        domain_kind = "host_package"
+                        missing_target_reason = "faltou o alvo do pacote do host."
+                        consistent_reason = "pedido enquadrado no dominio host_package por default seguro desta rodada."
 
         if not target:
             return SemanticRequest(
@@ -186,7 +253,7 @@ def classify_text(text: str) -> SemanticRequest:
                 reason=missing_target_reason,
                 observations=observations,
             )
-        if requested_source == "copr" and not source_coordinate:
+        if requested_source in {"copr", "ppa"} and not source_coordinate:
             return SemanticRequest(
                 original_text=action.original_action,
                 normalized_text=action.normalized_action,

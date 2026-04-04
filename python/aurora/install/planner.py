@@ -21,6 +21,11 @@ from aurora.install.sources.flatpak import (
     resolve_flatpak_target,
     resolved_flatpak_target,
 )
+from aurora.install.sources.ppa import (
+    ppa_target_resolution_blocks,
+    resolve_ppa_target,
+    resolved_ppa_target,
+)
 from aurora.linux.host_profile import detect_host_profile
 from aurora.linux.host_package import resolve_host_package_target
 from aurora.semantics.pipeline import has_confirmation_marker
@@ -31,6 +36,17 @@ def _summary_for_request(request: SemanticRequest) -> str:
         return "Sem acao aberta."
 
     if request.domain_kind == "host_package":
+        if request.requested_source == "ppa":
+            if request.intent == "instalar":
+                return (
+                    f"Instalar o pacote do host '{request.target}' via PPA "
+                    f"'{request.source_coordinate or '-'}'."
+                )
+            if request.intent == "remover":
+                return (
+                    f"Remover o pacote do host '{request.target}' via PPA "
+                    f"'{request.source_coordinate or '-'}'."
+                )
         if request.requested_source == "copr":
             if request.intent == "procurar":
                 return (
@@ -108,6 +124,8 @@ def _resolve_target(
     if request.domain_kind == "user_software":
         return resolve_flatpak_target(request, profile, environ=environ)
     if request.domain_kind == "host_package":
+        if request.requested_source == "ppa":
+            return resolve_ppa_target(request, profile, environ=environ)
         if request.requested_source == "copr":
             return resolve_copr_target(request, profile, environ=environ)
         if request.requested_source == "aur":
@@ -119,6 +137,8 @@ def _resolve_target(
 def _resolved_target(request: SemanticRequest, target_resolution) -> str:
     if request.domain_kind == "user_software":
         return resolved_flatpak_target(request, target_resolution)
+    if request.domain_kind == "host_package" and request.requested_source == "ppa":
+        return resolved_ppa_target(request, target_resolution)
     if request.domain_kind == "host_package" and request.requested_source == "copr":
         return resolved_copr_target(request, target_resolution)
     if request.domain_kind == "host_package" and request.requested_source == "aur":
@@ -133,6 +153,8 @@ def _target_resolution_blocks(request: SemanticRequest, target_resolution) -> bo
         return False
     if request.domain_kind == "user_software":
         return flatpak_target_resolution_blocks(request, target_resolution)
+    if request.domain_kind == "host_package" and request.requested_source == "ppa":
+        return ppa_target_resolution_blocks(request, target_resolution)
     if request.domain_kind == "host_package" and request.requested_source == "copr":
         return copr_target_resolution_blocks(request, target_resolution)
     if request.domain_kind == "host_package" and request.requested_source == "aur":

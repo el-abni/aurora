@@ -1,200 +1,98 @@
 # Changelog
 
+## 🌌 Aurora v0.4.0
+
+Fechamento pequeno da frente PPA para abrir uma nova família explícita de repositório terceiro sem transformar `apt` genérico em promessa ampla de Debian-like.
+
+### Adicionado
+
+- `requested_source=ppa` com coordenada canônica obrigatória `ppa:owner/name`.
+- `source_type=ppa_repository` e `trust_level=third_party_repository` como leitura própria da nova frente.
+- `ppa.instalar` como rota real com passos preparatórios explícitos: `add-apt-repository`, `apt-get update` e `apt-get install`.
+- observabilidade dedicada para `PPA` em `decision_record` e `aurora dev`, incluindo capacidades observadas, distro compatível, coordenada e preparação planejada.
+
+### Alterado
+
+- a política passa a distinguir Ubuntu mutável suportado de Debian puro e outras derivadas Debian-like bloqueadas na frente PPA.
+- `ppa.remover` deixa de ser ambíguo: continua bloqueado por honestidade porque a Aurora ainda não demonstra proveniência APT por PPA nem lifecycle amplo de repositório.
+- README, help e docs técnicas passam a refletir a `v0.4.0` como release pública atual.
+
+### Continua fora da v0.4.0
+
+- descoberta automática de PPA;
+- busca global em PPA;
+- tratamento de apt repo genérico como se fosse PPA;
+- `ppa.procurar`, `ppa.remover` real, `remove-apt-repository` e cleanup/lifecycle amplo;
+- promessa ampla para Debian-like fora de Ubuntu mutável;
+- AppImage e GitHub Releases;
+- `rpm-ostree`, toolbox, distrobox e `ujust`;
+- hosts imutáveis reais como superfície operacional.
+
 ## 🌌 Aurora v0.3.4
 
 Fechamento pequeno da honestidade operacional de COPR em mutação, adicionando proveniência RPM na remoção e lifecycle limitado de repositório sem abrir descoberta automática, cleanup heurístico ou disable mágico.
 
 ### Adicionado
+
 - verificação de proveniência RPM em `copr.remover`, comparando `from_repo` do pacote instalado com os `repoids` observados no repo file do COPR explícito.
 - observação explícita do estado habilitado do repositório COPR informado para expor se ele já estava ativo ou se precisou de `enable`.
-- observabilidade dedicada para estado do repositório, decisão de `enable` e status da proveniência RPM em `decision_record` e `aurora dev`.
 
 ### Alterado
-- `copr.instalar` agora trata `enable` de forma idempotente: se o repositório explícito já estiver habilitado, a rota não planeja novo `enable`; se estiver desabilitado, planeja apenas o `enable` mínimo.
-- `copr.remover` deixou de fingir segurança: quando a origem RPM do pacote instalado não fecha com o repositório COPR explícito, a Aurora bloqueia cedo e explica a limitação.
-- README, help e docs técnicas passam a refletir a `v0.3.4` como release pública atual.
 
-### Continua fora da v0.3.4
-- descoberta automática de repositório COPR a partir do nome do pacote;
-- busca global no universo COPR;
-- canonicalização ampla de pacote fora do repositório explícito;
-- disable automático, cleanup heurístico e lifecycle amplo do repositório COPR;
-- helpers AUR além de `paru` e `yay`;
-- passthrough interativo para `aur.remover`;
-- PPA, AppImage e GitHub Releases;
-- `rpm-ostree`, toolbox, distrobox e `ujust`;
-- hosts imutáveis reais como superfície operacional.
+- `copr.instalar` agora trata `enable` de forma idempotente.
+- `copr.remover` passa a bloquear cedo quando a origem RPM não fecha com o repositório explícito.
 
 ## 🌌 Aurora v0.3.3
 
 Fechamento contido da frente COPR para abrir `copr.procurar` por repositório explícito, sem descoberta automática de fonte nem busca global no universo COPR.
 
 ### Adicionado
+
 - `copr.procurar` como rota real de leitura dentro da família COPR já aberta.
-- consulta restrita ao `owner/project` explicitamente pedido, sem ranking global de repositórios.
-- observabilidade mais clara para o escopo da consulta, mantendo `requested_source=copr` e `source_coordinate` visíveis no request, na policy e na rota.
-
-### Alterado
-- a política de COPR agora aceita `procurar` apenas quando a coordenada do repositório é explícita e o host continua dentro do contrato Fedora mutável com capacidade `dnf copr` observada.
-- `copr.procurar` pode refinar a consulta humana para uma forma package-like apenas dentro do repositório explícito, sem promover isso a resolução automática de pacote para mutação.
-- README, help e docs técnicas passam a refletir a `v0.3.3` como release pública atual.
-
-### Continua fora da v0.3.3
-- descoberta automática de repositório COPR a partir do nome do pacote;
-- busca global no universo COPR;
-- canonicalização ampla de pacote fora do repositório explícito;
-- lifecycle amplo do repositório COPR e validação de origem RPM na remoção;
-- helpers AUR além de `paru` e `yay`;
-- passthrough interativo para `aur.remover`;
-- PPA, AppImage e GitHub Releases;
-- `rpm-ostree`, toolbox, distrobox e `ujust`;
-- hosts imutáveis reais como superfície operacional.
+- consulta restrita ao `owner/project` explicitamente pedido.
 
 ## 🌌 Aurora v0.3.2
 
-Fechamento contido da frente AUR sobre a base já aberta da `v0.3.1`, sem reintroduzir fallback mágico nem diluir a fronteira entre `host_package` e fonte explícita de terceiro.
+Fechamento contido da frente AUR sobre a base já aberta da `v0.3.1`.
 
 ### Adicionado
+
 - `yay` como segundo helper AUR deliberadamente suportado ao lado de `paru`.
-- observabilidade dedicada para helpers AUR observados, helpers AUR suportados nesta rodada, helper AUR selecionado e helpers observados fora do contrato.
-- bloqueio honesto quando o host observa apenas helper AUR fora do contrato, sem promover esse helper a rota executável.
-
-### Alterado
-- a frente AUR agora escolhe automaticamente o primeiro helper suportado observado na ordem do contrato: `paru`, depois `yay`.
-- `decision_record`, `aurora dev` e notas de rota passam a explicar de forma direta o helper observado no host, o helper suportado nesta rodada e o helper escolhido para a rota.
-- README, help e docs técnicas passam a refletir a `v0.3.2` como release pública atual.
-
-### Continua fora da v0.3.2
-- fallback automático de pedido nu para AUR;
-- helpers AUR além de `paru` e `yay`;
-- passthrough interativo para `aur.remover`;
-- `copr.procurar`, descoberta automática de repositório COPR e lifecycle amplo do repositório;
-- PPA, AppImage e GitHub Releases;
-- `rpm-ostree`, toolbox, distrobox e `ujust`;
-- hosts imutáveis reais como superfície operacional.
+- observabilidade dedicada para helpers AUR observados, suportados e selecionados.
 
 ## 🌌 Aurora v0.3.1
 
-Fechamento público da release que abre COPR como fonte explícita de terceiro em Fedora mutável, sem reabrir a espinha já consolidada da `v0.3.0`.
+Fechamento público da release que abre COPR como fonte explícita de terceiro em Fedora mutável.
 
 ### Adicionado
-- marcação pública inicial de COPR por frase explícita com coordenada `owner/project`, como `aurora instalar <pacote> do copr <owner>/<project> --confirm`.
+
+- marcação pública inicial de COPR por frase explícita com coordenada `owner/project`.
 - `copr.instalar` e `copr.remover` como segunda frente real de terceiro dentro de `host_package`.
-- `source_type=copr_repository` e `trust_level=third_party_repository` como leitura própria da nova frente.
-- `source_coordinate` no request observável e passos preparatórios explícitos de rota para registrar o `enable` antes da instalação.
-
-### Alterado
-- o `decision_record` e o `aurora dev` agora expõem a coordenada `owner/project` pedida para COPR.
-- a política de COPR nasce com confirmação explícita para mutações, bloqueio fora de Fedora mutável e checagem honesta de capacidade `dnf copr`.
-- o runtime passa a sustentar rotas com passo preparatório explícito antes da mutação principal, sem esconder isso da observabilidade.
-- README, help e docs técnicas passam a refletir a `v0.3.1` como release pública atual.
-
-### Continua fora da v0.3.1
-- `copr.procurar`;
-- descoberta automática de repositório COPR a partir do nome do pacote;
-- canonicalização de pacote por busca em COPR;
-- lifecycle amplo do repositório COPR e validação de origem RPM na remoção;
-- PPA, AppImage e GitHub Releases;
-- `rpm-ostree`, toolbox, distrobox e `ujust`;
-- hosts imutáveis reais como superfície operacional.
 
 ## 🌌 Aurora v0.3.0
 
-Fechamento público da release que abre AUR como fonte explícita de terceiro sobre a base já consolidada da `v0.2.0`, sem recontaminar `host_package`.
+Fechamento público da release que abre AUR como fonte explícita de terceiro.
 
 ### Adicionado
+
 - marcação pública inicial de AUR por frase explícita, como `aurora procurar <pacote> no aur`.
 - `aur.procurar`, `aur.instalar` e `aur.remover` como primeira fonte terceira real da Aurora.
-- `source_type=aur_repository` e `trust_level=third_party_build` como leitura própria da nova frente.
-- resolução de alvo com separação entre pacote `foreign` e pacote oficial do host.
-
-### Alterado
-- `decision_record` e `aurora dev` agora expõem `requested_source`, helper selecionado e `source_mismatch`.
-- a política de AUR nasce com confirmação explícita para mutações e bloqueio honesto quando `paru` não está observado.
-- `--confirm` e `--yes` passam a contar como confirmação explícita também quando entram inline na frase inspecionada.
-- `aur.instalar` anuncia a entrega e o retorno do helper interativo antes da validação final por probe.
-- README, help e docs técnicas passam a refletir a `v0.3.0` como release pública atual.
-
-### Continua fora da v0.3.0
-- fallback automático de pedido nu para AUR;
-- helpers AUR além de `paru`;
-- passthrough interativo para `aur.remover`;
-- seleção de remote além do default `flathub`;
-- COPR, PPA, AppImage e GitHub Releases;
-- `rpm-ostree`, toolbox, distrobox e `ujust`;
-- hosts imutáveis reais como superfície operacional.
 
 ## 🌌 Aurora v0.2.0
 
-Fechamento público da release que abre `user_software` como segundo domínio real da Aurora, preservando `host_package` como base íntegra da `v0.1.0`.
+Fechamento público da release que abre `user_software` como segundo domínio real da Aurora.
 
 ### Adicionado
+
 - `domain_kind=user_software` como parte real do contrato público.
-- arbitragem inicial entre `host_package` e `user_software`, com default seguro para pedidos nus.
 - `flatpak.procurar`, `flatpak.instalar` e `flatpak.remover` como primeira rota ativa de software do usuário.
-- probes antes e depois para mutações `flatpak`, com `noop` honesto quando o estado já está satisfeito.
-- gate final da `v0.2.0` com auditoria pública alinhada ao contrato real da release.
-
-### Alterado
-- `README.md`, `resources/help.txt` e docs principais agora descrevem a `v0.2.0` como release pública legítima.
-- `aurora dev <frase>` e o `decision_record` passaram a expor melhor a leitura de domínio, escopo e rota.
-- a política operacional agora governa `host_package` e `user_software`, incluindo `source_type=flatpak_remote`.
-- `flatpak.remover` continua exigindo confirmação explícita quando a remoção realmente vai acontecer.
-
-### Continua fora da v0.2.0
-- seleção de remote além do default `flathub`;
-- AUR, COPR, PPA, AppImage e GitHub Releases;
-- `rpm-ostree`, toolbox, distrobox e `ujust`;
-- suporte operacional real a hosts imutáveis;
-- backlog amplo de arquivos, rede e manutenção de host.
 
 ## 🌌 Aurora v0.1.0
 
 Primeiro release público da Aurora.
 
 ### Adicionado
-- Novo produto, 100% Python, com launchers oficiais `aurora` e `auro`.
-- Bootstrap próprio da Aurora com `python -m aurora`, `--help` e `--version`.
-- Núcleo inicial de semântica herdada/refatorada da Aury, incluindo normalização conservadora, proteção de tokens sensíveis, split simples de ações e classificação mínima de intenção para `procurar`, `instalar` e `remover`.
-- `host_profile` estruturado para Linux, com detecção de família, mutabilidade, tier de suporte e ferramentas observadas.
-- `host_package.search` com execução real por família:
-  - Arch/derivadas
-  - Debian/Ubuntu/derivadas
-  - Fedora
-  - OpenSUSE mutável contido
-- `decision_record` próprio da Aurora e comando `aurora dev <frase>` para observabilidade de decisão.
-- Modelo inicial e operacional de política com `domain_kind`, `source_type`, `trust_level`, `software_criticality`, `trust_signals`, `trust_gaps`, `policy_outcome`, `requires_confirmation` e `reversal_level`.
-- Estrutura modular inicial da Aurora em `semantics/`, `linux/`, `install/`, `observability/` e `presentation/`.
 
-### Alterado
-- A Aurora nasce com identidade própria e deixa de depender de Fish como centro do produto.
-- O runtime foi organizado com separação mais clara entre planejamento, política, execução e apresentação.
-- A instalação da própria ferramenta passou a seguir a direção de launcher fino + base própria da Aurora, em vez de repetir a casca histórica da Aury.
-
-### Endurecimento da release
-- `host_package.instalar` e `host_package.remover` passaram a executar de verdade em hosts mutáveis suportados.
-- Mutações reais do host agora contam com probe antes/depois, `noop` honesto, bloqueio explícito para Atomic/imutáveis e trilha de execução no `decision_record`.
-- Confirmação explícita por `--confirm` foi consolidada como parte real da UX para mutações sensíveis.
-
-### Compatibilidade
-- Suporte real na `v0.1.0` para:
-  - Arch/derivadas mutáveis
-  - Debian/Ubuntu/derivadas mutáveis
-  - Fedora mutável
-  - OpenSUSE mutável em escopo contido
-- Hosts Atomic/imutáveis permanecem bloqueados por política, de forma explícita e honesta.
-
-### Documentação
-- Documentação pública mínima da release consolidada em:
-  - `README.md`
-  - `docs/ARCHITECTURE.md`
-  - `docs/COMPATIBILITY_LINUX.md`
-  - `docs/INSTALLATION_POLICY.md`
-  - `docs/AURY_HERITAGE_MAP.md`
-- `resources/help.txt` alinhado ao comportamento real da Aurora e ao uso de `--confirm`.
-
-### Fora da v0.1.0
-- `flatpak` como rota ativa.
-- AUR, COPR, PPA, AppImage e GitHub Releases.
-- `rpm-ostree`, toolbox, distrobox e `ujust`.
-- Domínios de arquivos, rede e manutenção ampla do host.
+- produto 100% Python, com launchers oficiais `aurora` e `auro`;
+- bootstrap próprio da Aurora com `python -m aurora`, `--help` e `--version`;
+- núcleo inicial de semântica, `host_profile`, `decision_record` e rotas reais de `host_package`.

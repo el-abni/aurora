@@ -1014,6 +1014,171 @@ def setup_copr_testbed(
     return env, state_file, enabled_repo_file, commands_file
 
 
+def setup_ppa_testbed(
+    root: Path,
+    *,
+    ppa_coordinate: str,
+    repo_packages: tuple[str, ...] = (),
+    installed_packages: tuple[str, ...] = (),
+    add_apt_repository_available: bool = True,
+    distro_id: str = "ubuntu",
+    distro_like: str = "debian",
+    name: str = "Ubuntu",
+) -> tuple[dict[str, str], Path, Path, Path]:
+    bin_dir = root / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    state_file = root / "installed.txt"
+    repo_file = root / "ppa-repo.txt"
+    enabled_ppa_file = root / "enabled-ppa.txt"
+    indexes_updated_file = root / "apt-indexes-updated.txt"
+    commands_file = root / "commands.txt"
+    normalized_repo_packages: list[tuple[str, str]] = []
+    for entry in repo_packages:
+        package_name, separator, label_value = entry.partition("|")
+        package_name = package_name.strip()
+        display_label = label_value.strip() if separator else "pacote PPA de teste"
+        normalized_repo_packages.append((package_name, display_label or "pacote PPA de teste"))
+
+    state_file.write_text("\n".join(installed_packages) + ("\n" if installed_packages else ""), encoding="utf-8")
+    repo_file.write_text(
+        "\n".join(f"{package_name}\t{display_label}" for package_name, display_label in normalized_repo_packages)
+        + ("\n" if normalized_repo_packages else ""),
+        encoding="utf-8",
+    )
+    enabled_ppa_file.write_text("", encoding="utf-8")
+    indexes_updated_file.write_text("", encoding="utf-8")
+    commands_file.write_text("", encoding="utf-8")
+    write_os_release(root, distro_id=distro_id, distro_like=distro_like, name=name)
+    write_stub(bin_dir, "sudo", "#!/bin/sh\nexec \"$@\"\n")
+    write_stub(
+        bin_dir,
+        "add-apt-repository",
+        textwrap.dedent(
+            f"""\
+            #!/bin/sh
+            commands_file="{commands_file}"
+            enabled_ppa_file="{enabled_ppa_file}"
+            add_apt_repository_available="{1 if add_apt_repository_available else 0}"
+            printf "%s\\n" "$*" >> "$commands_file"
+            if [ "$add_apt_repository_available" != "1" ]; then
+              echo "add-apt-repository unavailable" >&2
+              exit 1
+            fi
+            if [ "$1" = "--help" ]; then
+              echo "usage: add-apt-repository [options] repository"
+              exit 0
+            fi
+            target=""
+            for arg in "$@"; do
+              case "$arg" in
+                -y|-n|--yes|--no-update)
+                  ;;
+                *)
+                  target="$arg"
+                  ;;
+              esac
+            done
+            printf "%s\\n" "$target" > "$enabled_ppa_file"
+            echo "added $target"
+            exit 0
+            """
+        ),
+    )
+    write_stub(
+        bin_dir,
+        "apt-get",
+        textwrap.dedent(
+            f"""\
+            #!/bin/sh
+            state_file="{state_file}"
+            repo_file="{repo_file}"
+            enabled_ppa_file="{enabled_ppa_file}"
+            indexes_updated_file="{indexes_updated_file}"
+            commands_file="{commands_file}"
+            requested_ppa="{ppa_coordinate}"
+            printf "%s\\n" "$*" >> "$commands_file"
+            action="$1"
+            target=""
+            for arg in "$@"; do
+              target="$arg"
+            done
+            has_state() {{
+              /usr/bin/grep -qx "$1" "$state_file"
+            }}
+            has_repo() {{
+              /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
+            }}
+            ppa_enabled() {{
+              /usr/bin/grep -qx "$requested_ppa" "$enabled_ppa_file"
+            }}
+            remove_state() {{
+              tmp="$state_file.tmp"
+              /usr/bin/grep -vx "$1" "$state_file" > "$tmp" || true
+              /usr/bin/mv "$tmp" "$state_file"
+            }}
+            case "$action" in
+              update)
+                if ! ppa_enabled; then
+                  echo "PPA not enabled" >&2
+                  exit 1
+                fi
+                printf "ok\\n" > "$indexes_updated_file"
+                echo "updated"
+                exit 0
+                ;;
+              install)
+                if has_state "$target"; then
+                  exit 0
+                fi
+                if ! ppa_enabled || [ ! -s "$indexes_updated_file" ]; then
+                  echo "Unable to locate package $target" >&2
+                  exit 100
+                fi
+                if ! has_repo "$target"; then
+                  echo "Unable to locate package $target" >&2
+                  exit 100
+                fi
+                echo "$target" >> "$state_file"
+                echo "installed $target"
+                exit 0
+                ;;
+              remove)
+                if ! has_state "$target"; then
+                  echo "package not installed" >&2
+                  exit 1
+                fi
+                remove_state "$target"
+                echo "removed $target"
+                exit 0
+                ;;
+            esac
+            exit 1
+            """
+        ),
+    )
+    write_stub(
+        bin_dir,
+        "dpkg",
+        textwrap.dedent(
+            f"""\
+            #!/bin/sh
+            state_file="{state_file}"
+            target="$2"
+            if /usr/bin/grep -qx "$target" "$state_file"; then
+              exit 0
+            fi
+            exit 1
+            """
+        ),
+    )
+
+    env = {
+        "PATH": str(bin_dir),
+        "AURORA_OS_RELEASE_PATH": str(root / "os-release"),
+    }
+    return env, state_file, enabled_ppa_file, commands_file
+
+
 def setup_flatpak_testbed(
     root: Path,
     *,

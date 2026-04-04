@@ -1,22 +1,23 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v0.3.4-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v0.4.0-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com política explícita, observabilidade própria e execução real sobre um contrato pequeno e auditável.
 
-A release pública atual é a `v0.3.4`. Ela fecha a honestidade operacional de COPR com **proveniência RPM na remoção** e **lifecycle limitado de repositório**, sem reabrir descoberta automática, sem trair a base já consolidada de `host_package`, `AUR` explícito, `COPR` explícito e `user_software` via `flatpak`.
+A release pública atual é a `v0.4.0`. Ela abre **PPA como fonte explícita e contida**, sem transformar `apt` genérico em PPA, sem descoberta automática de fonte e sem prometer Debian-like amplo onde ainda não existe sustentação operacional.
 
-Na `v0.3.4`, a superfície pública cobre dois domínios reais e duas fontes explícitas adicionais:
+Na `v0.4.0`, a superfície pública cobre dois domínios reais e três famílias explícitas de fonte terceira:
 
 - `host_package` para pacotes do host;
-- `AUR` como fonte explícita de terceiro dentro do escopo de pacote do host;
-- `COPR` como fonte explícita de terceiro dentro do escopo de pacote do host;
+- `AUR` como fonte explícita de terceiro dentro de `host_package`;
+- `COPR` como fonte explícita de terceiro dentro de `host_package`;
+- `PPA` como fonte explícita de terceiro dentro de `host_package`;
 - `user_software` para software do usuário via `flatpak`.
 
-Pedidos nus, como `aurora procurar firefox`, continuam no default seguro de `host_package`. Pedidos explicitamente marcados como `aur`, como `aurora instalar google chrome no aur`, entram na frente AUR. Pedidos explicitamente marcados como `copr`, como `aurora instalar yt-dlp do copr atim/ytdlp --confirm`, entram na frente COPR. Pedidos explicitamente marcados como `flatpak` ou `flathub`, como `aurora instalar firefox no flatpak`, entram em `user_software`.
+Pedidos nus, como `aurora procurar firefox`, continuam no default seguro de `host_package`. Pedidos explicitamente marcados como `aur`, `copr`, `ppa` ou `flatpak` entram apenas nessas frentes explícitas.
 
 ## O que a Aurora faz
 
@@ -27,9 +28,9 @@ A Aurora funciona como uma camada de decisão e execução sobre Linux. Em vez d
 - aplica política;
 - escolhe a rota cabível no contrato atual;
 - executa com probe de estado quando a ação muda software;
-- e expõe um `decision_record` auditável com `aurora dev <frase>`.
+- expõe um `decision_record` auditável com `aurora dev <frase>`.
 
-## Contrato público da v0.3.4
+## Contrato público da v0.4.0
 
 Rotas reais abertas nesta release:
 
@@ -39,9 +40,10 @@ Rotas reais abertas nesta release:
 - `aur.procurar`
 - `aur.instalar`
 - `aur.remover`
+- `copr.procurar`
 - `copr.instalar`
 - `copr.remover`
-- `copr.procurar`
+- `ppa.instalar`
 - `flatpak.procurar`
 - `flatpak.instalar`
 - `flatpak.remover`
@@ -50,26 +52,17 @@ Comportamento garantido:
 
 - `host_package` continua sendo o default para pedidos nus;
 - `AUR` só entra quando a frase marca `aur`;
-- `AUR` continua separado do backend oficial do host e aceita apenas `paru` e `yay` nesta rodada contida;
-- quando ambos estão observados, a Aurora escolhe automaticamente o primeiro helper suportado na ordem do contrato: `paru`, depois `yay`;
-- `decision_record` e `aurora dev` expõem helpers AUR observados, helpers suportados nesta rodada e helper selecionado para a rota;
-- `aur.instalar` e `aur.remover` exigem confirmação explícita;
+- `COPR` só entra quando a frase marca `copr` e traz `owner/project`;
+- `PPA` só entra quando a frase marca `ppa` e traz a coordenada canônica `ppa:owner/name`;
+- `flatpak` só entra quando a frase marca `flatpak` ou `flathub`;
+- `decision_record` e `aurora dev` deixam visíveis `requested_source`, `source_coordinate`, capacidades observadas, gaps e passos preparatórios;
+- `aur.instalar`, `aur.remover`, `copr.instalar`, `copr.remover` e `ppa.instalar` exigem confirmação explícita;
 - `--confirm` e `--yes` funcionam como confirmação explícita, inclusive quando aparecem inline numa frase passada como texto único ou inspecionada em `aurora dev`;
 - `aur.instalar` pode entregar o terminal ao helper para revisão/build interativos;
-- `aur.remover` permanece no caminho não interativo desta release;
-- helper AUR observado fora do contrato continua bloqueando de forma honesta e não amplia a superfície pública;
-- `COPR` só entra quando a frase marca `copr` e traz `owner/project` de forma explícita;
 - `copr.procurar` consulta apenas o repositório explicitamente pedido;
-- `copr.instalar` e `copr.remover` exigem confirmação explícita;
-- `copr.instalar` observa se o repositório explícito já estava habilitado e só mantém `enable` quando isso for necessário ou quando o estado prévio não puder ser observado com confiança;
-- `COPR` só abre em Fedora mutável com `dnf copr` observado;
-- `COPR` não faz descoberta automática de repositório nem busca global fora do repositório explícito;
-- `copr.procurar` pode refinar a consulta para forma package-like apenas dentro do repositório explícito, sem transformar isso em resolução automática para mutação;
-- `copr.remover` só executa quando a origem RPM do pacote instalado fecha com o repositório explícito informado;
-- `copr.remover` não faz disable automático nem cleanup heurístico do repositório;
-- `flatpak` só entra quando a frase marca `flatpak` ou `flathub`;
-- `flatpak.instalar` e `flatpak.remover` usam escopo explícito de usuário;
-- `flatpak.instalar` usa `flathub` como remote default nesta release;
+- `copr.remover` só executa quando a origem RPM do pacote instalado fecha com o repositório explícito informado via `from_repo`;
+- `ppa.instalar` planeja `add-apt-repository`, `apt-get update` e `apt-get install` de forma explícita e auditável;
+- `ppa.remover` permanece bloqueado por honestidade, porque a Aurora ainda não demonstra proveniência APT por PPA nem lifecycle amplo do repositório;
 - mutações usam probe antes e depois, com `noop` honesto quando nada precisa mudar.
 
 ## Exemplos rápidos
@@ -100,6 +93,13 @@ aurora instalar yt-dlp do copr atim/ytdlp --confirm
 aurora remover yt-dlp do copr atim/ytdlp --confirm
 ```
 
+### Pacotes PPA explícitos
+
+```bash
+aurora instalar obs-studio do ppa ppa:obsproject/obs-studio --confirm
+aurora dev "remover obs-studio do ppa ppa:obsproject/obs-studio"
+```
+
 ### Software do usuário via Flatpak
 
 ```bash
@@ -108,15 +108,15 @@ aurora instalar firefox no flatpak
 aurora remover firefox no flatpak --confirm
 ```
 
-### Observabilidade
+## Observabilidade
 
 ```bash
 aurora dev "procurar firefox"
 aurora dev "instalar firefox no flatpak"
 aurora dev "instalar google chrome no aur --confirm"
 aurora dev "procurar obs-studio do copr atim/obs-studio"
-aurora dev "instalar yt-dlp do copr atim/ytdlp --confirm"
-aurora dev "remover sudo"
+aurora dev "instalar obs-studio do ppa ppa:obsproject/obs-studio --confirm"
+aurora dev "remover obs-studio do ppa ppa:obsproject/obs-studio"
 ```
 
 ## Compatibilidade Linux
@@ -130,26 +130,30 @@ aurora dev "remover sudo"
 ### `AUR` explícito
 
 - suportado agora: hosts Arch/derivados mutáveis com `paru` ou `yay` observado;
-- exige marcação explícita de fonte com `aur`;
 - usa política própria, `source_type=aur_repository` e `trust_level=third_party_build`;
-- se ambos os helpers suportados estiverem observados, a seleção segue a ordem do contrato: `paru`, depois `yay`;
-- `aur.instalar` pode abrir o fluxo interativo real do helper e volta para validação por probe quando o helper termina;
-- `aur.remover` continua fora do passthrough interativo nesta release;
-- helper AUR fora do contrato não vira fallback nem rota executável;
-- não herda fallback implícito de `host_package`.
+- `aur.instalar` pode abrir fluxo interativo real do helper;
+- `aur.remover` continua fora do passthrough interativo desta release;
+- helper AUR fora do contrato não vira fallback nem rota executável.
 
 ### `COPR` explícito
 
 - suportado agora: Fedora mutável com `dnf` e capacidade `dnf copr` observados;
 - exige marcação explícita de fonte com `copr` e coordenada `owner/project`;
 - usa política própria, `source_type=copr_repository` e `trust_level=third_party_repository`;
-- `copr.procurar` consulta apenas o repositório explicitamente pedido, sem descoberta automática de fonte;
-- `copr.instalar` observa se o repositório explícito já estava habilitado e só planeja `enable` quando necessário;
-- `copr.remover` verifica a origem RPM do pacote instalado via `from_repo` antes de permitir a mutação;
-- `copr.remover` bloqueia quando essa origem não puder ser demonstrada com honestidade;
-- nenhuma rota COPR faz disable automático ou cleanup heurístico do repositório;
-- `copr.procurar` pode refinar a consulta humana para forma package-like apenas dentro do repositório explícito;
-- não herda fallback implícito de `host_package`.
+- `copr.procurar` consulta apenas o repositório explicitamente pedido;
+- `copr.instalar` observa o estado do repositório e só planeja `enable` quando necessário;
+- `copr.remover` verifica `from_repo` antes da mutação;
+- nenhuma rota COPR faz disable automático ou cleanup heurístico do repositório.
+
+### `PPA` explícito
+
+- suportado agora: **Ubuntu mutável** com `apt-get`, `dpkg` e `add-apt-repository` observados;
+- exige marcação explícita de fonte com `ppa` e coordenada canônica `ppa:owner/name`;
+- usa política própria, `source_type=ppa_repository` e `trust_level=third_party_repository`;
+- `ppa.instalar` planeja `add-apt-repository -n`, `apt-get update` e `apt-get install` como passos preparatórios explícitos;
+- `ppa.remover` continua bloqueado por honestidade nesta release;
+- Debian puro e outras derivadas Debian-like continuam bloqueados nesta frente;
+- URL genérica de apt repo não entra como PPA.
 
 ### `user_software` via `flatpak`
 
@@ -207,19 +211,21 @@ A identidade pública da ferramenta é:
 No help público, a versão aparece como:
 
 ```text
-🌌 Aurora v0.3.4
+🌌 Aurora v0.4.0
 ```
 
-## O que a v0.3.4 não promete
+## O que a v0.4.0 não promete
 
 A Aurora ainda não abre:
 
 - fallback automático de pedido nu para AUR;
-- descoberta automática de repositório COPR, busca global no universo COPR ou canonicalização ampla de pacote fora do repositório explícito;
-- lifecycle amplo de repositório COPR, disable automático e cleanup heurístico;
-- helpers AUR além de `paru` e `yay`, e passthrough interativo para `aur.remover`;
+- descoberta automática de repositório COPR;
+- descoberta automática de PPA ou inferência de PPA a partir do nome do pacote;
+- `ppa.procurar`, `ppa.remover` real, cleanup automático, `remove-apt-repository` e lifecycle amplo de PPA;
+- tratamento de URL genérica de apt repo como se fosse PPA;
+- promessa ampla para qualquer Debian-like fora de Ubuntu mutável;
 - remotes `flatpak` além do default `flathub`;
-- PPA, AppImage e GitHub Releases;
+- AppImage e GitHub Releases;
 - `rpm-ostree`, toolbox, distrobox e `ujust`;
 - suporte operacional real a hosts imutáveis;
 - manutenção ampla do host;

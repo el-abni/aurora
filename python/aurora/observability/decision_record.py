@@ -93,6 +93,23 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
                 record.policy.trust_signals,
                 "copr_package_from_repo:",
             )
+        if record.request.requested_source == "ppa":
+            payload["policy"]["ppa_supported_distros"] = _signal_value(
+                record.policy.trust_signals,
+                "ppa_supported_distros:",
+            )
+            payload["policy"]["ppa_capability"] = _signal_value(
+                record.policy.trust_signals,
+                "ppa_capability:",
+            )
+            payload["policy"]["ppa_state_probe"] = _signal_value(
+                record.policy.trust_signals,
+                "ppa_state_probe:",
+            )
+            payload["policy"]["ppa_install_preparation"] = _signal_value(
+                record.policy.trust_signals,
+                "ppa_install_preparation:",
+            )
 
     if record.target_resolution is not None:
         payload["target_resolution"] = {
@@ -149,6 +166,25 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
                 payload["execution_route"]["copr_package_from_repo"] = _signal_value(
                     record.policy.trust_signals,
                     "copr_package_from_repo:",
+                )
+        if record.execution_route.route_name.startswith("ppa."):
+            payload["execution_route"]["ppa_preparation_planned"] = bool(record.execution_route.pre_commands)
+            if record.policy is not None:
+                payload["execution_route"]["ppa_supported_distros"] = _signal_value(
+                    record.policy.trust_signals,
+                    "ppa_supported_distros:",
+                )
+                payload["execution_route"]["ppa_capability"] = _signal_value(
+                    record.policy.trust_signals,
+                    "ppa_capability:",
+                )
+                payload["execution_route"]["ppa_state_probe"] = _signal_value(
+                    record.policy.trust_signals,
+                    "ppa_state_probe:",
+                )
+                payload["execution_route"]["ppa_install_preparation"] = _signal_value(
+                    record.policy.trust_signals,
+                    "ppa_install_preparation:",
                 )
 
     if record.execution is not None:
