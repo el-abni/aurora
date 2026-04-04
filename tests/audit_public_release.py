@@ -58,16 +58,17 @@ def git_ls_files() -> list[str]:
 
 
 def main() -> int:
-    ensure(VERSION == "v0.3.2", "VERSION precisa estar promovido para v0.3.2 no fechamento desta release")
+    ensure(VERSION == "v0.3.3", "VERSION precisa estar promovido para v0.3.3 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v0.3.2")
+    ok("VERSION promovido para v0.3.3")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
-    ensure("## 🌌 Aurora v0.3.2" in changelog, "CHANGELOG.md precisa abrir a release publica v0.3.2")
-    ensure("em progresso" not in changelog_normalized, "CHANGELOG.md nao pode manter a v0.3.2 como em progresso")
-    ensure("## 🌌 Aurora v0.3.1" in changelog, "CHANGELOG.md precisa preservar a release publica v0.3.1")
+    ensure("## 🌌 Aurora v0.3.3" in changelog, "CHANGELOG.md precisa abrir a release publica v0.3.3")
+    ensure("em progresso" not in changelog_normalized, "CHANGELOG.md nao pode manter a v0.3.3 como em progresso")
+    ensure("## 🌌 Aurora v0.3.2" in changelog, "CHANGELOG.md precisa preservar a release publica v0.3.2")
     ensure("aur.procurar" in changelog, "CHANGELOG.md precisa citar a rota aur.procurar")
+    ensure("copr.procurar" in changelog, "CHANGELOG.md precisa citar a rota copr.procurar")
     ensure("copr.instalar" in changelog, "CHANGELOG.md precisa citar a rota copr.instalar")
     ensure("owner/project" in changelog, "CHANGELOG.md precisa citar a coordenada owner/project")
     ensure("user_software" in changelog, "CHANGELOG.md precisa citar user_software")
@@ -95,6 +96,7 @@ def main() -> int:
     ensure("owner/project" in readme, "README.md precisa citar a coordenada owner/project")
     ensure("interativo" in readme_normalized, "README.md precisa explicar o fluxo interativo do helper AUR")
     ensure("yay" in readme_normalized, "README.md precisa citar o helper yay")
+    ensure("copr.procurar" in readme, "README.md precisa citar a rota copr.procurar")
     assert_no_auroboros("README.md", readme)
     ok("README.md alinhado ao release")
 
@@ -109,6 +111,7 @@ def main() -> int:
         "aur.procurar",
         "aur.instalar",
         "aur.remover",
+        "copr.procurar",
         "copr.instalar",
         "copr.remover",
         "flatpak.procurar",
@@ -119,6 +122,7 @@ def main() -> int:
     ensure("owner/project" in architecture, "ARCHITECTURE precisa citar a coordenada owner/project")
     ensure("interativo" in architecture_normalized, "ARCHITECTURE precisa registrar o handoff interativo do helper")
     ensure("yay" in architecture_normalized, "ARCHITECTURE precisa citar o helper yay")
+    ensure("copr.procurar" in architecture, "ARCHITECTURE precisa listar a rota copr.procurar")
     assert_no_auroboros("docs/ARCHITECTURE.md", architecture)
     ok("docs/ARCHITECTURE.md alinhado")
 
@@ -140,6 +144,7 @@ def main() -> int:
     ):
         ensure(term in compatibility_normalized, f"COMPATIBILITY precisa citar {term}")
     ensure("interativo" in compatibility_normalized, "COMPATIBILITY precisa citar o fluxo interativo de aur.instalar")
+    ensure("copr.procurar" in compatibility, "COMPATIBILITY precisa citar a rota copr.procurar")
     assert_no_auroboros("docs/COMPATIBILITY_LINUX.md", compatibility)
     ok("docs/COMPATIBILITY_LINUX.md alinhado")
 
@@ -172,6 +177,7 @@ def main() -> int:
     ensure("--yes" in policy, "INSTALLATION_POLICY precisa citar --yes como alias de confirmacao")
     ensure("interativo" in policy_normalized, "INSTALLATION_POLICY precisa explicar o fluxo interativo de aur.instalar")
     ensure("yay" in policy_normalized, "INSTALLATION_POLICY precisa citar o helper yay")
+    ensure("copr.procurar" in policy, "INSTALLATION_POLICY precisa citar a rota copr.procurar")
     assert_no_auroboros("docs/INSTALLATION_POLICY.md", policy)
     ok("docs/INSTALLATION_POLICY.md alinhado")
 
@@ -184,6 +190,7 @@ def main() -> int:
     ensure("user_software" in heritage, "AURY_HERITAGE_MAP precisa citar a extensao da v0.2.0")
     ensure("aur" in heritage_normalized, "AURY_HERITAGE_MAP precisa citar a frente AUR da v0.3.0")
     ensure("copr" in heritage_normalized, "AURY_HERITAGE_MAP precisa citar a frente COPR da v0.3.1")
+    ensure("v0.3.3" in heritage, "AURY_HERITAGE_MAP precisa refletir a release publica v0.3.3")
     assert_no_auroboros("docs/AURY_HERITAGE_MAP.md", heritage)
     ok("docs/AURY_HERITAGE_MAP.md alinhado")
 
@@ -197,6 +204,7 @@ def main() -> int:
     ensure("aur" in help_normalized, "resources/help.txt precisa citar AUR como rota real")
     ensure("yay" in help_normalized, "resources/help.txt precisa citar o helper yay")
     ensure("copr" in help_normalized, "resources/help.txt precisa citar COPR como rota real")
+    ensure("copr.procurar" in help_text, "resources/help.txt precisa listar a rota copr.procurar")
     ensure("flatpak" in help_normalized, "resources/help.txt precisa citar flatpak como rota real")
     ensure("--confirm" in help_text, "resources/help.txt precisa citar --confirm")
     ensure("--yes" in help_text, "resources/help.txt precisa citar --yes")
@@ -209,6 +217,10 @@ def main() -> int:
     ensure(
         "aurora remover <software> no flatpak --confirm" in help_text,
         "resources/help.txt precisa mostrar a sintaxe publica correta para remocao flatpak com confirmacao",
+    )
+    ensure(
+        "aurora procurar <pacote> do copr <owner>/<project>" in help_text,
+        "resources/help.txt precisa mostrar a sintaxe publica correta para procura COPR com repositório explicito",
     )
     ensure(
         "aurora instalar <pacote> do copr <owner>/<project> --confirm" in help_text,

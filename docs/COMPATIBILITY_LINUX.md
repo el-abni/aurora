@@ -1,4 +1,4 @@
-# Compatibilidade Linux - Aurora v0.3.2
+# Compatibilidade Linux - Aurora v0.3.3
 
 ## Matriz atual de `host_package`
 
@@ -24,14 +24,14 @@
 
 | Perfil Linux | Estado | Escopo real |
 | --- | --- | --- |
-| Fedora mutável com `dnf copr` observado | suportado agora | instalar, remover |
+| Fedora mutável com `dnf copr` observado | suportado agora | procurar, instalar, remover |
 | Fedora mutável sem capacidade `dnf copr` observada | bloqueado por política | sem rota executável |
 | Demais famílias Linux | fora do recorte | sem rota executável |
 | Atomic / imutáveis | bloqueado por política | sem mutação via COPR |
 
 ## `user_software` via `flatpak`
 
-Na `v0.3.2`, `flatpak` continua sendo a frente explícita de software do usuário.
+Na `v0.3.3`, `flatpak` continua sendo a frente explícita de software do usuário.
 
 Leitura correta desta frente:
 
@@ -51,11 +51,13 @@ Leitura operacional da frente AUR:
 
 Leitura operacional da frente COPR:
 
+- `copr.procurar` consulta apenas o repositório explicitamente pedido;
+- `copr.procurar` pode refinar a consulta humana para forma package-like só dentro desse escopo explícito;
 - `copr.instalar` habilita explicitamente o repositório pedido antes da instalação;
 - `copr.remover` remove o pacote, mas não desabilita o repositório;
 - a coordenada `owner/project` é obrigatória;
-- o nome do pacote precisa vir de forma exata neste primeiro corte;
-- não existe `copr.procurar`, descoberta mágica de repositório ou canonicalização por busca.
+- o nome do pacote continua precisando ser exato para mutação nesta rodada;
+- não existe descoberta mágica de repositório, busca global no universo COPR ou canonicalização por busca fora do repositório explícito.
 
 ## Leitura correta da fronteira
 

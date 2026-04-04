@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.3.2
+# Architecture - Aurora v0.3.3
 
 ## Tese curta
 
@@ -71,7 +71,7 @@ Mantém a superfície pública:
 - mensagens de confirmação;
 - mensagens de resultado.
 
-## Rotas abertas na v0.3.2
+## Rotas abertas na v0.3.3
 
 ### `host_package`
 
@@ -115,6 +115,7 @@ Comportamento garantido:
 
 Segunda fonte terceira real:
 
+- `copr.procurar`
 - `copr.instalar`
 - `copr.remover`
 
@@ -123,6 +124,8 @@ Comportamento garantido:
 - `COPR` só entra por pedido explícito;
 - a frase precisa carregar a coordenada `owner/project`;
 - a frente só abre em Fedora mutável com `dnf copr` observado;
+- `copr.procurar` consulta apenas o repositório explicitamente pedido;
+- a busca pode refinar a consulta humana para forma package-like apenas dentro do repositório explícito;
 - `copr.instalar` executa um passo preparatório explícito para habilitar o repositório pedido e depois instala o pacote;
 - `copr.remover` remove o pacote do host, mas não desabilita o repositório;
 - mutação exige confirmação explícita;
@@ -146,12 +149,12 @@ Comportamento garantido:
 
 ## Fronteiras deliberadas
 
-A `v0.3.2` continua pequena de propósito:
+A `v0.3.3` continua pequena de propósito:
 
 - pedido nu continua em `host_package`;
 - `AUR` não vira fallback mágico;
 - helper AUR observado fora do contrato não vira suporte implícito;
-- `COPR` não abre `procurar`, não descobre repositório e não canoniza pacote por busca;
+- `COPR` abre `procurar` apenas dentro do repositório explícito, sem descoberta automática nem busca global;
 - `flatpak` não generaliza seleção de remote além do default `flathub`;
 - `user_software` não abre outras fontes além de `flatpak`;
 - hosts imutáveis reais continuam fora da superfície operacional.

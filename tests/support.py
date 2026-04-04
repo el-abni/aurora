@@ -58,6 +58,7 @@ def write_os_release(
     *,
     distro_id: str,
     distro_like: str = "",
+    version_id: str = "",
     variant_id: str = "",
     name: str = "",
     pretty_name: str = "",
@@ -66,6 +67,8 @@ def write_os_release(
     lines = [f"ID={distro_id}"]
     if distro_like:
         lines.append(f'ID_LIKE="{distro_like}"')
+    if version_id:
+        lines.append(f'VERSION_ID="{version_id}"')
     if variant_id:
         lines.append(f'VARIANT_ID="{variant_id}"')
     if name:
@@ -737,6 +740,7 @@ def setup_copr_testbed(
     copr_available: bool = True,
     distro_id: str = "fedora",
     distro_like: str = "fedora",
+    version_id: str = "42",
     name: str = "Fedora Linux",
 ) -> tuple[dict[str, str], Path, Path, Path]:
     bin_dir = root / "bin"
@@ -745,6 +749,7 @@ def setup_copr_testbed(
     repo_file = root / "copr-repo.txt"
     enabled_repo_file = root / "enabled-copr.txt"
     commands_file = root / "commands.txt"
+    copr_web_root = root / "copr-web"
     normalized_repo_packages: list[tuple[str, str]] = []
     for entry in repo_packages:
         package_name, separator, label_value = entry.partition("|")
@@ -760,7 +765,29 @@ def setup_copr_testbed(
     )
     enabled_repo_file.write_text("", encoding="utf-8")
     commands_file.write_text("", encoding="utf-8")
-    write_os_release(root, distro_id=distro_id, distro_like=distro_like, name=name)
+    write_os_release(
+        root,
+        distro_id=distro_id,
+        distro_like=distro_like,
+        version_id=version_id,
+        name=name,
+    )
+    owner, project = copr_repo.split("/", 1)
+    repo_slug = f"{owner}-{project}"
+    repo_download_dir = copr_web_root / "coprs" / owner / project / "repo" / f"fedora-{version_id}"
+    repo_download_dir.mkdir(parents=True, exist_ok=True)
+    (repo_download_dir / f"{repo_slug}-fedora-{version_id}.repo").write_text(
+        textwrap.dedent(
+            f"""\
+            [copr:{owner}:{project}]
+            name=COPR {copr_repo}
+            baseurl=file://{repo_file}
+            enabled=1
+            gpgcheck=0
+            """
+        ),
+        encoding="utf-8",
+    )
     write_stub(bin_dir, "sudo", "#!/bin/sh\nexec \"$@\"\n")
     write_stub(
         bin_dir,
@@ -775,9 +802,24 @@ def setup_copr_testbed(
             requested_repo="{copr_repo}"
             copr_available="{1 if copr_available else 0}"
             printf "%s\\n" "$*" >> "$commands_file"
-            if [ "$1" = "-y" ]; then
-              shift
-            fi
+            reposdir=""
+            while [ "$#" -gt 0 ]; do
+              case "$1" in
+                -y)
+                  shift
+                  ;;
+                --disablerepo=*)
+                  shift
+                  ;;
+                --setopt=reposdir=*)
+                  reposdir="${{1#--setopt=reposdir=}}"
+                  shift
+                  ;;
+                *)
+                  break
+                  ;;
+              esac
+            done
             action="$1"
             target=""
             for arg in "$@"; do
@@ -791,6 +833,12 @@ def setup_copr_testbed(
             }}
             repo_enabled() {{
               /usr/bin/grep -qx "$requested_repo" "$enabled_repo_file"
+            }}
+            repo_file_present() {{
+              [ -n "$reposdir" ] && /usr/bin/find "$reposdir" -maxdepth 1 -name '*.repo' -print -quit | /usr/bin/grep -q .
+            }}
+            search_key() {{
+              printf "%s" "$1" | /usr/bin/tr '[:upper:]' '[:lower:]'
             }}
             remove_state() {{
               tmp="$state_file.tmp"
@@ -815,6 +863,35 @@ def setup_copr_testbed(
                     exit 0
                     ;;
                 esac
+                ;;
+              search)
+                if ! repo_file_present; then
+                  echo "No matches found." >&2
+                  exit 1
+                fi
+                query_key="$(search_key "$target")"
+                found=1
+                while IFS="$(printf '\\t')" read -r package_name display_label; do
+                  [ -n "$package_name" ] || continue
+                  package_key="$(search_key "$package_name")"
+                  label_key="$(search_key "$display_label")"
+                  match=1
+                  case "$package_key" in
+                    *"$query_key"*) match=0 ;;
+                  esac
+                  case "$label_key" in
+                    *"$query_key"*) match=0 ;;
+                  esac
+                  if [ "$match" -eq 0 ]; then
+                    echo "$package_name.x86_64 : $display_label"
+                    found=0
+                  fi
+                done < "$repo_file"
+                if [ "$found" -eq 0 ]; then
+                  exit 0
+                fi
+                echo "No matches found." >&2
+                exit 1
                 ;;
               install)
                 if has_state "$target"; then
@@ -865,6 +942,7 @@ def setup_copr_testbed(
     env = {
         "PATH": str(bin_dir),
         "AURORA_OS_RELEASE_PATH": str(root / "os-release"),
+        "AURORA_COPR_BASE_URL": copr_web_root.as_uri(),
     }
     return env, state_file, enabled_repo_file, commands_file
 

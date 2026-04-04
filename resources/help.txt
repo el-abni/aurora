@@ -11,6 +11,7 @@ Comandos públicos:
 - aurora instalar <pacote> no aur --confirm
 - aurora remover <pacote> no aur
 - aurora remover <pacote> no aur --confirm
+- aurora procurar <pacote> do copr <owner>/<project>
 - aurora instalar <pacote> do copr <owner>/<project> --confirm
 - aurora remover <pacote> do copr <owner>/<project> --confirm
 - aurora procurar <software> no flatpak
@@ -21,18 +22,19 @@ Comandos públicos:
 - aurora --help
 - aurora --version
 
-Contrato público da v0.3.2:
+Contrato público da v0.3.3:
 - produto 100% Python;
 - launchers oficiais: aurora e auro;
 - domínios ativos: host_package e user_software;
 - fontes reais: host_package_manager, aur_repository, copr_repository e flatpak_remote;
-- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.instalar/remover e flatpak.procurar/instalar/remover;
+- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.procurar/instalar/remover e flatpak.procurar/instalar/remover;
 - pedidos nus continuam em host_package;
 - AUR so entra por frase marcada com aur;
 - AUR aceita apenas os helpers paru e yay nesta rodada;
 - se ambos estiverem observados, a rota escolhe paru antes de yay pela ordem do contrato;
 - COPR so entra por frase marcada com copr e owner/project explicito;
-- COPR abre apenas instalar/remover em Fedora mutavel com dnf copr observado;
+- copr.procurar consulta apenas o repositorio explicitamente pedido;
+- COPR abre procurar/instalar/remover em Fedora mutavel com dnf copr observado;
 - pedidos com flatpak/flathub vão para user_software.
 
 Confirmação:
@@ -46,13 +48,14 @@ Compatibilidade:
 - AUR explícito: Arch mutável com helper paru ou yay observado;
 - aur.instalar pode entregar o terminal ao helper para revisão/build interativos; aur.remover permanece não interativo nesta release;
 - helper AUR observado fora do contrato continua bloqueado e não amplia a superfície pública;
-- COPR explícito: Fedora mutável com dnf copr observado, nome real de pacote e repositório owner/project explícito;
+- COPR explícito: Fedora mutável com dnf copr observado, consulta restrita ao repositório owner/project explícito;
+- copr.procurar pode refinar a consulta para forma package-like só dentro do repositório pedido;
 - copr.instalar habilita o repositório pedido antes da instalação; copr.remover não desabilita o repositório nesta release;
 - flatpak: depende do backend estar presente no host e atua no escopo do usuário.
 
-Fora da v0.3.2:
+Fora da v0.3.3:
 - fallback automático de pedido nu para AUR;
-- copr.procurar, descoberta automática de repositório COPR e canonicalização de pacote por busca;
+- descoberta automática de repositório COPR, busca global no universo COPR e canonicalização ampla de pacote por busca;
 - lifecycle amplo de repositório COPR e validação de origem na remoção;
 - helpers AUR além de paru e yay, e passthrough interativo para aur.remover;
 - remotes flatpak além do default flathub;

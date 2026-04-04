@@ -479,13 +479,16 @@ def _assess_copr_policy(
         trust_signals.append(f"observed_backends:{','.join(profile.package_backends)}")
     if capability.observed:
         trust_signals.append("copr_capability:dnf_copr_observed")
+    if request.intent == "procurar":
+        trust_signals.append("copr_search_scope:explicit_repository_only")
     if confirmation_supplied:
         trust_signals.append("confirmation:explicit")
 
     trust_gaps = ["copr_third_party_source_requires_human_review"]
     if request.intent == "remover":
         trust_gaps.append("copr_package_origin_not_verified_on_remove")
-    trust_gaps.append("copr_repository_lifecycle_not_managed")
+    if request.intent in {"instalar", "remover"}:
+        trust_gaps.append("copr_repository_lifecycle_not_managed")
 
     outcome = "allow"
     reason = "COPR explicito foi aceito como fonte contida de terceiro em Fedora mutavel nesta rodada."
@@ -494,13 +497,6 @@ def _assess_copr_policy(
         outcome = "block"
         trust_gaps.append("request_not_consistent")
         reason = request.reason
-    elif request.intent == "procurar":
-        outcome = "block"
-        trust_gaps.append("copr_search_not_open")
-        reason = (
-            "COPR explicito nesta release abre apenas instalacao e remocao. "
-            "A busca controlada por repositorio ficou fora deste corte."
-        )
     elif profile.linux_family != "fedora":
         outcome = "block"
         trust_gaps.append("copr_linux_family_not_supported")
@@ -521,6 +517,11 @@ def _assess_copr_policy(
         outcome = "block"
         trust_gaps.append(capability.gap or "copr_dnf_plugin_not_observed")
         reason = capability.reason
+    elif request.intent == "procurar":
+        reason = (
+            "copr.procurar consulta apenas o repositório explicitamente pedido e nao faz "
+            "descoberta automatica nem busca global de repositórios nesta rodada."
+        )
     elif request.intent == "instalar":
         reason = (
             "copr.instalar habilita explicitamente o repositório pedido antes de instalar o pacote "

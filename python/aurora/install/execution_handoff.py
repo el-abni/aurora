@@ -13,6 +13,7 @@ from aurora.install.sources.aur import (
     aur_search_has_no_results,
     aur_search_has_parseable_candidates,
 )
+from aurora.install.sources.copr import copr_search_has_no_results, run_copr_search
 from aurora.install.sources.flatpak import (
     flatpak_mutation_reports_no_matching_ref,
     flatpak_search_has_no_results,
@@ -180,6 +181,8 @@ def _search_reports_no_results(
     returncode: int,
 ) -> bool:
     route = record.execution_route
+    if route is not None and route.route_name == "copr.procurar":
+        return copr_search_has_no_results(stdout, stderr, returncode)
     if route is not None and route.route_name.startswith("aur."):
         return aur_search_has_no_results(stdout, stderr, returncode)
     if route is not None and route.backend_name == "flatpak":
@@ -234,7 +237,14 @@ def _execute_search(
             ),
         )
 
-    proc = run(route.command)
+    if route.route_name == "copr.procurar":
+        proc = run_copr_search(
+            record.request.source_coordinate,
+            route.command[-1],
+            environ=environ,
+        )
+    else:
+        proc = run(route.command)
     if _search_reports_no_results(
         record,
         stdout=proc.stdout,

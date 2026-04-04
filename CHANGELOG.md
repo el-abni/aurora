@@ -1,5 +1,30 @@
 # Changelog
 
+## 🌌 Aurora v0.3.3
+
+Fechamento contido da frente COPR para abrir `copr.procurar` por repositório explícito, sem descoberta automática de fonte nem busca global no universo COPR.
+
+### Adicionado
+- `copr.procurar` como rota real de leitura dentro da família COPR já aberta.
+- consulta restrita ao `owner/project` explicitamente pedido, sem ranking global de repositórios.
+- observabilidade mais clara para o escopo da consulta, mantendo `requested_source=copr` e `source_coordinate` visíveis no request, na policy e na rota.
+
+### Alterado
+- a política de COPR agora aceita `procurar` apenas quando a coordenada do repositório é explícita e o host continua dentro do contrato Fedora mutável com capacidade `dnf copr` observada.
+- `copr.procurar` pode refinar a consulta humana para uma forma package-like apenas dentro do repositório explícito, sem promover isso a resolução automática de pacote para mutação.
+- README, help e docs técnicas passam a refletir a `v0.3.3` como release pública atual.
+
+### Continua fora da v0.3.3
+- descoberta automática de repositório COPR a partir do nome do pacote;
+- busca global no universo COPR;
+- canonicalização ampla de pacote fora do repositório explícito;
+- lifecycle amplo do repositório COPR e validação de origem RPM na remoção;
+- helpers AUR além de `paru` e `yay`;
+- passthrough interativo para `aur.remover`;
+- PPA, AppImage e GitHub Releases;
+- `rpm-ostree`, toolbox, distrobox e `ujust`;
+- hosts imutáveis reais como superfície operacional.
+
 ## 🌌 Aurora v0.3.2
 
 Fechamento contido da frente AUR sobre a base já aberta da `v0.3.1`, sem reintroduzir fallback mágico nem diluir a fronteira entre `host_package` e fonte explícita de terceiro.
