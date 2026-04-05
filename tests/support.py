@@ -1469,3 +1469,530 @@ def setup_flatpak_testbed(
         },
         state_file,
     )
+
+
+def _write_toolbox_container_backend_stubs(
+    bin_dir: Path,
+    *,
+    family: str,
+    state_file: Path,
+    repo_file: Path,
+    include_sudo: bool = True,
+) -> None:
+    if include_sudo:
+        write_stub(bin_dir, "sudo", "#!/bin/sh\nexec \"$@\"\n")
+    write_stub(
+        bin_dir,
+        "cat",
+        textwrap.dedent(
+            """\
+            #!/bin/sh
+            if [ "$1" = "/etc/os-release" ] && [ -n "$TOOLBOX_CONTAINER_ROOT" ]; then
+              exec /bin/cat "$TOOLBOX_CONTAINER_ROOT/os-release"
+            fi
+            exec /bin/cat "$@"
+            """
+        ),
+    )
+
+    if family == "arch":
+        manager_body = textwrap.dedent(
+            f"""\
+            #!/bin/sh
+            state_file="{state_file}"
+            repo_file="{repo_file}"
+            target=""
+            for arg in "$@"; do
+              target="$arg"
+            done
+            has_state() {{
+              /usr/bin/grep -qx "$1" "$state_file"
+            }}
+            has_repo() {{
+              /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
+            }}
+            search_key() {{
+              printf "%s" "$1" | /usr/bin/tr '[:upper:]' '[:lower:]'
+            }}
+            remove_state() {{
+              tmp="$state_file.tmp"
+              /usr/bin/grep -vx "$1" "$state_file" > "$tmp" || true
+              /usr/bin/mv "$tmp" "$state_file"
+            }}
+            case "$1" in
+              -Ss)
+                query_key="$(search_key "$target")"
+                found=1
+                while IFS="$(printf '\\t')" read -r package_name display_label; do
+                  [ -n "$package_name" ] || continue
+                  package_key="$(search_key "$package_name")"
+                  label_key="$(search_key "$display_label")"
+                  match=1
+                  case "$package_key" in
+                    *"$query_key"*) match=0 ;;
+                  esac
+                  case "$label_key" in
+                    *"$query_key"*) match=0 ;;
+                  esac
+                  if [ "$match" -eq 0 ]; then
+                    echo "extra/$package_name 1.0"
+                    echo "    $display_label"
+                    found=0
+                  fi
+                done < "$repo_file"
+                if [ "$found" -eq 0 ]; then
+                  exit 0
+                fi
+                echo "no packages found" >&2
+                exit 1
+                ;;
+              -Q)
+                if has_state "$target"; then
+                  exit 0
+                fi
+                exit 1
+                ;;
+              -S)
+                if has_state "$target"; then
+                  exit 0
+                fi
+                if ! has_repo "$target"; then
+                  echo "target not found: $target" >&2
+                  exit 1
+                fi
+                echo "$target" >> "$state_file"
+                echo "installed $target"
+                exit 0
+                ;;
+              -Rns)
+                if ! has_state "$target"; then
+                  echo "package not found" >&2
+                  exit 1
+                fi
+                remove_state "$target"
+                echo "removed $target"
+                exit 0
+                ;;
+            esac
+            exit 1
+            """
+        )
+        write_stub(bin_dir, "pacman", manager_body)
+        return
+
+    if family == "debian":
+        write_stub(
+            bin_dir,
+            "apt-cache",
+            textwrap.dedent(
+                f"""\
+                #!/bin/sh
+                repo_file="{repo_file}"
+                target="$2"
+                query_key="$(printf "%s" "$target" | /usr/bin/tr '[:upper:]' '[:lower:]')"
+                found=1
+                while IFS="$(printf '\\t')" read -r package_name display_label; do
+                  [ -n "$package_name" ] || continue
+                  package_key="$(printf "%s" "$package_name" | /usr/bin/tr '[:upper:]' '[:lower:]')"
+                  label_key="$(printf "%s" "$display_label" | /usr/bin/tr '[:upper:]' '[:lower:]')"
+                  match=1
+                  case "$package_key" in
+                    *"$query_key"*) match=0 ;;
+                  esac
+                  case "$label_key" in
+                    *"$query_key"*) match=0 ;;
+                  esac
+                  if [ "$match" -eq 0 ]; then
+                    echo "$package_name - $display_label"
+                    found=0
+                  fi
+                done < "$repo_file"
+                if [ "$found" -eq 0 ]; then
+                  exit 0
+                fi
+                echo "No packages found" >&2
+                exit 1
+                """
+            ),
+        )
+        write_stub(
+            bin_dir,
+            "apt-get",
+            textwrap.dedent(
+                f"""\
+                #!/bin/sh
+                state_file="{state_file}"
+                repo_file="{repo_file}"
+                action="$1"
+                target=""
+                for arg in "$@"; do
+                  target="$arg"
+                done
+                has_state() {{
+                  /usr/bin/grep -qx "$1" "$state_file"
+                }}
+                has_repo() {{
+                  /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
+                }}
+                remove_state() {{
+                  tmp="$state_file.tmp"
+                  /usr/bin/grep -vx "$1" "$state_file" > "$tmp" || true
+                  /usr/bin/mv "$tmp" "$state_file"
+                }}
+                case "$action" in
+                  install)
+                    if has_state "$target"; then
+                      exit 0
+                    fi
+                    if ! has_repo "$target"; then
+                      echo "Unable to locate package $target" >&2
+                      exit 100
+                    fi
+                    echo "$target" >> "$state_file"
+                    echo "installed $target"
+                    exit 0
+                    ;;
+                  remove)
+                    if ! has_state "$target"; then
+                      echo "package not installed" >&2
+                      exit 1
+                    fi
+                    remove_state "$target"
+                    echo "removed $target"
+                    exit 0
+                    ;;
+                esac
+                exit 1
+                """
+            ),
+        )
+        write_stub(
+            bin_dir,
+            "dpkg",
+            textwrap.dedent(
+                f"""\
+                #!/bin/sh
+                state_file="{state_file}"
+                target="$2"
+                if /usr/bin/grep -qx "$target" "$state_file"; then
+                  exit 0
+                fi
+                exit 1
+                """
+            ),
+        )
+        return
+
+    if family == "fedora":
+        write_stub(
+            bin_dir,
+            "dnf",
+            textwrap.dedent(
+                f"""\
+                #!/bin/sh
+                state_file="{state_file}"
+                repo_file="{repo_file}"
+                action="$1"
+                target=""
+                for arg in "$@"; do
+                  target="$arg"
+                done
+                has_state() {{
+                  /usr/bin/grep -qx "$1" "$state_file"
+                }}
+                has_repo() {{
+                  /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
+                }}
+                remove_state() {{
+                  tmp="$state_file.tmp"
+                  /usr/bin/grep -vx "$1" "$state_file" > "$tmp" || true
+                  /usr/bin/mv "$tmp" "$state_file"
+                }}
+                search_key() {{
+                  printf "%s" "$1" | /usr/bin/tr '[:upper:]' '[:lower:]'
+                }}
+                case "$action" in
+                  search)
+                    query_key="$(search_key "$target")"
+                    found=1
+                    while IFS="$(printf '\\t')" read -r package_name display_label; do
+                      [ -n "$package_name" ] || continue
+                      package_key="$(search_key "$package_name")"
+                      label_key="$(search_key "$display_label")"
+                      match=1
+                      case "$package_key" in
+                        *"$query_key"*) match=0 ;;
+                      esac
+                      case "$label_key" in
+                        *"$query_key"*) match=0 ;;
+                      esac
+                      if [ "$match" -eq 0 ]; then
+                        echo "$package_name.x86_64 : $display_label"
+                        found=0
+                      fi
+                    done < "$repo_file"
+                    if [ "$found" -eq 0 ]; then
+                      exit 0
+                    fi
+                    echo "No matches found" >&2
+                    exit 1
+                    ;;
+                  install)
+                    if has_state "$target"; then
+                      exit 0
+                    fi
+                    if ! has_repo "$target"; then
+                      echo "No match for argument: $target" >&2
+                      exit 1
+                    fi
+                    echo "$target" >> "$state_file"
+                    echo "installed $target"
+                    exit 0
+                    ;;
+                  remove)
+                    if ! has_state "$target"; then
+                      echo "No match for argument: $target" >&2
+                      exit 1
+                    fi
+                    remove_state "$target"
+                    echo "removed $target"
+                    exit 0
+                    ;;
+                esac
+                exit 1
+                """
+            ),
+        )
+        write_stub(
+            bin_dir,
+            "rpm",
+            textwrap.dedent(
+                f"""\
+                #!/bin/sh
+                state_file="{state_file}"
+                target="$2"
+                if /usr/bin/grep -qx "$target" "$state_file"; then
+                  exit 0
+                fi
+                exit 1
+                """
+            ),
+        )
+        return
+
+    if family == "opensuse":
+        write_stub(
+            bin_dir,
+            "zypper",
+            textwrap.dedent(
+                f"""\
+                #!/bin/sh
+                state_file="{state_file}"
+                repo_file="{repo_file}"
+                action=""
+                target=""
+                for arg in "$@"; do
+                  case "$arg" in
+                    search|install|remove)
+                      action="$arg"
+                      ;;
+                  esac
+                  target="$arg"
+                done
+                has_state() {{
+                  /usr/bin/grep -qx "$1" "$state_file"
+                }}
+                has_repo() {{
+                  /usr/bin/awk -F '\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
+                }}
+                remove_state() {{
+                  tmp="$state_file.tmp"
+                  /usr/bin/grep -vx "$1" "$state_file" > "$tmp" || true
+                  /usr/bin/mv "$tmp" "$state_file"
+                }}
+                search_key() {{
+                  printf "%s" "$1" | /usr/bin/tr '[:upper:]' '[:lower:]'
+                }}
+                case "$action" in
+                  search)
+                    query_key="$(search_key "$target")"
+                    found=1
+                    while IFS="$(printf '\\t')" read -r package_name display_label; do
+                      [ -n "$package_name" ] || continue
+                      package_key="$(search_key "$package_name")"
+                      label_key="$(search_key "$display_label")"
+                      match=1
+                      case "$package_key" in
+                        *"$query_key"*) match=0 ;;
+                      esac
+                      case "$label_key" in
+                        *"$query_key"*) match=0 ;;
+                      esac
+                      if [ "$match" -eq 0 ]; then
+                        echo "i | $package_name | $display_label"
+                        found=0
+                      fi
+                    done < "$repo_file"
+                    if [ "$found" -eq 0 ]; then
+                      exit 0
+                    fi
+                    echo "No matching items found." >&2
+                    exit 104
+                    ;;
+                  install)
+                    if has_state "$target"; then
+                      exit 0
+                    fi
+                    if ! has_repo "$target"; then
+                      echo "No matching items found." >&2
+                      exit 104
+                    fi
+                    echo "$target" >> "$state_file"
+                    echo "installed $target"
+                    exit 0
+                    ;;
+                  remove)
+                    if ! has_state "$target"; then
+                      echo "package not found" >&2
+                      exit 1
+                    fi
+                    remove_state "$target"
+                    echo "removed $target"
+                    exit 0
+                    ;;
+                esac
+                exit 1
+                """
+            ),
+        )
+        write_stub(
+            bin_dir,
+            "rpm",
+            textwrap.dedent(
+                f"""\
+                #!/bin/sh
+                state_file="{state_file}"
+                target="$2"
+                if /usr/bin/grep -qx "$target" "$state_file"; then
+                  exit 0
+                fi
+                exit 1
+                """
+            ),
+        )
+
+
+def setup_toolbox_testbed(
+    root: Path,
+    *,
+    host_distro_id: str,
+    host_distro_like: str,
+    toolboxes: tuple[dict[str, object], ...],
+    host_name: str = "",
+) -> tuple[dict[str, str], dict[str, Path]]:
+    bin_dir = root / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    toolboxes_root = root / "toolboxes"
+    toolboxes_root.mkdir(parents=True, exist_ok=True)
+    state_files: dict[str, Path] = {}
+
+    for spec in toolboxes:
+        toolbox_name = str(spec["name"])
+        family = str(spec["family"])
+        distro_id = str(spec.get("distro_id", family))
+        distro_like = str(spec.get("distro_like", family))
+        repo_packages = tuple(spec.get("repo_packages", ()))
+        installed_packages = tuple(spec.get("installed_packages", ()))
+        include_sudo = bool(spec.get("include_sudo", True))
+        display_name = str(spec.get("display_name", distro_id))
+
+        container_root = toolboxes_root / toolbox_name
+        container_bin = container_root / "bin"
+        container_bin.mkdir(parents=True, exist_ok=True)
+        state_file = container_root / "installed.txt"
+        repo_file = container_root / "repo.txt"
+        normalized_repo_packages: list[tuple[str, str]] = []
+        for entry in repo_packages:
+            package_name, separator, label_value = str(entry).partition("|")
+            package_name = package_name.strip()
+            display_label = label_value.strip() if separator else "pacote de teste"
+            if package_name:
+                normalized_repo_packages.append((package_name, display_label or "pacote de teste"))
+        state_file.write_text(
+            "\n".join(str(item) for item in installed_packages) + ("\n" if installed_packages else ""),
+            encoding="utf-8",
+        )
+        repo_file.write_text(
+            "\n".join(
+                f"{package_name}\t{display_label}"
+                for package_name, display_label in normalized_repo_packages
+            )
+            + ("\n" if normalized_repo_packages else ""),
+            encoding="utf-8",
+        )
+        write_os_release(
+            container_root,
+            distro_id=distro_id,
+            distro_like=distro_like,
+            name=display_name,
+        )
+        _write_toolbox_container_backend_stubs(
+            container_bin,
+            family=family,
+            state_file=state_file,
+            repo_file=repo_file,
+            include_sudo=include_sudo,
+        )
+        state_files[toolbox_name] = state_file
+
+    write_os_release(root, distro_id=host_distro_id, distro_like=host_distro_like, name=host_name or host_distro_id)
+    write_stub(
+        bin_dir,
+        "toolbox",
+        textwrap.dedent(
+            f"""\
+            #!/bin/sh
+            toolboxes_root="{toolboxes_root}"
+            if [ "$1" = "list" ] && [ "$2" = "--containers" ]; then
+              echo "CONTAINER ID  CONTAINER NAME    CREATED       STATUS   IMAGE NAME"
+              index=1
+              for container_dir in "$toolboxes_root"/*; do
+                [ -d "$container_dir" ] || continue
+                container_name="${{container_dir##*/}}"
+                printf "%012x  %s  2 hours ago  running  quay.io/fedora/fedora-toolbox:41\\n" "$index" "$container_name"
+                index=$((index + 1))
+              done
+              exit 0
+            fi
+            if [ "$1" = "run" ] && [ "$2" = "--container" ]; then
+              container_name="$3"
+              container_root="$toolboxes_root/$container_name"
+              shift 3
+              if [ "$1" = "--" ]; then
+                shift
+              fi
+              if [ ! -d "$container_root" ]; then
+                echo "container not found: $container_name" >&2
+                exit 1
+              fi
+              export TOOLBOX_CONTAINER_ROOT="$container_root"
+              export PATH="$container_root/bin"
+              if [ "$1" = "sh" ]; then
+                shift
+                exec /bin/sh "$@"
+              fi
+              exec "$@"
+            fi
+            echo "unsupported toolbox invocation" >&2
+            exit 1
+            """
+        ),
+    )
+
+    return (
+        {
+            "PATH": str(bin_dir),
+            "AURORA_OS_RELEASE_PATH": str(root / "os-release"),
+        },
+        state_files,
+    )

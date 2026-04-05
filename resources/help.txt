@@ -24,26 +24,29 @@ Comandos públicos:
 - aurora remover <software> no flatpak <remote>
 - aurora remover <software> no flatpak --confirm
 - aurora remover <software> no flatpak <remote> --confirm
+- aurora procurar <pacote> na toolbox <ambiente>
+- aurora instalar <pacote> na toolbox <ambiente>
+- aurora remover <pacote> na toolbox <ambiente> --confirm
 - aurora dev <frase>
 - aurora --help
 - aurora --version
 
-Contrato público da v0.4.1:
+Contrato público da v0.5.0:
 - produto 100% Python;
 - launchers oficiais: aurora e auro;
 - domínios ativos: host_package e user_software;
-- fontes reais: host_package_manager, aur_repository, copr_repository, ppa_repository e flatpak_remote;
-- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.procurar/instalar/remover, ppa.instalar e flatpak.procurar/instalar/remover;
-- pedidos nus continuam em host_package;
-- AUR so entra por frase marcada com aur;
-- COPR so entra por frase marcada com copr e owner/project explicito;
-- PPA so entra por frase marcada com ppa e coordenada canonica ppa:owner/name;
-- AUR aceita apenas os helpers paru e yay nesta rodada;
-- COPR abre procurar/instalar/remover em Fedora mutavel com dnf copr observado;
-- PPA abre apenas ppa.instalar em Ubuntu mutavel com add-apt-repository, apt-get e dpkg observados;
-- ppa.instalar planeja add-apt-repository, apt-get update e apt-get install como passos preparatorios explicitos;
-- ppa.remover continua bloqueado por honestidade nesta release;
-- pedidos com flatpak/flathub vao para user_software.
+- execution surfaces reais: host e toolbox;
+- fontes reais: host_package_manager, aur_repository, copr_repository, ppa_repository, flatpak_remote e toolbox_host_package_manager;
+- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.procurar/instalar/remover, ppa.instalar, flatpak.procurar/instalar/remover e toolbox.procurar/instalar/remover;
+- pedidos nus continuam em host_package no host;
+- AUR só entra por frase marcada com aur;
+- COPR só entra por frase marcada com copr e owner/project explicito;
+- PPA só entra por frase marcada com ppa e coordenada canonica ppa:owner/name;
+- pedidos com flatpak/flathub vao para user_software;
+- toolbox entra apenas por frase marcada como toolbox e com ambiente explicito;
+- toolbox nao vira fallback do host e nao cria ambiente automaticamente;
+- toolbox.instalar e toolbox.remover exigem nome exato de pacote nesta release;
+- toolbox.remover exige confirmacao explicita;
 - flatpak preserva flathub como default em procurar/instalar quando nenhum remote e informado;
 - flatpak aceita remote explicito apenas quando ele ja e observavel via flatpak remotes;
 - flatpak.procurar usa flatpak remote-ls no remote selecionado;
@@ -52,32 +55,32 @@ Contrato público da v0.4.1:
 Confirmação:
 - use --confirm ou --yes quando a Aurora pedir confirmação explícita;
 - isso também vale quando o marcador entra inline numa frase passada como texto único, inclusive em aurora dev;
-- isso cobre mutações sensíveis de host_package, mutações reais via AUR, mutações reais via COPR, ppa.instalar e remoções reais via flatpak.
+- isso cobre mutações sensíveis de host_package, mutações reais via AUR, mutações reais via COPR, ppa.instalar, remoções reais via flatpak e toolbox.remover.
 
 Compatibilidade:
 - host_package: Arch, Debian/Ubuntu, Fedora e OpenSUSE mutáveis;
 - host_package em Atomic/imutáveis: bloqueado por política;
 - AUR explícito: Arch mutável com helper paru ou yay observado;
-- aur.instalar pode entregar o terminal ao helper para revisão/build interativos; aur.remover permanece não interativo nesta release;
-- helper AUR observado fora do contrato continua bloqueado e não amplia a superfície pública;
 - COPR explícito: Fedora mutável com dnf copr observado, consulta restrita ao repositório owner/project explícito;
-- copr.remover verifica from_repo antes da mutação e bloqueia quando a origem não fecha;
 - PPA explícito: Ubuntu mutável com ppa:owner/name explícito, add-apt-repository, apt-get e dpkg observados;
-- Debian puro e outras derivadas Debian-like continuam bloqueados na frente PPA;
-- flatpak: depende do backend estar presente no host, atua no escopo do usuário e nao faz add automatico de remote.
+- flatpak: depende do backend estar presente no host, atua no escopo do usuário e nao faz add automatico de remote;
+- toolbox: depende do comando toolbox no host, exige ambiente explicito, observa backend dentro do ambiente mediado e nao equivale a suporte amplo a imutáveis.
 
-Fora da v0.4.1:
+Fora da v0.5.0:
 - fallback automático de pedido nu para AUR;
+- fallback automático do host para toolbox;
+- default implícito de toolbox e descoberta mágica de ambiente;
+- criação automática de toolbox e administração ampla de lifecycle;
+- mistura de toolbox com AUR, COPR, PPA ou flatpak;
+- canonicalização ampla de alvo para toolbox.instalar e toolbox.remover;
 - descoberta automática de repositório COPR;
 - descoberta automática de PPA ou inferência de PPA a partir do nome do pacote;
 - ppa.procurar, ppa.remover real, remove-apt-repository e lifecycle amplo de PPA;
-- tratamento de apt repo genérico como se fosse PPA;
-- promessa ampla para Debian-like fora de Ubuntu mutável;
 - descoberta automática de remotes flatpak;
 - add automático de remote arbitrário;
 - administração geral de remotes flatpak;
 - helpers AUR além de paru e yay, e passthrough interativo para aur.remover;
 - AppImage e GitHub Releases;
-- rpm-ostree, toolbox, distrobox e ujust;
+- distrobox, rpm-ostree e ujust;
 - suporte operacional real a hosts imutáveis;
 - manutenção ampla do host, arquivos e rede.

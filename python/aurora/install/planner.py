@@ -30,12 +30,27 @@ from aurora.install.sources.ppa import (
 )
 from aurora.linux.host_profile import detect_host_profile
 from aurora.linux.host_package import resolve_host_package_target
+from aurora.linux.toolbox import (
+    observe_toolbox_profile,
+    resolve_toolbox_environment,
+    resolve_toolbox_target,
+    toolbox_target_resolution_blocks,
+)
 from aurora.semantics.pipeline import has_confirmation_marker
 
 
 def _summary_for_request(request: SemanticRequest) -> str:
     if not request.target:
         return "Sem acao aberta."
+
+    if request.execution_surface == "toolbox" and request.domain_kind == "host_package":
+        environment_label = request.environment_target or "toolbox explicitamente pedida"
+        if request.intent == "procurar":
+            return f"Procurar o pacote '{request.target}' dentro da toolbox '{environment_label}'."
+        if request.intent == "instalar":
+            return f"Instalar o pacote '{request.target}' dentro da toolbox '{environment_label}'."
+        if request.intent == "remover":
+            return f"Remover o pacote '{request.target}' dentro da toolbox '{environment_label}'."
 
     if request.domain_kind == "host_package":
         if request.requested_source == "ppa":
@@ -121,11 +136,14 @@ def _outcome_for_request(
     request: SemanticRequest,
     policy_outcome: str | None,
     *,
+    environment_resolution=None,
     target_resolution=None,
 ) -> str:
     if request.status == "OUT_OF_SCOPE":
         return "out_of_scope"
     if request.status == "BLOCKED":
+        return "blocked"
+    if _environment_resolution_blocks(request, environment_resolution):
         return "blocked"
     if _target_resolution_blocks(request, target_resolution):
         return "blocked"
@@ -137,19 +155,36 @@ def _outcome_for_request(
 def _summary(
     request: SemanticRequest,
     *,
+    environment_resolution=None,
     target_resolution=None,
 ) -> str:
+    if _environment_resolution_blocks(request, environment_resolution) and environment_resolution is not None:
+        return environment_resolution.reason
     if _target_resolution_blocks(request, target_resolution) and target_resolution is not None:
         return target_resolution.reason
     return _summary_for_request(request)
+
+
+def _resolve_environment(
+    request: SemanticRequest,
+    profile,
+    *,
+    environ: dict[str, str] | None = None,
+):
+    if request.execution_surface == "toolbox":
+        return resolve_toolbox_environment(request, profile, environ=environ)
+    return None
 
 
 def _resolve_target(
     request: SemanticRequest,
     profile,
     *,
+    toolbox_profile=None,
     environ: dict[str, str] | None = None,
 ):
+    if request.execution_surface == "toolbox":
+        return resolve_toolbox_target(request, toolbox_profile, environ=environ)
     if request.domain_kind == "user_software":
         return resolve_flatpak_target(request, profile, environ=environ)
     if request.domain_kind == "host_package":
@@ -164,6 +199,10 @@ def _resolve_target(
 
 
 def _resolved_target(request: SemanticRequest, target_resolution) -> str:
+    if request.execution_surface == "toolbox":
+        if target_resolution is not None and target_resolution.resolved_target:
+            return target_resolution.resolved_target
+        return request.target
     if request.domain_kind == "user_software":
         return resolved_flatpak_target(request, target_resolution)
     if request.domain_kind == "host_package" and request.requested_source == "ppa":
@@ -180,6 +219,8 @@ def _resolved_target(request: SemanticRequest, target_resolution) -> str:
 def _target_resolution_blocks(request: SemanticRequest, target_resolution) -> bool:
     if target_resolution is None:
         return False
+    if request.execution_surface == "toolbox":
+        return toolbox_target_resolution_blocks(target_resolution)
     if request.domain_kind == "user_software":
         return flatpak_target_resolution_blocks(request, target_resolution)
     if request.domain_kind == "host_package" and request.requested_source == "ppa":
@@ -189,6 +230,12 @@ def _target_resolution_blocks(request: SemanticRequest, target_resolution) -> bo
     if request.domain_kind == "host_package" and request.requested_source == "aur":
         return aur_target_resolution_blocks(request, target_resolution)
     return target_resolution.status in {"ambiguous", "not_found", "unresolved"}
+
+
+def _environment_resolution_blocks(request: SemanticRequest, environment_resolution) -> bool:
+    if request.execution_surface != "toolbox" or environment_resolution is None:
+        return False
+    return environment_resolution.status in {"missing", "not_found", "unresolved", "ambiguous"}
 
 
 def _confirmation_supplied(request: SemanticRequest, *, confirmed: bool) -> bool:
@@ -205,32 +252,58 @@ def plan_request(
 ) -> DecisionRecord:
     profile = None
     policy = None
+    environment_resolution = None
     target_resolution = None
     route = None
+    toolbox_profile = None
+    toolbox_profile_probe = None
     confirmation_supplied = _confirmation_supplied(request, confirmed=confirmed)
 
     if request.domain_kind in {"host_package", "user_software"}:
         profile = detect_host_profile(environ)
+        environment_resolution = _resolve_environment(request, profile, environ=environ)
+        if (
+            request.execution_surface == "toolbox"
+            and environment_resolution is not None
+            and environment_resolution.status == "resolved"
+            and environment_resolution.resolved_environment
+        ):
+            toolbox_profile_probe = observe_toolbox_profile(
+                environment_resolution.resolved_environment,
+                environ=environ,
+            )
+            toolbox_profile = toolbox_profile_probe.profile if toolbox_profile_probe.observed else None
         policy = assess_policy(
             request,
             profile,
             confirmation_supplied=confirmation_supplied,
             environ=environ,
+            environment_resolution=environment_resolution,
+            toolbox_profile=toolbox_profile,
+            toolbox_profile_probe=toolbox_profile_probe,
         )
-        target_resolution = _resolve_target(request, profile, environ=environ)
-        if not _target_resolution_blocks(request, target_resolution):
+        target_resolution = _resolve_target(
+            request,
+            profile,
+            toolbox_profile=toolbox_profile,
+            environ=environ,
+        )
+        if not _environment_resolution_blocks(request, environment_resolution) and not _target_resolution_blocks(request, target_resolution):
             route = select_route(
                 build_route_candidates(
                     request,
                     profile,
                     target=_resolved_target(request, target_resolution),
                     environ=environ,
+                    environment_resolution=environment_resolution,
+                    toolbox_profile=toolbox_profile,
                 )
             )
 
     outcome = _outcome_for_request(
         request,
         policy.policy_outcome if policy else None,
+        environment_resolution=environment_resolution,
         target_resolution=target_resolution,
     )
     return DecisionRecord(
@@ -240,7 +313,13 @@ def plan_request(
         target_resolution=target_resolution,
         execution_route=route,
         outcome=outcome,
-        summary=_summary(request, target_resolution=target_resolution),
+        summary=_summary(
+            request,
+            environment_resolution=environment_resolution,
+            target_resolution=target_resolution,
+        ),
+        environment_resolution=environment_resolution,
+        toolbox_profile=toolbox_profile,
     )
 
 

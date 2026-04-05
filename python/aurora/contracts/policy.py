@@ -16,3 +16,4 @@ class PolicyAssessment:
     confirmation_supplied: bool
     reversal_level: str
     reason: str
+    execution_surface: str = "host"

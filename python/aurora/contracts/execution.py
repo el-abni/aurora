@@ -18,6 +18,8 @@ class ExecutionRoute:
     requires_privilege_escalation: bool = False
     interactive_passthrough: bool = False
     notes: tuple[str, ...] = field(default_factory=tuple)
+    execution_surface: str = "host"
+    environment_target: str = ""
 
     @property
     def can_execute_now(self) -> bool:

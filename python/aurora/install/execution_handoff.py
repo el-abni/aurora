@@ -124,6 +124,10 @@ def _is_user_software(record: DecisionRecord) -> bool:
     return record.request.domain_kind == "user_software"
 
 
+def _is_toolbox_surface(record: DecisionRecord) -> bool:
+    return record.request.execution_surface == "toolbox"
+
+
 def _is_copr_source(record: DecisionRecord) -> bool:
     return record.request.domain_kind == "host_package" and record.request.requested_source == "copr"
 
@@ -137,6 +141,8 @@ def _is_aur_source(record: DecisionRecord) -> bool:
 
 
 def _target_label(record: DecisionRecord) -> str:
+    if _is_toolbox_surface(record):
+        return "pacote da toolbox"
     if _is_copr_source(record):
         return "pacote do COPR"
     if _is_ppa_source(record):
@@ -147,6 +153,13 @@ def _target_label(record: DecisionRecord) -> str:
 
 
 def _location_label(record: DecisionRecord) -> str:
+    if _is_toolbox_surface(record):
+        environment_name = (
+            record.execution_route.environment_target
+            if record.execution_route is not None and record.execution_route.environment_target
+            else record.request.environment_target
+        )
+        return f"na toolbox '{environment_name or '-'}'"
     if _is_copr_source(record):
         return "neste host via COPR"
     if _is_ppa_source(record):
@@ -157,6 +170,10 @@ def _location_label(record: DecisionRecord) -> str:
 
 
 def _probe_summary(record: DecisionRecord, package_present: bool) -> str:
+    if _is_toolbox_surface(record):
+        if package_present:
+            return f"pacote presente {_location_label(record)}."
+        return f"pacote ausente {_location_label(record)}."
     if _is_copr_source(record):
         if package_present:
             return "pacote presente no host para a rota COPR."

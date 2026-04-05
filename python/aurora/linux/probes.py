@@ -9,13 +9,7 @@ OS_RELEASE_ENV = "AURORA_OS_RELEASE_PATH"
 OSTREE_BOOTED_ENV = "AURORA_OSTREE_BOOTED"
 
 
-def read_os_release(environ: dict[str, str]) -> dict[str, str]:
-    path = Path(environ.get(OS_RELEASE_ENV, "/etc/os-release"))
-    try:
-        raw = path.read_text(encoding="utf-8")
-    except OSError:
-        return {}
-
+def parse_os_release_text(raw: str) -> dict[str, str]:
     parsed: dict[str, str] = {}
     for line in raw.splitlines():
         stripped = line.strip()
@@ -27,6 +21,15 @@ def read_os_release(environ: dict[str, str]) -> dict[str, str]:
             value = value[1:-1]
         parsed[key.strip().upper()] = value.strip()
     return parsed
+
+
+def read_os_release(environ: dict[str, str]) -> dict[str, str]:
+    path = Path(environ.get(OS_RELEASE_ENV, "/etc/os-release"))
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    return parse_os_release_text(raw)
 
 
 def split_like(value: str) -> tuple[str, ...]:

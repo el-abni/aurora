@@ -1,5 +1,33 @@
 # Changelog
 
+## 🌌 Aurora v0.5.0
+
+Fechamento pequeno da frente `toolbox` para abrir um ambiente mediado explícito e distinto do host, sem fingir que isso já resolve suporte operacional real a hosts imutáveis.
+
+### Adicionado
+
+- `execution_surface=toolbox` e `environment_target` explícito no contrato de request, policy, route e `decision_record`.
+- `toolbox.procurar`, `toolbox.instalar` e `toolbox.remover` como rotas reais sobre pacote distro-managed dentro de uma toolbox explicitamente nomeada.
+- observação explícita de `toolbox` no host, das toolboxes existentes e do backend observado dentro do ambiente selecionado.
+- `environment_resolution` e `toolbox_profile` em `aurora dev` para deixar visível a fronteira host vs toolbox.
+
+### Alterado
+
+- `toolbox` não entra como fonte; entra como superfície operacional mediada sobre `host_package`.
+- `toolbox.instalar` e `toolbox.remover` exigem nome exato de pacote nesta release; a descoberta de nome humano fica em `toolbox.procurar`.
+- `toolbox.remover` exige confirmação explícita para manter visível a mutação dentro do ambiente mediado.
+- host Atomic/imutável continua bloqueado em `host_package`, mas um pedido explicitamente marcado para `toolbox` pode seguir quando `toolbox` e o ambiente nomeado foram observados.
+- README, help e docs técnicas passam a refletir a `v0.5.0` como release pública atual.
+
+### Continua fora da v0.5.0
+
+- fallback automático do host para `toolbox`;
+- default implícito de toolbox, autoseleção por ambiguidade ou descoberta mágica de ambiente;
+- criação automática de toolbox e administração ampla de lifecycle;
+- mistura de `toolbox` com AUR, COPR, PPA ou remotes `flatpak`;
+- canonicalização ampla de alvo para `toolbox.instalar` e `toolbox.remover`;
+- distrobox, `rpm-ostree`, `ujust` e suporte operacional real a hosts imutáveis.
+
 ## 🌌 Aurora v0.4.1
 
 Fechamento pequeno da frente `flatpak` para abrir `remote` explícito além de `flathub`, sem transformar a Aurora em gerenciador amplo de remotes.

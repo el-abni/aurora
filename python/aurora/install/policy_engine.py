@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 
+from aurora.contracts.decisions import EnvironmentResolution
 from aurora.contracts.host import HostProfile
 from aurora.contracts.policy import PolicyAssessment
 from aurora.contracts.requests import SemanticRequest
@@ -24,6 +25,7 @@ from aurora.install.sources.flatpak import (
 )
 from aurora.install.sources.ppa import observe_ppa_capability, supported_ppa_distro_ids
 from aurora.linux.immutable_policy import host_package_block_reason
+from aurora.linux.toolbox import ToolboxProfileProbe
 
 _CRITICAL_PACKAGE_NAMES = {
     "apt",
@@ -179,6 +181,211 @@ def _assess_host_package_policy(
         confirmation_supplied=confirmation_supplied,
         reversal_level=reversal_level,
         reason=reason,
+    )
+
+
+def _toolbox_software_criticality(request: SemanticRequest) -> str:
+    if request.intent == "procurar":
+        return "low"
+    return "medium"
+
+
+def _toolbox_reversal_level(intent: str) -> str:
+    if intent == "procurar":
+        return "informational"
+    if intent == "instalar":
+        return "mediated_environment_change"
+    return "mediated_environment_removal"
+
+
+def _toolbox_environment_gap(status: str) -> str:
+    if status == "missing":
+        return "toolbox_environment_target_missing"
+    if status == "not_found":
+        return "toolbox_environment_not_observed"
+    if status == "ambiguous":
+        return "toolbox_environment_ambiguous"
+    return "toolbox_environment_not_resolved"
+
+
+def _assess_toolbox_policy(
+    request: SemanticRequest,
+    profile: HostProfile | None,
+    *,
+    environment_resolution: EnvironmentResolution | None = None,
+    toolbox_profile: HostProfile | None = None,
+    toolbox_profile_probe: ToolboxProfileProbe | None = None,
+    confirmation_supplied: bool = False,
+) -> PolicyAssessment | None:
+    software_criticality = _toolbox_software_criticality(request)
+    reversal_level = _toolbox_reversal_level(request.intent)
+    requires_confirmation = request.intent == "remover"
+
+    if profile is None:
+        return PolicyAssessment(
+            domain_kind="host_package",
+            source_type="toolbox_host_package_manager",
+            trust_level="mediated_environment",
+            software_criticality=software_criticality,
+            trust_signals=(),
+            trust_gaps=("host_profile_unavailable",),
+            policy_outcome="block",
+            requires_confirmation=requires_confirmation,
+            confirmation_supplied=confirmation_supplied,
+            reversal_level=reversal_level,
+            reason="o host profile nao esta disponivel para abrir a superficie toolbox.",
+            execution_surface="toolbox",
+        )
+
+    trust_signals = [
+        "execution_surface:toolbox",
+        "domain:host_package",
+        "source_type:toolbox_host_package_manager",
+        f"host_mutability:{profile.mutability}",
+        f"software_criticality:{software_criticality}",
+        (
+            f"toolbox_requested_environment:{request.environment_target}"
+            if request.environment_target
+            else "toolbox_requested_environment:-"
+        ),
+    ]
+    if profile.observed_environment_tools:
+        trust_signals.append(f"observed_environment_tools:{','.join(profile.observed_environment_tools)}")
+    if profile.observed_toolbox_environments:
+        trust_signals.append(
+            f"observed_toolbox_environments:{','.join(profile.observed_toolbox_environments)}"
+        )
+    if environment_resolution is not None:
+        trust_signals.append(f"toolbox_environment_status:{environment_resolution.status}")
+        if environment_resolution.resolved_environment:
+            trust_signals.append(
+                f"toolbox_resolved_environment:{environment_resolution.resolved_environment}"
+            )
+    if toolbox_profile is not None:
+        trust_signals.extend(
+            (
+                f"toolbox_linux_family:{toolbox_profile.linux_family}",
+                f"toolbox_support_tier:{toolbox_profile.support_tier}",
+                (
+                    f"toolbox_package_backends:{','.join(toolbox_profile.package_backends)}"
+                    if toolbox_profile.package_backends
+                    else "toolbox_package_backends:-"
+                ),
+            )
+        )
+    if toolbox_profile_probe is not None and toolbox_profile_probe.observed_commands:
+        trust_signals.append(
+            f"toolbox_observed_commands:{','.join(toolbox_profile_probe.observed_commands)}"
+        )
+        trust_signals.append(
+            f"toolbox_sudo_observed:{'true' if toolbox_profile_probe.sudo_observed else 'false'}"
+        )
+    if confirmation_supplied:
+        trust_signals.append("confirmation:explicit")
+
+    trust_gaps = [
+        "toolbox_default_selection_not_opened",
+        "toolbox_create_not_opened",
+        "toolbox_lifecycle_not_opened",
+        "toolbox_host_fallback_not_opened",
+    ]
+    if request.intent in {"instalar", "remover"}:
+        trust_gaps.append("toolbox_mutation_requires_exact_package_name")
+
+    outcome = "allow"
+    reason = "toolbox explicita foi aceita como superficie mediada distinta do host nesta release."
+
+    if request.status != "CONSISTENT":
+        outcome = "block"
+        trust_gaps.append("request_not_consistent")
+        reason = request.reason
+    elif request.domain_kind != "host_package" or request.requested_source:
+        outcome = "block"
+        trust_gaps.append("toolbox_scope_not_supported")
+        reason = (
+            "toolbox explicita nesta rodada cobre apenas pacotes distro-managed dentro da toolbox, "
+            "sem misturar AUR, COPR, PPA ou flatpak."
+        )
+    elif "toolbox" not in profile.observed_environment_tools:
+        outcome = "block"
+        trust_gaps.append("toolbox_command_not_observed")
+        reason = (
+            "o comando 'toolbox' nao foi observado neste host. "
+            "esta release nao cria ambiente automaticamente nem usa toolbox como fallback implicito."
+        )
+    elif environment_resolution is None or environment_resolution.status != "resolved":
+        outcome = "block"
+        if environment_resolution is not None:
+            trust_gaps.append(_toolbox_environment_gap(environment_resolution.status))
+            reason = environment_resolution.reason
+        else:
+            trust_gaps.append("toolbox_environment_not_resolved")
+            reason = "nao consegui resolver o ambiente toolbox explicitamente pedido."
+    elif toolbox_profile_probe is not None and not toolbox_profile_probe.observed:
+        outcome = "block"
+        trust_gaps.append(toolbox_profile_probe.gap or "toolbox_profile_not_observed")
+        reason = toolbox_profile_probe.reason
+    elif toolbox_profile is None:
+        outcome = "block"
+        trust_gaps.append("toolbox_profile_not_observed")
+        reason = "nao consegui observar a familia Linux e o backend de pacote dentro da toolbox selecionada."
+    elif toolbox_profile.support_tier == "out_of_scope":
+        outcome = "block"
+        trust_gaps.append("toolbox_linux_family_out_of_scope")
+        reason = (
+            "a familia Linux observada dentro da toolbox ficou fora do recorte atual. "
+            "esta release so cobre backends distro-managed conhecidos."
+        )
+    elif not toolbox_profile.package_backends:
+        outcome = "block"
+        trust_gaps.append("toolbox_backend_not_observed")
+        reason = (
+            "nao observei um backend distro-managed suportado dentro da toolbox selecionada. "
+            "esta release nao abre mutacao cega nem heuristica ampla de ambiente."
+        )
+    elif request.intent in {"instalar", "remover"} and (
+        toolbox_profile_probe is None or not toolbox_profile_probe.sudo_observed
+    ):
+        outcome = "block"
+        trust_gaps.append("toolbox_sudo_not_observed")
+        reason = (
+            "nao observei 'sudo' dentro da toolbox selecionada. "
+            "esta release nao tenta mutar o ambiente mediado sem capacidade minima explicitamente observada."
+        )
+    elif request.intent == "procurar":
+        reason = (
+            f"toolbox.procurar foi aceito dentro da toolbox '{environment_resolution.resolved_environment}', "
+            "mantendo clara a fronteira entre host e ambiente mediado."
+        )
+    elif request.intent == "instalar":
+        reason = (
+            f"toolbox.instalar foi aceito dentro da toolbox '{environment_resolution.resolved_environment}', "
+            "sem criar ambiente automaticamente e sem tocar o host."
+        )
+    elif request.intent == "remover":
+        reason = (
+            f"toolbox.remover foi aceito dentro da toolbox '{environment_resolution.resolved_environment}', "
+            "com confirmacao explicita para deixar visivel a mutacao mediada."
+        )
+
+    if outcome == "allow" and requires_confirmation and not confirmation_supplied:
+        outcome = "require_confirmation"
+        trust_gaps.append("confirmation_missing_for_toolbox_removal")
+        reason = "a remocao dentro da toolbox exige confirmacao explicita nesta rodada."
+
+    return PolicyAssessment(
+        domain_kind="host_package",
+        source_type="toolbox_host_package_manager",
+        trust_level="mediated_environment",
+        software_criticality=software_criticality,
+        trust_signals=tuple(trust_signals),
+        trust_gaps=tuple(trust_gaps),
+        policy_outcome=outcome,
+        requires_confirmation=requires_confirmation,
+        confirmation_supplied=confirmation_supplied,
+        reversal_level=reversal_level,
+        reason=reason,
+        execution_surface="toolbox",
     )
 
 
@@ -839,7 +1046,19 @@ def assess_policy(
     *,
     confirmation_supplied: bool = False,
     environ: dict[str, str] | None = None,
+    environment_resolution: EnvironmentResolution | None = None,
+    toolbox_profile: HostProfile | None = None,
+    toolbox_profile_probe: ToolboxProfileProbe | None = None,
 ) -> PolicyAssessment | None:
+    if request.execution_surface == "toolbox":
+        return _assess_toolbox_policy(
+            request,
+            profile,
+            environment_resolution=environment_resolution,
+            toolbox_profile=toolbox_profile,
+            toolbox_profile_probe=toolbox_profile_probe,
+            confirmation_supplied=confirmation_supplied,
+        )
     if request.domain_kind == "host_package" and request.requested_source == "ppa":
         return _assess_ppa_policy(
             request,

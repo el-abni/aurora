@@ -1,4 +1,4 @@
-from .decisions import DecisionRecord
+from .decisions import DecisionRecord, EnvironmentResolution
 from .execution import ExecutionRoute
 from .host import HostProfile
 from .policy import PolicyAssessment
@@ -6,6 +6,7 @@ from .requests import InputPhrase, PreparedAction, ProtectedToken, SemanticReque
 
 __all__ = [
     "DecisionRecord",
+    "EnvironmentResolution",
     "ExecutionRoute",
     "HostProfile",
     "InputPhrase",

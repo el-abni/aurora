@@ -1,27 +1,29 @@
-# Architecture - Aurora v0.4.1
+# Architecture - Aurora v0.5.0
 
 ## Tese curta
 
 Aurora continua sendo um produto **100% Python** com contratos pequenos e observáveis:
 
-- `host_package` para pacotes oficiais do host;
+- `host_package` para pacotes oficiais do host em `execution_surface=host`;
 - `AUR` como fonte explícita de terceiro para pacote do host em Arch;
 - `COPR` como fonte explícita de terceiro para pacote do host em Fedora;
 - `PPA` como fonte explícita de terceiro para pacote do host em Ubuntu;
-- `user_software` para software do usuário via `flatpak`.
+- `user_software` para software do usuário via `flatpak`;
+- `toolbox` como `execution_surface` explícita para pacote distro-managed dentro de um ambiente mediado nomeado.
 
-Ela não depende de Fish como centro do runtime, não trata ferramenta observada como promessa de suporte e não colapsa fontes diferentes numa única rota opaca.
+Ela não depende de Fish como centro do runtime, não trata ferramenta observada como promessa de suporte e não colapsa host e ambiente mediado numa rota opaca.
 
 ## Fluxo principal
 
 1. `cli.py` recebe o comando público.
 2. `semantics/` normaliza a frase e classifica a intenção mínima.
-3. `linux/host_profile.py` detecta família, mutabilidade, distro e ferramentas observadas.
-4. `install/domain_classifier.py` decide entre default de `host_package`, fontes explícitas `AUR`, `COPR`, `PPA` e `user_software`.
-5. `install/policy_engine.py` produz o juízo de política.
-6. `install/candidates.py` e `install/route_selector.py` escolhem a rota executável.
-7. `install/execution_handoff.py` executa, faz probes, roda passos preparatórios quando a rota exige preparação explícita e entrega o terminal ao helper quando a rota é interativa.
-8. `observability/` registra e renderiza o `decision_record`.
+3. `linux/host_profile.py` detecta família, mutabilidade, distro, ferramentas observadas e toolboxes observadas no host.
+4. `install/domain_classifier.py` decide entre default de `host_package`, fontes explícitas `AUR`, `COPR`, `PPA`, `user_software` via `flatpak` e `execution_surface=toolbox`.
+5. `linux/toolbox.py` resolve o ambiente mediado quando a frase marca `toolbox` e observa a família Linux e o backend dentro desse ambiente.
+6. `install/policy_engine.py` produz o juízo de política.
+7. `install/candidates.py` e `install/route_selector.py` escolhem a rota executável.
+8. `install/execution_handoff.py` executa, faz probes e mantém visível se a ação ocorre no host ou dentro da toolbox.
+9. `observability/` registra e renderiza o `decision_record`.
 
 ## Módulos principais
 
@@ -38,20 +40,24 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - detecção de mutabilidade;
 - matriz por família;
 - rotas concretas de `host_package`;
-- fronteira entre backend oficial do host e fontes terceiras explícitas.
+- observação e roteamento contido de `toolbox`;
+- fronteira entre backend oficial do host, fontes terceiras explícitas e ambiente mediado explícito.
 
 ### `install/`
 
-- classificação de domínio e fonte;
+- classificação de domínio, fonte e `execution_surface`;
 - policy;
+- resolução controlada de ambiente;
 - resolução controlada de alvo;
 - candidatos e seleção de rota;
-- handoff de execução, incluindo preparação explícita de rota quando necessário;
+- handoff de execução;
 - separação entre bloqueio, `noop`, confirmação e erro operacional.
 
 ### `observability/`
 
 - `decision_record`;
+- `environment_resolution`;
+- `toolbox_profile`;
 - renderização curta e expandida;
 - `aurora dev`.
 
@@ -62,7 +68,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - mensagens de confirmação;
 - mensagens de resultado.
 
-## Rotas abertas na v0.4.1
+## Rotas abertas na v0.5.0
 
 ### `host_package`
 
@@ -119,9 +125,9 @@ Garantias:
 - a frase precisa carregar a coordenada canônica `ppa:owner/name`;
 - a frente só abre em Ubuntu mutável com `add-apt-repository`, `apt-get` e `dpkg` observados;
 - `ppa.instalar` planeja `add-apt-repository -n`, `apt-get update` e `apt-get install` como passos preparatórios explícitos;
-- `ppa.remover` permanece bloqueado por honestidade, porque a Aurora ainda não demonstra proveniência APT por PPA e não abre lifecycle amplo do repositório;
+- `ppa.remover` permanece bloqueado por honestidade;
 - URL genérica de apt repo não entra como PPA;
-- não existe descoberta automática de PPA, busca global em PPA ou fallback implícito de pedido nu para PPA.
+- não existe descoberta automática de PPA nem fallback implícito de pedido nu para PPA.
 
 ### `user_software`
 
@@ -139,18 +145,35 @@ Garantias:
 - `flatpak` aceita remote explícito somente quando esse remote já é observável via `flatpak remotes`;
 - `flatpak.procurar` usa `flatpak remote-ls` filtrado localmente para respeitar o remote selecionado;
 - `flatpak.remover` usa remote explícito apenas como restrição de `origin`, sem default implícito para remoção;
-- mutação usa probe antes/depois e `noop` honesto;
 - `flatpak.remover` exige confirmação explícita quando a remoção realmente precisa acontecer.
+
+### `toolbox` explícita
+
+Rotas reais:
+
+- `toolbox.procurar`
+- `toolbox.instalar`
+- `toolbox.remover`
+
+Garantias:
+
+- `toolbox` entra como `execution_surface`, não como `requested_source`;
+- a frase precisa carregar o nome explícito do ambiente em `na toolbox <ambiente>`;
+- `toolbox` observa o ambiente antes de abrir policy e route;
+- `toolbox` observa `linux_family`, `support_tier`, `package_backends` e `sudo` dentro do ambiente selecionado;
+- `toolbox.procurar` pode usar busca humana dentro da toolbox selecionada;
+- `toolbox.instalar` e `toolbox.remover` exigem nome exato de pacote nesta release;
+- `toolbox.remover` exige confirmação explícita;
+- a mutação acontece dentro da toolbox e não toca o host;
+- não existe default implícito de toolbox, autocriação, lifecycle amplo, mistura com AUR/COPR/PPA/flatpak nem fallback host -> toolbox.
 
 ## Fronteiras deliberadas
 
-A `v0.4.1` continua pequena de propósito:
+A `v0.5.0` continua pequena de propósito:
 
-- pedido nu continua em `host_package`;
-- `AUR` não vira fallback mágico;
-- `COPR` continua sem descoberta automática nem busca global;
-- `PPA` não vira sinônimo de `apt` externo;
-- `PPA` não abre Debian puro nem outras derivadas Debian-like sem sustentação operacional;
-- `PPA` não abre `ppa.procurar`, `ppa.remover`, `remove-apt-repository` nem cleanup automático;
-- `flatpak` não faz descoberta automática, add arbitrário nem administração geral de remotes;
-- hosts imutáveis reais continuam fora da superfície operacional.
+- pedido nu continua em `host_package` no host;
+- `toolbox` não vira escape hatch implícito para Atomic/imutáveis;
+- `toolbox` não prepara abstração geral para distrobox;
+- `toolbox.instalar` e `toolbox.remover` não fazem canonicalização ampla de alvo;
+- `AUR`, `COPR`, `PPA` e `flatpak` continuam separados de `toolbox`;
+- hosts imutáveis reais continuam fora da superfície operacional ampla do produto, mesmo com `toolbox` agora aberta de forma explícita.

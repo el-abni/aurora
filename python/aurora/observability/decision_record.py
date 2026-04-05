@@ -22,8 +22,10 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "normalized_text": record.request.normalized_text,
             "intent": record.request.intent,
             "domain_kind": record.request.domain_kind,
+            "execution_surface": record.request.execution_surface,
             "requested_source": record.request.requested_source,
             "source_coordinate": record.request.source_coordinate,
+            "environment_target": record.request.environment_target,
             "target": record.request.target,
             "status": record.request.status,
             "reason": record.request.reason,
@@ -45,12 +47,15 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "observed_package_tools": list(record.host_profile.observed_package_tools),
             "observed_third_party_package_tools": list(record.host_profile.observed_third_party_package_tools),
             "support_tier": record.host_profile.support_tier,
+            "observed_environment_tools": list(record.host_profile.observed_environment_tools),
+            "observed_toolbox_environments": list(record.host_profile.observed_toolbox_environments),
         }
 
     if record.policy is not None:
         payload["policy"] = {
             "domain_kind": record.policy.domain_kind,
             "source_type": record.policy.source_type,
+            "execution_surface": record.policy.execution_surface,
             "trust_level": record.policy.trust_level,
             "software_criticality": record.policy.software_criticality,
             "trust_signals": list(record.policy.trust_signals),
@@ -127,6 +132,62 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
                 record.policy.trust_signals,
                 "flatpak_remove_origin_constraint:",
             )
+        if record.request.execution_surface == "toolbox":
+            payload["policy"]["toolbox_requested_environment"] = _signal_value(
+                record.policy.trust_signals,
+                "toolbox_requested_environment:",
+            )
+            payload["policy"]["toolbox_environment_status"] = _signal_value(
+                record.policy.trust_signals,
+                "toolbox_environment_status:",
+            )
+            payload["policy"]["toolbox_resolved_environment"] = _signal_value(
+                record.policy.trust_signals,
+                "toolbox_resolved_environment:",
+            )
+            payload["policy"]["observed_environment_tools"] = _signal_value(
+                record.policy.trust_signals,
+                "observed_environment_tools:",
+            )
+            payload["policy"]["observed_toolbox_environments"] = _signal_value(
+                record.policy.trust_signals,
+                "observed_toolbox_environments:",
+            )
+            payload["policy"]["toolbox_linux_family"] = _signal_value(
+                record.policy.trust_signals,
+                "toolbox_linux_family:",
+            )
+            payload["policy"]["toolbox_support_tier"] = _signal_value(
+                record.policy.trust_signals,
+                "toolbox_support_tier:",
+            )
+            payload["policy"]["toolbox_package_backends"] = _signal_value(
+                record.policy.trust_signals,
+                "toolbox_package_backends:",
+            )
+            payload["policy"]["toolbox_observed_commands"] = _signal_value(
+                record.policy.trust_signals,
+                "toolbox_observed_commands:",
+            )
+            payload["policy"]["toolbox_sudo_observed"] = _signal_value(
+                record.policy.trust_signals,
+                "toolbox_sudo_observed:",
+            )
+
+    if record.environment_resolution is not None:
+        payload["environment_resolution"] = {
+            "execution_surface": record.environment_resolution.execution_surface,
+            "original_environment": record.environment_resolution.original_environment,
+            "resolved_environment": record.environment_resolution.resolved_environment,
+            "observed_environments": list(record.environment_resolution.observed_environments),
+            "status": record.environment_resolution.status,
+            "source": record.environment_resolution.source,
+            "reason": record.environment_resolution.reason,
+            "diagnostic_command": list(record.environment_resolution.diagnostic_command),
+            "diagnostic_exit_code": record.environment_resolution.diagnostic_exit_code,
+            "diagnostic_stdout": record.environment_resolution.diagnostic_stdout,
+            "diagnostic_stderr": record.environment_resolution.diagnostic_stderr,
+        }
 
     if record.target_resolution is not None:
         payload["target_resolution"] = {
@@ -150,6 +211,8 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "route_name": record.execution_route.route_name,
             "action_name": record.execution_route.action_name,
             "backend_name": record.execution_route.backend_name,
+            "execution_surface": record.execution_route.execution_surface,
+            "environment_target": record.execution_route.environment_target,
             "pre_commands": [list(command) for command in record.execution_route.pre_commands],
             "pre_command_required_commands": [
                 list(commands) for commands in record.execution_route.pre_command_required_commands
@@ -221,6 +284,43 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
                     record.policy.trust_signals,
                     "flatpak_remove_origin_constraint:",
                 )
+        if record.execution_route.route_name.startswith("toolbox."):
+            if record.policy is not None:
+                payload["execution_route"]["toolbox_environment_status"] = _signal_value(
+                    record.policy.trust_signals,
+                    "toolbox_environment_status:",
+                )
+                payload["execution_route"]["toolbox_resolved_environment"] = _signal_value(
+                    record.policy.trust_signals,
+                    "toolbox_resolved_environment:",
+                )
+                payload["execution_route"]["toolbox_linux_family"] = _signal_value(
+                    record.policy.trust_signals,
+                    "toolbox_linux_family:",
+                )
+                payload["execution_route"]["toolbox_package_backends"] = _signal_value(
+                    record.policy.trust_signals,
+                    "toolbox_package_backends:",
+                )
+                payload["execution_route"]["toolbox_sudo_observed"] = _signal_value(
+                    record.policy.trust_signals,
+                    "toolbox_sudo_observed:",
+                )
+
+    if record.toolbox_profile is not None:
+        payload["toolbox_profile"] = {
+            "linux_family": record.toolbox_profile.linux_family,
+            "distro_id": record.toolbox_profile.distro_id,
+            "distro_like": list(record.toolbox_profile.distro_like),
+            "variant_id": record.toolbox_profile.variant_id,
+            "mutability": record.toolbox_profile.mutability,
+            "package_backends": list(record.toolbox_profile.package_backends),
+            "observed_package_tools": list(record.toolbox_profile.observed_package_tools),
+            "observed_third_party_package_tools": list(record.toolbox_profile.observed_third_party_package_tools),
+            "support_tier": record.toolbox_profile.support_tier,
+            "observed_environment_tools": list(record.toolbox_profile.observed_environment_tools),
+            "observed_toolbox_environments": list(record.toolbox_profile.observed_toolbox_environments),
+        }
 
     if record.execution is not None:
         payload["execution"] = {

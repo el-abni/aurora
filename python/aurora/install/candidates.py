@@ -8,6 +8,7 @@ from aurora.install.sources.copr import build_copr_candidate
 from aurora.install.sources.flatpak import build_flatpak_candidate
 from aurora.install.sources.host_package import build_host_package_candidate
 from aurora.install.sources.ppa import build_ppa_candidate
+from aurora.linux.toolbox import build_toolbox_candidate
 
 
 def build_route_candidates(
@@ -15,13 +16,23 @@ def build_route_candidates(
     profile: HostProfile | None,
     *,
     target: str | None = None,
+    environment_resolution=None,
+    toolbox_profile: HostProfile | None = None,
     environ: dict[str, str] | None = None,
 ) -> tuple[ExecutionRoute, ...]:
     if profile is None:
         return ()
 
     route = None
-    if request.domain_kind == "host_package":
+    if request.execution_surface == "toolbox":
+        route = build_toolbox_candidate(
+            request,
+            profile,
+            toolbox_profile=toolbox_profile,
+            environment_resolution=environment_resolution,
+            target=target,
+        )
+    elif request.domain_kind == "host_package":
         if request.requested_source == "ppa":
             route = build_ppa_candidate(request, profile, target=target)
         elif request.requested_source == "copr":

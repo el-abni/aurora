@@ -50,8 +50,10 @@ class SemanticRequest:
     normalized_text: str
     intent: str
     domain_kind: str
+    execution_surface: str = "host"
     requested_source: str = ""
     source_coordinate: str = ""
+    environment_target: str = ""
     target: str = ""
     status: str = "OUT_OF_SCOPE"
     reason: str = ""

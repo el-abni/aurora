@@ -14,6 +14,8 @@ class HostProfile:
     observed_package_tools: tuple[str, ...]
     observed_third_party_package_tools: tuple[str, ...]
     support_tier: str
+    observed_environment_tools: tuple[str, ...] = ()
+    observed_toolbox_environments: tuple[str, ...] = ()
 
     @property
     def linux_family_label(self) -> str:
@@ -58,3 +60,15 @@ class HostProfile:
         if not self.observed_third_party_package_tools:
             return "-"
         return ", ".join(self.observed_third_party_package_tools)
+
+    @property
+    def observed_environment_tools_label(self) -> str:
+        if not self.observed_environment_tools:
+            return "-"
+        return ", ".join(self.observed_environment_tools)
+
+    @property
+    def observed_toolbox_environments_label(self) -> str:
+        if not self.observed_toolbox_environments:
+            return "-"
+        return ", ".join(self.observed_toolbox_environments)
