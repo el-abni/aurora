@@ -1471,7 +1471,7 @@ def setup_flatpak_testbed(
     )
 
 
-def _write_toolbox_container_backend_stubs(
+def _write_mediated_container_backend_stubs(
     bin_dir: Path,
     *,
     family: str,
@@ -1487,8 +1487,8 @@ def _write_toolbox_container_backend_stubs(
         textwrap.dedent(
             """\
             #!/bin/sh
-            if [ "$1" = "/etc/os-release" ] && [ -n "$TOOLBOX_CONTAINER_ROOT" ]; then
-              exec /bin/cat "$TOOLBOX_CONTAINER_ROOT/os-release"
+            if [ "$1" = "/etc/os-release" ] && [ -n "$AURORA_MEDIATED_CONTAINER_ROOT" ]; then
+              exec /bin/cat "$AURORA_MEDIATED_CONTAINER_ROOT/os-release"
             fi
             exec /bin/cat "$@"
             """
@@ -1936,7 +1936,7 @@ def setup_toolbox_testbed(
             distro_like=distro_like,
             name=display_name,
         )
-        _write_toolbox_container_backend_stubs(
+        _write_mediated_container_backend_stubs(
             container_bin,
             family=family,
             state_file=state_file,
@@ -1975,7 +1975,7 @@ def setup_toolbox_testbed(
                 echo "container not found: $container_name" >&2
                 exit 1
               fi
-              export TOOLBOX_CONTAINER_ROOT="$container_root"
+              export AURORA_MEDIATED_CONTAINER_ROOT="$container_root"
               export PATH="$container_root/bin"
               if [ "$1" = "sh" ]; then
                 shift
@@ -1984,6 +1984,146 @@ def setup_toolbox_testbed(
               exec "$@"
             fi
             echo "unsupported toolbox invocation" >&2
+            exit 1
+            """
+        ),
+    )
+
+    return (
+        {
+            "PATH": str(bin_dir),
+            "AURORA_OS_RELEASE_PATH": str(root / "os-release"),
+        },
+        state_files,
+    )
+
+
+def setup_distrobox_testbed(
+    root: Path,
+    *,
+    host_distro_id: str,
+    host_distro_like: str,
+    distroboxes: tuple[dict[str, object], ...],
+    host_name: str = "",
+) -> tuple[dict[str, str], dict[str, Path]]:
+    bin_dir = root / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    distroboxes_root = root / "distroboxes"
+    distroboxes_root.mkdir(parents=True, exist_ok=True)
+    state_files: dict[str, Path] = {}
+
+    for spec in distroboxes:
+        distrobox_name = str(spec["name"])
+        family = str(spec["family"])
+        distro_id = str(spec.get("distro_id", family))
+        distro_like = str(spec.get("distro_like", family))
+        repo_packages = tuple(spec.get("repo_packages", ()))
+        installed_packages = tuple(spec.get("installed_packages", ()))
+        include_sudo = bool(spec.get("include_sudo", True))
+        display_name = str(spec.get("display_name", distro_id))
+
+        container_root = distroboxes_root / distrobox_name
+        container_bin = container_root / "bin"
+        container_bin.mkdir(parents=True, exist_ok=True)
+        state_file = container_root / "installed.txt"
+        repo_file = container_root / "repo.txt"
+        normalized_repo_packages: list[tuple[str, str]] = []
+        for entry in repo_packages:
+            package_name, separator, label_value = str(entry).partition("|")
+            package_name = package_name.strip()
+            display_label = label_value.strip() if separator else "pacote de teste"
+            if package_name:
+                normalized_repo_packages.append((package_name, display_label or "pacote de teste"))
+        state_file.write_text(
+            "\n".join(str(item) for item in installed_packages) + ("\n" if installed_packages else ""),
+            encoding="utf-8",
+        )
+        repo_file.write_text(
+            "\n".join(
+                f"{package_name}\t{display_label}"
+                for package_name, display_label in normalized_repo_packages
+            )
+            + ("\n" if normalized_repo_packages else ""),
+            encoding="utf-8",
+        )
+        write_os_release(
+            container_root,
+            distro_id=distro_id,
+            distro_like=distro_like,
+            name=display_name,
+        )
+        _write_mediated_container_backend_stubs(
+            container_bin,
+            family=family,
+            state_file=state_file,
+            repo_file=repo_file,
+            include_sudo=include_sudo,
+        )
+        state_files[distrobox_name] = state_file
+
+    write_os_release(root, distro_id=host_distro_id, distro_like=host_distro_like, name=host_name or host_distro_id)
+    write_stub(
+        bin_dir,
+        "distrobox",
+        textwrap.dedent(
+            f"""\
+            #!/bin/sh
+            distroboxes_root="{distroboxes_root}"
+            if [ "$1" = "list" ]; then
+              shift
+              if [ "$1" = "--no-color" ]; then
+                shift
+              fi
+              echo "ID | NAME | STATUS | IMAGE"
+              index=1
+              for container_dir in "$distroboxes_root"/*; do
+                [ -d "$container_dir" ] || continue
+                container_name="${{container_dir##*/}}"
+                printf "%012x | %s | running | docker.io/library/test:latest\\n" "$index" "$container_name"
+                index=$((index + 1))
+              done
+              exit 0
+            fi
+            if [ "$1" = "enter" ]; then
+              shift
+              container_name=""
+              while [ $# -gt 0 ]; do
+                case "$1" in
+                  --name|-n)
+                    container_name="$2"
+                    shift 2
+                    ;;
+                  --no-tty|-T|--no-workdir|-nw)
+                    shift
+                    ;;
+                  --)
+                    shift
+                    break
+                    ;;
+                  *)
+                    if [ -z "$container_name" ]; then
+                      container_name="$1"
+                      shift
+                    else
+                      break
+                    fi
+                    ;;
+                esac
+              done
+              container_root="$distroboxes_root/$container_name"
+              if [ ! -d "$container_root" ]; then
+                echo "container not found: $container_name" >&2
+                exit 1
+              fi
+              export AURORA_MEDIATED_CONTAINER_ROOT="$container_root"
+              export PATH="$container_root/bin"
+              if [ "$1" = "sh" ]; then
+                shift
+                exec /bin/sh "$@"
+              fi
+              exec "$@"
+            fi
+            echo "unsupported distrobox invocation" >&2
             exit 1
             """
         ),

@@ -15,6 +15,37 @@ def _signal_value(signals: tuple[str, ...], prefix: str) -> str | None:
     return None
 
 
+def _host_profile_to_dict(profile) -> dict[str, object]:
+    return {
+        "linux_family": profile.linux_family,
+        "distro_id": profile.distro_id,
+        "distro_like": list(profile.distro_like),
+        "variant_id": profile.variant_id,
+        "mutability": profile.mutability,
+        "package_backends": list(profile.package_backends),
+        "observed_package_tools": list(profile.observed_package_tools),
+        "observed_third_party_package_tools": list(profile.observed_third_party_package_tools),
+        "support_tier": profile.support_tier,
+        "observed_environment_tools": list(profile.observed_environment_tools),
+        "observed_toolbox_environments": list(profile.observed_toolbox_environments),
+        "observed_distrobox_environments": list(profile.observed_distrobox_environments),
+    }
+
+
+def _surface_fields(surface: str) -> tuple[str, ...]:
+    return (
+        f"{surface}_requested_environment",
+        f"{surface}_environment_status",
+        f"{surface}_resolved_environment",
+        f"observed_{surface}_environments",
+        f"{surface}_linux_family",
+        f"{surface}_support_tier",
+        f"{surface}_package_backends",
+        f"{surface}_observed_commands",
+        f"{surface}_sudo_observed",
+    )
+
+
 def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
     payload: dict[str, object] = {
         "request": {
@@ -37,19 +68,7 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
     }
 
     if record.host_profile is not None:
-        payload["host_profile"] = {
-            "linux_family": record.host_profile.linux_family,
-            "distro_id": record.host_profile.distro_id,
-            "distro_like": list(record.host_profile.distro_like),
-            "variant_id": record.host_profile.variant_id,
-            "mutability": record.host_profile.mutability,
-            "package_backends": list(record.host_profile.package_backends),
-            "observed_package_tools": list(record.host_profile.observed_package_tools),
-            "observed_third_party_package_tools": list(record.host_profile.observed_third_party_package_tools),
-            "support_tier": record.host_profile.support_tier,
-            "observed_environment_tools": list(record.host_profile.observed_environment_tools),
-            "observed_toolbox_environments": list(record.host_profile.observed_toolbox_environments),
-        }
+        payload["host_profile"] = _host_profile_to_dict(record.host_profile)
 
     if record.policy is not None:
         payload["policy"] = {
@@ -132,47 +151,17 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
                 record.policy.trust_signals,
                 "flatpak_remove_origin_constraint:",
             )
-        if record.request.execution_surface == "toolbox":
-            payload["policy"]["toolbox_requested_environment"] = _signal_value(
-                record.policy.trust_signals,
-                "toolbox_requested_environment:",
-            )
-            payload["policy"]["toolbox_environment_status"] = _signal_value(
-                record.policy.trust_signals,
-                "toolbox_environment_status:",
-            )
-            payload["policy"]["toolbox_resolved_environment"] = _signal_value(
-                record.policy.trust_signals,
-                "toolbox_resolved_environment:",
-            )
+        if record.request.execution_surface in {"toolbox", "distrobox"}:
+            surface = record.request.execution_surface
             payload["policy"]["observed_environment_tools"] = _signal_value(
                 record.policy.trust_signals,
                 "observed_environment_tools:",
             )
-            payload["policy"]["observed_toolbox_environments"] = _signal_value(
-                record.policy.trust_signals,
-                "observed_toolbox_environments:",
-            )
-            payload["policy"]["toolbox_linux_family"] = _signal_value(
-                record.policy.trust_signals,
-                "toolbox_linux_family:",
-            )
-            payload["policy"]["toolbox_support_tier"] = _signal_value(
-                record.policy.trust_signals,
-                "toolbox_support_tier:",
-            )
-            payload["policy"]["toolbox_package_backends"] = _signal_value(
-                record.policy.trust_signals,
-                "toolbox_package_backends:",
-            )
-            payload["policy"]["toolbox_observed_commands"] = _signal_value(
-                record.policy.trust_signals,
-                "toolbox_observed_commands:",
-            )
-            payload["policy"]["toolbox_sudo_observed"] = _signal_value(
-                record.policy.trust_signals,
-                "toolbox_sudo_observed:",
-            )
+            for field_name in _surface_fields(surface):
+                payload["policy"][field_name] = _signal_value(
+                    record.policy.trust_signals,
+                    f"{field_name}:",
+                )
 
     if record.environment_resolution is not None:
         payload["environment_resolution"] = {
@@ -284,43 +273,25 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
                     record.policy.trust_signals,
                     "flatpak_remove_origin_constraint:",
                 )
-        if record.execution_route.route_name.startswith("toolbox."):
-            if record.policy is not None:
-                payload["execution_route"]["toolbox_environment_status"] = _signal_value(
+        if record.execution_route.route_name.startswith(("toolbox.", "distrobox.")) and record.policy is not None:
+            surface = record.execution_route.execution_surface
+            for field_name in (
+                f"{surface}_environment_status",
+                f"{surface}_resolved_environment",
+                f"{surface}_linux_family",
+                f"{surface}_package_backends",
+                f"{surface}_sudo_observed",
+            ):
+                payload["execution_route"][field_name] = _signal_value(
                     record.policy.trust_signals,
-                    "toolbox_environment_status:",
-                )
-                payload["execution_route"]["toolbox_resolved_environment"] = _signal_value(
-                    record.policy.trust_signals,
-                    "toolbox_resolved_environment:",
-                )
-                payload["execution_route"]["toolbox_linux_family"] = _signal_value(
-                    record.policy.trust_signals,
-                    "toolbox_linux_family:",
-                )
-                payload["execution_route"]["toolbox_package_backends"] = _signal_value(
-                    record.policy.trust_signals,
-                    "toolbox_package_backends:",
-                )
-                payload["execution_route"]["toolbox_sudo_observed"] = _signal_value(
-                    record.policy.trust_signals,
-                    "toolbox_sudo_observed:",
+                    f"{field_name}:",
                 )
 
     if record.toolbox_profile is not None:
-        payload["toolbox_profile"] = {
-            "linux_family": record.toolbox_profile.linux_family,
-            "distro_id": record.toolbox_profile.distro_id,
-            "distro_like": list(record.toolbox_profile.distro_like),
-            "variant_id": record.toolbox_profile.variant_id,
-            "mutability": record.toolbox_profile.mutability,
-            "package_backends": list(record.toolbox_profile.package_backends),
-            "observed_package_tools": list(record.toolbox_profile.observed_package_tools),
-            "observed_third_party_package_tools": list(record.toolbox_profile.observed_third_party_package_tools),
-            "support_tier": record.toolbox_profile.support_tier,
-            "observed_environment_tools": list(record.toolbox_profile.observed_environment_tools),
-            "observed_toolbox_environments": list(record.toolbox_profile.observed_toolbox_environments),
-        }
+        payload["toolbox_profile"] = _host_profile_to_dict(record.toolbox_profile)
+
+    if record.distrobox_profile is not None:
+        payload["distrobox_profile"] = _host_profile_to_dict(record.distrobox_profile)
 
     if record.execution is not None:
         payload["execution"] = {

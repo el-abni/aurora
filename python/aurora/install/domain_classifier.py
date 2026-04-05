@@ -6,6 +6,7 @@ import re
 from aurora.contracts.requests import SemanticRequest
 from aurora.install.sources.flatpak import flatpak_remote_name_is_explicit
 from aurora.install.sources.ppa import ppa_coordinate_is_explicit
+from aurora.linux.distrobox import distrobox_name_is_explicit
 from aurora.linux.toolbox import toolbox_name_is_explicit
 from aurora.semantics.entities import extract_package_target, extract_target_token_pairs
 from aurora.semantics.intent import canonicalize_intent
@@ -13,6 +14,7 @@ from aurora.semantics.pipeline import prepare_text
 
 _FLATPAK_HINT_TOKENS = {"flatpak", "flathub"}
 _TOOLBOX_HINT_TOKENS = {"toolbox"}
+_DISTROBOX_HINT_TOKENS = {"distrobox"}
 _AUR_HINT_TOKENS = {"aur"}
 _COPR_HINT_TOKENS = {"copr"}
 _PPA_HINT_TOKENS = {"ppa"}
@@ -48,6 +50,14 @@ class _FlatpakSelection:
 
 @dataclass(frozen=True)
 class _ToolboxSelection:
+    target: str = ""
+    environment_target: str = ""
+    hint_found: bool = False
+    reason: str = ""
+
+
+@dataclass(frozen=True)
+class _DistroboxSelection:
     target: str = ""
     environment_target: str = ""
     hint_found: bool = False
@@ -245,7 +255,13 @@ def _extract_flatpak_selection(action) -> _FlatpakSelection:
 
 def _extract_toolbox_selection(action) -> _ToolboxSelection:
     pairs = extract_target_token_pairs(action)
-    conflicting_hints = _FLATPAK_HINT_TOKENS | _AUR_HINT_TOKENS | _COPR_HINT_TOKENS | _PPA_HINT_TOKENS
+    conflicting_hints = (
+        _FLATPAK_HINT_TOKENS
+        | _AUR_HINT_TOKENS
+        | _COPR_HINT_TOKENS
+        | _PPA_HINT_TOKENS
+        | _DISTROBOX_HINT_TOKENS
+    )
     for index in range(1, len(pairs)):
         if pairs[index - 1][1] not in _SOURCE_PREPOSITIONS or pairs[index][1] not in _TOOLBOX_HINT_TOKENS:
             continue
@@ -303,6 +319,72 @@ def _extract_toolbox_selection(action) -> _ToolboxSelection:
     return _ToolboxSelection()
 
 
+def _extract_distrobox_selection(action) -> _DistroboxSelection:
+    pairs = extract_target_token_pairs(action)
+    conflicting_hints = (
+        _FLATPAK_HINT_TOKENS
+        | _AUR_HINT_TOKENS
+        | _COPR_HINT_TOKENS
+        | _PPA_HINT_TOKENS
+        | _TOOLBOX_HINT_TOKENS
+    )
+    for index in range(1, len(pairs)):
+        if pairs[index - 1][1] not in _SOURCE_PREPOSITIONS or pairs[index][1] not in _DISTROBOX_HINT_TOKENS:
+            continue
+
+        target_pairs = pairs[: index - 1]
+        environment_pairs = pairs[index + 1 :]
+        if not target_pairs:
+            return _DistroboxSelection(
+                hint_found=True,
+                reason="faltou o alvo do pacote marcado para a distrobox explicita.",
+            )
+
+        if any(normalized in conflicting_hints for _original, normalized in target_pairs):
+            return _DistroboxSelection(
+                target=" ".join(original for original, _normalized in target_pairs).strip(),
+                hint_found=True,
+                reason=(
+                    "distrobox explicita nesta rodada nao se combina com aur, copr, ppa, flatpak ou toolbox. "
+                    "escolha uma unica superficie operacional."
+                ),
+            )
+
+        if len(environment_pairs) > 1:
+            return _DistroboxSelection(
+                target=" ".join(original for original, _normalized in target_pairs).strip(),
+                hint_found=True,
+                reason=(
+                    "o nome da distrobox precisa ser um identificador unico e conservador nesta rodada, "
+                    "sem parsing amplo de argumentos."
+                ),
+            )
+
+        if len(environment_pairs) == 1:
+            environment_original, environment_normalized = environment_pairs[0]
+            if not distrobox_name_is_explicit(environment_normalized):
+                return _DistroboxSelection(
+                    target=" ".join(original for original, _normalized in target_pairs).strip(),
+                    hint_found=True,
+                    reason=(
+                        "o nome da distrobox precisa ser um identificador simples e conservador nesta rodada, "
+                        "sem parsing amplo nem coordenada magica."
+                    ),
+                )
+            return _DistroboxSelection(
+                target=" ".join(original for original, _normalized in target_pairs).strip(),
+                environment_target=environment_original,
+                hint_found=True,
+            )
+
+        return _DistroboxSelection(
+            target=" ".join(original for original, _normalized in target_pairs).strip(),
+            hint_found=True,
+        )
+
+    return _DistroboxSelection()
+
+
 def classify_text(text: str) -> SemanticRequest:
     phrase, actions = prepare_text(text)
     if not actions:
@@ -339,6 +421,7 @@ def classify_text(text: str) -> SemanticRequest:
         environment_target = ""
         source_coordinate_required = False
         toolbox_selection = _extract_toolbox_selection(action)
+        distrobox_selection = _extract_distrobox_selection(action)
         if toolbox_selection.hint_found:
             target = toolbox_selection.target
             environment_target = toolbox_selection.environment_target
@@ -368,6 +451,38 @@ def classify_text(text: str) -> SemanticRequest:
                 if environment_target
                 else (
                     "pedido explicitamente marcado como 'toolbox', entao foi enquadrado em host_package "
+                    "sobre superficie mediada e ainda exige resolucao explicita do ambiente."
+                )
+            )
+        elif distrobox_selection.hint_found:
+            target = distrobox_selection.target
+            environment_target = distrobox_selection.environment_target
+            observations = tuple(
+                item
+                for item in (
+                    "domain_selection:explicit_host_package_surface",
+                    "surface_hint:distrobox",
+                    (
+                        f"distrobox_environment_target:{environment_target}"
+                        if environment_target
+                        else "distrobox_environment_target:-"
+                    ),
+                )
+                if item
+            )
+            domain_kind = "host_package"
+            execution_surface = "distrobox"
+            missing_target_reason = (
+                distrobox_selection.reason or "faltou o alvo do pacote marcado para a distrobox explicita."
+            )
+            consistent_reason = (
+                (
+                    f"pedido explicitamente marcado como 'distrobox', com ambiente explicito '{environment_target}', "
+                    "entao foi enquadrado em host_package sobre superficie mediada."
+                )
+                if environment_target
+                else (
+                    "pedido explicitamente marcado como 'distrobox', entao foi enquadrado em host_package "
                     "sobre superficie mediada e ainda exige resolucao explicita do ambiente."
                 )
             )
@@ -486,6 +601,21 @@ def classify_text(text: str) -> SemanticRequest:
                 target=target,
                 status="BLOCKED",
                 reason=toolbox_selection.reason,
+                observations=observations,
+            )
+        if execution_surface == "distrobox" and distrobox_selection.reason:
+            return SemanticRequest(
+                original_text=action.original_action,
+                normalized_text=action.normalized_action,
+                intent=intent,
+                domain_kind=domain_kind,
+                execution_surface=execution_surface,
+                requested_source=requested_source,
+                source_coordinate=source_coordinate,
+                environment_target=environment_target,
+                target=target,
+                status="BLOCKED",
+                reason=distrobox_selection.reason,
                 observations=observations,
             )
         if requested_source == "flatpak" and source_coordinate_required and not source_coordinate:

@@ -1,14 +1,15 @@
-# Installation Policy - Aurora v0.5.0
+# Installation Policy - Aurora v0.5.1
 
 ## Escopo real da política
 
-Na `v0.5.0`, a política operacional da Aurora governa dois domínios, uma superfície mediada explícita e seis leituras reais de rota:
+Na `v0.5.1`, a política operacional da Aurora governa dois domínios, duas superfícies mediadas explícitas e sete leituras reais de rota:
 
 - `host_package` com `execution_surface=host` e `source_type=host_package_manager`;
 - `host_package` explicitamente marcado com `source_type=aur_repository`;
 - `host_package` explicitamente marcado com `source_type=copr_repository`;
 - `host_package` explicitamente marcado com `source_type=ppa_repository`;
 - `host_package` explicitamente marcado com `execution_surface=toolbox` e `source_type=toolbox_host_package_manager`;
+- `host_package` explicitamente marcado com `execution_surface=distrobox` e `source_type=distrobox_host_package_manager`;
 - `user_software` com `source_type=flatpak_remote`.
 
 A política existe para explicitar contrato, risco e limite da rota. Ela não existe para simular amplitude.
@@ -104,6 +105,21 @@ Os campos ativos desta release são:
 - a política mantém gaps estruturais visíveis: `toolbox_default_selection_not_opened`, `toolbox_create_not_opened`, `toolbox_lifecycle_not_opened`, `toolbox_host_fallback_not_opened` e `toolbox_mutation_requires_exact_package_name`;
 - host Atomic/imutável não bloqueia `toolbox` por si só, mas também não abre suporte amplo a imutáveis.
 
+### `distrobox` explícita
+
+- pedido explicitamente marcado como `distrobox` continua no domínio `host_package`, mas troca a superfície para `execution_surface=distrobox`;
+- `distrobox` não vira `requested_source`;
+- `source_type=distrobox_host_package_manager`;
+- `trust_level=mediated_environment`;
+- a frase precisa trazer `na distrobox <ambiente>`;
+- a política expõe `distrobox_requested_environment`, `distrobox_environment_status`, `distrobox_resolved_environment`, `distrobox_linux_family`, `distrobox_package_backends` e `distrobox_sudo_observed`;
+- `distrobox.procurar` não exige confirmação;
+- `distrobox.instalar` não exige confirmação, mas depende de backend distro-managed e `sudo` observados dentro do ambiente selecionado;
+- `distrobox.remover` exige confirmação explícita;
+- `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote;
+- a política mantém gaps estruturais visíveis: `distrobox_default_selection_not_opened`, `distrobox_create_not_opened`, `distrobox_lifecycle_not_opened`, `distrobox_host_fallback_not_opened` e `distrobox_mutation_requires_exact_package_name`;
+- host Atomic/imutável não bloqueia `distrobox` por si só, mas também não abre suporte amplo a imutáveis.
+
 ## Como a política afeta o runtime
 
 ### `policy_outcome`
@@ -118,7 +134,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v0.5.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v0.5.1`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -165,16 +181,23 @@ Registra o peso de reversão esperado da mutação, por exemplo:
   resultado típico: `allow`
 - `aurora remover ripgrep na toolbox devbox`
   resultado típico: `require_confirmation`
+- `aurora instalar ripgrep na distrobox devbox`
+  resultado típico: `allow`
+- `aurora remover ripgrep na distrobox devbox`
+  resultado típico: `require_confirmation`
 
 ## O que ainda não está aberto
 
-Continuam fora da `v0.5.0`:
+Continuam fora da `v0.5.1`:
 
 - fallback automático do host para `toolbox`;
+- fallback automático do host para `distrobox`;
 - default implícito de toolbox, autoseleção e descoberta mágica de ambiente;
-- criação automática de toolbox e administração ampla de lifecycle;
-- mistura de `toolbox` com `aur`, `copr`, `ppa` ou `flatpak`;
+- default implícito de distrobox, autoseleção e descoberta mágica de ambiente;
+- criação automática de toolbox, criação automática de distrobox e administração ampla de lifecycle;
+- mistura de `toolbox` ou `distrobox` com `aur`, `copr`, `ppa` ou `flatpak`;
 - canonicalização ampla de alvo para `toolbox.instalar` e `toolbox.remover`;
+- canonicalização ampla de alvo para `distrobox.instalar` e `distrobox.remover`;
 - descoberta automática de repositório COPR;
 - descoberta automática de PPA ou inferência por nome do pacote;
 - `ppa.procurar`, `ppa.remover` real, `remove-apt-repository` e cleanup/lifecycle amplo;
@@ -183,7 +206,7 @@ Continuam fora da `v0.5.0`:
 - administração geral de remotes `flatpak`;
 - helpers AUR além de `paru` e `yay`, e passthrough interativo para `aur.remover`;
 - AppImage e GitHub Releases;
-- distrobox, `rpm-ostree`, toolbox default implícita e `ujust`;
+- `rpm-ostree`, toolbox default implícita, distrobox default implícita e `ujust`;
 - suporte operacional real a hosts imutáveis.
 
-Se `flatpak`, helper AUR, capacidade COPR, `add-apt-repository` ou `toolbox` aparecerem no host sem pedido explícito, isso continua sendo apenas observação e não muda o default seguro de `host_package` no host.
+Se `flatpak`, helper AUR, capacidade COPR, `add-apt-repository`, `toolbox` ou `distrobox` aparecerem no host sem pedido explícito, isso continua sendo apenas observação e não muda o default seguro de `host_package` no host.

@@ -27,26 +27,33 @@ Comandos públicos:
 - aurora procurar <pacote> na toolbox <ambiente>
 - aurora instalar <pacote> na toolbox <ambiente>
 - aurora remover <pacote> na toolbox <ambiente> --confirm
+- aurora procurar <pacote> na distrobox <ambiente>
+- aurora instalar <pacote> na distrobox <ambiente>
+- aurora remover <pacote> na distrobox <ambiente> --confirm
 - aurora dev <frase>
 - aurora --help
 - aurora --version
 
-Contrato público da v0.5.0:
+Contrato público da v0.5.1:
 - produto 100% Python;
 - launchers oficiais: aurora e auro;
 - domínios ativos: host_package e user_software;
-- execution surfaces reais: host e toolbox;
-- fontes reais: host_package_manager, aur_repository, copr_repository, ppa_repository, flatpak_remote e toolbox_host_package_manager;
-- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.procurar/instalar/remover, ppa.instalar, flatpak.procurar/instalar/remover e toolbox.procurar/instalar/remover;
+- execution surfaces reais: host, toolbox e distrobox;
+- fontes reais: host_package_manager, aur_repository, copr_repository, ppa_repository, flatpak_remote, toolbox_host_package_manager e distrobox_host_package_manager;
+- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.procurar/instalar/remover, ppa.instalar, flatpak.procurar/instalar/remover, toolbox.procurar/instalar/remover e distrobox.procurar/instalar/remover;
 - pedidos nus continuam em host_package no host;
 - AUR só entra por frase marcada com aur;
 - COPR só entra por frase marcada com copr e owner/project explicito;
 - PPA só entra por frase marcada com ppa e coordenada canonica ppa:owner/name;
 - pedidos com flatpak/flathub vao para user_software;
 - toolbox entra apenas por frase marcada como toolbox e com ambiente explicito;
+- distrobox entra apenas por frase marcada como distrobox e com ambiente explicito;
 - toolbox nao vira fallback do host e nao cria ambiente automaticamente;
+- distrobox nao vira fallback do host e nao cria ambiente automaticamente;
 - toolbox.instalar e toolbox.remover exigem nome exato de pacote nesta release;
+- distrobox.instalar e distrobox.remover exigem nome exato de pacote nesta release;
 - toolbox.remover exige confirmacao explicita;
+- distrobox.remover exige confirmacao explicita;
 - flatpak preserva flathub como default em procurar/instalar quando nenhum remote e informado;
 - flatpak aceita remote explicito apenas quando ele ja e observavel via flatpak remotes;
 - flatpak.procurar usa flatpak remote-ls no remote selecionado;
@@ -55,7 +62,7 @@ Contrato público da v0.5.0:
 Confirmação:
 - use --confirm ou --yes quando a Aurora pedir confirmação explícita;
 - isso também vale quando o marcador entra inline numa frase passada como texto único, inclusive em aurora dev;
-- isso cobre mutações sensíveis de host_package, mutações reais via AUR, mutações reais via COPR, ppa.instalar, remoções reais via flatpak e toolbox.remover.
+- isso cobre mutações sensíveis de host_package, mutações reais via AUR, mutações reais via COPR, ppa.instalar, remoções reais via flatpak, toolbox.remover e distrobox.remover.
 
 Compatibilidade:
 - host_package: Arch, Debian/Ubuntu, Fedora e OpenSUSE mutáveis;
@@ -65,14 +72,18 @@ Compatibilidade:
 - PPA explícito: Ubuntu mutável com ppa:owner/name explícito, add-apt-repository, apt-get e dpkg observados;
 - flatpak: depende do backend estar presente no host, atua no escopo do usuário e nao faz add automatico de remote;
 - toolbox: depende do comando toolbox no host, exige ambiente explicito, observa backend dentro do ambiente mediado e nao equivale a suporte amplo a imutáveis.
+- distrobox: depende do comando distrobox no host, exige ambiente explicito, observa backend dentro do ambiente mediado e nao equivale a suporte amplo a imutáveis.
 
-Fora da v0.5.0:
+Fora da v0.5.1:
 - fallback automático de pedido nu para AUR;
 - fallback automático do host para toolbox;
+- fallback automático do host para distrobox;
 - default implícito de toolbox e descoberta mágica de ambiente;
-- criação automática de toolbox e administração ampla de lifecycle;
-- mistura de toolbox com AUR, COPR, PPA ou flatpak;
+- default implícito de distrobox e descoberta mágica de ambiente;
+- criação automática de toolbox, criação automática de distrobox e administração ampla de lifecycle;
+- mistura de toolbox ou distrobox com AUR, COPR, PPA ou flatpak;
 - canonicalização ampla de alvo para toolbox.instalar e toolbox.remover;
+- canonicalização ampla de alvo para distrobox.instalar e distrobox.remover;
 - descoberta automática de repositório COPR;
 - descoberta automática de PPA ou inferência de PPA a partir do nome do pacote;
 - ppa.procurar, ppa.remover real, remove-apt-repository e lifecycle amplo de PPA;
@@ -81,6 +92,6 @@ Fora da v0.5.0:
 - administração geral de remotes flatpak;
 - helpers AUR além de paru e yay, e passthrough interativo para aur.remover;
 - AppImage e GitHub Releases;
-- distrobox, rpm-ostree e ujust;
+- rpm-ostree e ujust;
 - suporte operacional real a hosts imutáveis;
 - manutenção ampla do host, arquivos e rede.

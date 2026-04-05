@@ -28,6 +28,12 @@ from aurora.install.sources.ppa import (
     resolve_ppa_target,
     resolved_ppa_target,
 )
+from aurora.linux.distrobox import (
+    distrobox_target_resolution_blocks,
+    observe_distrobox_profile,
+    resolve_distrobox_environment,
+    resolve_distrobox_target,
+)
 from aurora.linux.host_profile import detect_host_profile
 from aurora.linux.host_package import resolve_host_package_target
 from aurora.linux.toolbox import (
@@ -42,6 +48,15 @@ from aurora.semantics.pipeline import has_confirmation_marker
 def _summary_for_request(request: SemanticRequest) -> str:
     if not request.target:
         return "Sem acao aberta."
+
+    if request.execution_surface == "distrobox" and request.domain_kind == "host_package":
+        environment_label = request.environment_target or "distrobox explicitamente pedida"
+        if request.intent == "procurar":
+            return f"Procurar o pacote '{request.target}' dentro da distrobox '{environment_label}'."
+        if request.intent == "instalar":
+            return f"Instalar o pacote '{request.target}' dentro da distrobox '{environment_label}'."
+        if request.intent == "remover":
+            return f"Remover o pacote '{request.target}' dentro da distrobox '{environment_label}'."
 
     if request.execution_surface == "toolbox" and request.domain_kind == "host_package":
         environment_label = request.environment_target or "toolbox explicitamente pedida"
@@ -171,6 +186,8 @@ def _resolve_environment(
     *,
     environ: dict[str, str] | None = None,
 ):
+    if request.execution_surface == "distrobox":
+        return resolve_distrobox_environment(request, profile, environ=environ)
     if request.execution_surface == "toolbox":
         return resolve_toolbox_environment(request, profile, environ=environ)
     return None
@@ -183,6 +200,8 @@ def _resolve_target(
     toolbox_profile=None,
     environ: dict[str, str] | None = None,
 ):
+    if request.execution_surface == "distrobox":
+        return resolve_distrobox_target(request, toolbox_profile, environ=environ)
     if request.execution_surface == "toolbox":
         return resolve_toolbox_target(request, toolbox_profile, environ=environ)
     if request.domain_kind == "user_software":
@@ -199,6 +218,10 @@ def _resolve_target(
 
 
 def _resolved_target(request: SemanticRequest, target_resolution) -> str:
+    if request.execution_surface == "distrobox":
+        if target_resolution is not None and target_resolution.resolved_target:
+            return target_resolution.resolved_target
+        return request.target
     if request.execution_surface == "toolbox":
         if target_resolution is not None and target_resolution.resolved_target:
             return target_resolution.resolved_target
@@ -219,6 +242,8 @@ def _resolved_target(request: SemanticRequest, target_resolution) -> str:
 def _target_resolution_blocks(request: SemanticRequest, target_resolution) -> bool:
     if target_resolution is None:
         return False
+    if request.execution_surface == "distrobox":
+        return distrobox_target_resolution_blocks(target_resolution)
     if request.execution_surface == "toolbox":
         return toolbox_target_resolution_blocks(target_resolution)
     if request.domain_kind == "user_software":
@@ -233,7 +258,7 @@ def _target_resolution_blocks(request: SemanticRequest, target_resolution) -> bo
 
 
 def _environment_resolution_blocks(request: SemanticRequest, environment_resolution) -> bool:
-    if request.execution_surface != "toolbox" or environment_resolution is None:
+    if request.execution_surface not in {"toolbox", "distrobox"} or environment_resolution is None:
         return False
     return environment_resolution.status in {"missing", "not_found", "unresolved", "ambiguous"}
 
@@ -257,22 +282,33 @@ def plan_request(
     route = None
     toolbox_profile = None
     toolbox_profile_probe = None
+    distrobox_profile = None
+    distrobox_profile_probe = None
     confirmation_supplied = _confirmation_supplied(request, confirmed=confirmed)
 
     if request.domain_kind in {"host_package", "user_software"}:
         profile = detect_host_profile(environ)
         environment_resolution = _resolve_environment(request, profile, environ=environ)
         if (
-            request.execution_surface == "toolbox"
+            request.execution_surface in {"toolbox", "distrobox"}
             and environment_resolution is not None
             and environment_resolution.status == "resolved"
             and environment_resolution.resolved_environment
         ):
-            toolbox_profile_probe = observe_toolbox_profile(
-                environment_resolution.resolved_environment,
-                environ=environ,
-            )
-            toolbox_profile = toolbox_profile_probe.profile if toolbox_profile_probe.observed else None
+            if request.execution_surface == "toolbox":
+                toolbox_profile_probe = observe_toolbox_profile(
+                    environment_resolution.resolved_environment,
+                    environ=environ,
+                )
+                toolbox_profile = toolbox_profile_probe.profile if toolbox_profile_probe.observed else None
+            else:
+                distrobox_profile_probe = observe_distrobox_profile(
+                    environment_resolution.resolved_environment,
+                    environ=environ,
+                )
+                distrobox_profile = (
+                    distrobox_profile_probe.profile if distrobox_profile_probe.observed else None
+                )
         policy = assess_policy(
             request,
             profile,
@@ -281,11 +317,13 @@ def plan_request(
             environment_resolution=environment_resolution,
             toolbox_profile=toolbox_profile,
             toolbox_profile_probe=toolbox_profile_probe,
+            distrobox_profile=distrobox_profile,
+            distrobox_profile_probe=distrobox_profile_probe,
         )
         target_resolution = _resolve_target(
             request,
             profile,
-            toolbox_profile=toolbox_profile,
+            toolbox_profile=toolbox_profile if request.execution_surface == "toolbox" else distrobox_profile,
             environ=environ,
         )
         if not _environment_resolution_blocks(request, environment_resolution) and not _target_resolution_blocks(request, target_resolution):
@@ -297,6 +335,7 @@ def plan_request(
                     environ=environ,
                     environment_resolution=environment_resolution,
                     toolbox_profile=toolbox_profile,
+                    distrobox_profile=distrobox_profile,
                 )
             )
 
@@ -320,6 +359,7 @@ def plan_request(
         ),
         environment_resolution=environment_resolution,
         toolbox_profile=toolbox_profile,
+        distrobox_profile=distrobox_profile,
     )
 
 

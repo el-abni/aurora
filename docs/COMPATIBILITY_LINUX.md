@@ -1,4 +1,4 @@
-# Compatibilidade Linux - Aurora v0.5.0
+# Compatibilidade Linux - Aurora v0.5.1
 
 ## Matriz atual de `host_package`
 
@@ -41,7 +41,7 @@
 
 ## `user_software` via `flatpak`
 
-Na `v0.5.0`, `flatpak` continua sendo a frente explícita de software do usuário.
+Na `v0.5.1`, `flatpak` continua sendo a frente explícita de software do usuário.
 
 Leitura correta desta frente:
 
@@ -56,7 +56,7 @@ Leitura correta desta frente:
 
 ## Frente `toolbox` explícita
 
-Na `v0.5.0`, `toolbox` entra como superfície operacional mediada, não como fonte.
+Na `v0.5.1`, `toolbox` entra como superfície operacional mediada, não como fonte.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
@@ -75,6 +75,28 @@ Leitura correta desta frente:
 - `toolbox.remover` exige confirmação explícita;
 - a mutação acontece dentro da toolbox e não no host;
 - não existe default implícito, criação automática, lifecycle amplo nem fallback host -> toolbox.
+
+## Frente `distrobox` explícita
+
+Na `v0.5.1`, `distrobox` entra como segunda superfície operacional mediada, não como fonte.
+
+| Perfil observado | Estado | Escopo real |
+| --- | --- | --- |
+| Host com `distrobox` observado e distrobox explícita Arch/Debian/Fedora com backend distro-managed e `sudo` observados | suportado agora | procurar, instalar e remover por nome exato de pacote |
+| Host com `distrobox` observado e distrobox explícita OpenSUSE com backend e `sudo` observados | suportado contido | procurar, instalar e remover por nome exato de pacote |
+| Host sem `distrobox` observado | bloqueado por política | sem rota executável |
+| Distrobox explícita não resolvida, sem backend suportado ou sem `sudo` para mutação | bloqueado por política | sem rota executável |
+| Host Atomic / imutável com `distrobox` explícita e válida | suportado agora como ambiente mediado | não abre suporte amplo ao host imutável |
+
+Leitura correta desta frente:
+
+- `distrobox` exige ambiente explicitamente nomeado;
+- a Aurora observa o backend dentro da distrobox selecionada antes de abrir a rota;
+- `distrobox.procurar` aceita busca humana dentro do ambiente selecionado;
+- `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote;
+- `distrobox.remover` exige confirmação explícita;
+- a mutação acontece dentro da distrobox e não no host;
+- não existe default implícito, criação automática, lifecycle amplo nem fallback host -> distrobox.
 
 ## Leitura operacional das frentes explícitas
 
@@ -115,6 +137,13 @@ Leitura correta desta frente:
 - `toolbox.instalar` e `toolbox.remover` não fazem fallback para host, não criam toolbox e não misturam outras fontes;
 - `toolbox` não é promessa ampla para `rpm-ostree`, distrobox ou hosts imutáveis como um todo.
 
+### `distrobox`
+
+- `distrobox.procurar` deixa visível em `decision_record` qual ambiente foi selecionado;
+- `distrobox.instalar` e `distrobox.remover` deixam visíveis `execution_surface=distrobox`, `environment_target`, `distrobox_profile` e `distrobox_package_backends`;
+- `distrobox.instalar` e `distrobox.remover` não fazem fallback para host, não criam distrobox e não misturam outras fontes;
+- `distrobox` não é alias de `toolbox` e não é promessa ampla para `rpm-ostree` ou hosts imutáveis como um todo.
+
 ## Leitura correta da fronteira
 
 - `suportado agora` significa rota real aberta com policy, execução e observabilidade;
@@ -127,7 +156,7 @@ Leitura correta desta frente:
 Detecção de ferramenta não vira promessa automática de suporte. Isto continua valendo para:
 
 - `toolbox` sem pedido explícito e sem ambiente nomeado;
+- `distrobox` sem pedido explícito e sem ambiente nomeado;
 - PPA fora do recorte Ubuntu mutável;
 - `rpm-ostree`;
-- distrobox;
 - `ujust`.

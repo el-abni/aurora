@@ -17,6 +17,8 @@ def _signal_value(signals: tuple[str, ...], prefix: str) -> str | None:
 
 
 def _scope_label(record: DecisionRecord) -> str:
+    if record.request.execution_surface == "distrobox" and record.request.domain_kind == "host_package":
+        return "pacote do host dentro da distrobox"
     if record.request.execution_surface == "toolbox" and record.request.domain_kind == "host_package":
         return "pacote do host dentro da toolbox"
     if record.request.domain_kind == "user_software":
@@ -39,6 +41,118 @@ def _compact_diagnostic(value: str) -> str:
     if len(compact) <= 200:
         return compact
     return compact[:197].rstrip() + "..."
+
+
+def _append_surface_policy_lines(lines: list[str], record: DecisionRecord, surface: str) -> None:
+    lines.extend(
+        [
+            field(
+                f"{surface}_requested_environment",
+                _signal_value(record.policy.trust_signals, f"{surface}_requested_environment:") or "-",
+            ),
+            field(
+                f"{surface}_environment_status",
+                _signal_value(record.policy.trust_signals, f"{surface}_environment_status:") or "-",
+            ),
+            field(
+                f"{surface}_resolved_environment",
+                _signal_value(record.policy.trust_signals, f"{surface}_resolved_environment:") or "-",
+            ),
+            field(
+                f"{surface}_linux_family",
+                _signal_value(record.policy.trust_signals, f"{surface}_linux_family:") or "-",
+            ),
+            field(
+                f"{surface}_support_tier",
+                _signal_value(record.policy.trust_signals, f"{surface}_support_tier:") or "-",
+            ),
+            field(
+                f"{surface}_package_backends",
+                _signal_value(record.policy.trust_signals, f"{surface}_package_backends:") or "-",
+            ),
+            field(
+                f"{surface}_observed_commands",
+                _signal_value(record.policy.trust_signals, f"{surface}_observed_commands:") or "-",
+            ),
+            field(
+                f"{surface}_sudo_observed",
+                _signal_value(record.policy.trust_signals, f"{surface}_sudo_observed:") or "-",
+            ),
+        ]
+    )
+
+
+def _append_surface_route_lines(lines: list[str], record: DecisionRecord, surface: str) -> None:
+    lines.extend(
+        [
+            field(
+                f"{surface}_environment_status",
+                (
+                    _signal_value(record.policy.trust_signals, f"{surface}_environment_status:")
+                    if record.policy is not None
+                    else "-"
+                )
+                or "-",
+            ),
+            field(
+                f"{surface}_resolved_environment",
+                (
+                    _signal_value(record.policy.trust_signals, f"{surface}_resolved_environment:")
+                    if record.policy is not None
+                    else "-"
+                )
+                or "-",
+            ),
+            field(
+                f"{surface}_linux_family",
+                (
+                    _signal_value(record.policy.trust_signals, f"{surface}_linux_family:")
+                    if record.policy is not None
+                    else "-"
+                )
+                or "-",
+            ),
+            field(
+                f"{surface}_package_backends",
+                (
+                    _signal_value(record.policy.trust_signals, f"{surface}_package_backends:")
+                    if record.policy is not None
+                    else "-"
+                )
+                or "-",
+            ),
+            field(
+                f"{surface}_sudo_observed",
+                (
+                    _signal_value(record.policy.trust_signals, f"{surface}_sudo_observed:")
+                    if record.policy is not None
+                    else "-"
+                )
+                or "-",
+            ),
+        ]
+    )
+
+
+def _append_environment_profile_lines(lines: list[str], profile, title: str) -> None:
+    lines.extend(
+        [
+            "",
+            title,
+            field("linux_family", profile.linux_family_label),
+            field("distro_id", profile.distro_id or "-"),
+            field("distro_like", ", ".join(profile.distro_like) or "-"),
+            field("mutability", profile.mutability_label),
+            field("support_tier", profile.support_tier_label),
+            field("compatibility", profile.compatibility_frontier_label),
+            field("package_backends", profile.package_backends_label),
+            field("observed_tools", profile.observed_package_tools_label),
+            field(
+                "observed_third_party_tools",
+                profile.observed_third_party_package_tools_label,
+            ),
+        ]
+    )
 
 
 def render_decision_record(record: DecisionRecord) -> str:
@@ -88,6 +202,10 @@ def render_decision_record(record: DecisionRecord) -> str:
                 field(
                     "observed_toolbox_environments",
                     record.host_profile.observed_toolbox_environments_label,
+                ),
+                field(
+                    "observed_distrobox_environments",
+                    record.host_profile.observed_distrobox_environments_label,
                 ),
             ]
         )
@@ -192,43 +310,8 @@ def render_decision_record(record: DecisionRecord) -> str:
                     ),
                 ]
             )
-        if record.request.execution_surface == "toolbox":
-            lines.extend(
-                [
-                    field(
-                        "toolbox_requested_environment",
-                        _signal_value(record.policy.trust_signals, "toolbox_requested_environment:") or "-",
-                    ),
-                    field(
-                        "toolbox_environment_status",
-                        _signal_value(record.policy.trust_signals, "toolbox_environment_status:") or "-",
-                    ),
-                    field(
-                        "toolbox_resolved_environment",
-                        _signal_value(record.policy.trust_signals, "toolbox_resolved_environment:") or "-",
-                    ),
-                    field(
-                        "toolbox_linux_family",
-                        _signal_value(record.policy.trust_signals, "toolbox_linux_family:") or "-",
-                    ),
-                    field(
-                        "toolbox_support_tier",
-                        _signal_value(record.policy.trust_signals, "toolbox_support_tier:") or "-",
-                    ),
-                    field(
-                        "toolbox_package_backends",
-                        _signal_value(record.policy.trust_signals, "toolbox_package_backends:") or "-",
-                    ),
-                    field(
-                        "toolbox_observed_commands",
-                        _signal_value(record.policy.trust_signals, "toolbox_observed_commands:") or "-",
-                    ),
-                    field(
-                        "toolbox_sudo_observed",
-                        _signal_value(record.policy.trust_signals, "toolbox_sudo_observed:") or "-",
-                    ),
-                ]
-            )
+        if record.request.execution_surface in {"toolbox", "distrobox"}:
+            _append_surface_policy_lines(lines, record, record.request.execution_surface)
 
     if record.environment_resolution is not None:
         lines.extend(
@@ -461,75 +544,15 @@ def render_decision_record(record: DecisionRecord) -> str:
                 ]
             )
         if record.execution_route.route_name.startswith("toolbox."):
-            lines.extend(
-                [
-                    field(
-                        "toolbox_environment_status",
-                        (
-                            _signal_value(record.policy.trust_signals, "toolbox_environment_status:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
-                    ),
-                    field(
-                        "toolbox_resolved_environment",
-                        (
-                            _signal_value(record.policy.trust_signals, "toolbox_resolved_environment:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
-                    ),
-                    field(
-                        "toolbox_linux_family",
-                        (
-                            _signal_value(record.policy.trust_signals, "toolbox_linux_family:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
-                    ),
-                    field(
-                        "toolbox_package_backends",
-                        (
-                            _signal_value(record.policy.trust_signals, "toolbox_package_backends:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
-                    ),
-                    field(
-                        "toolbox_sudo_observed",
-                        (
-                            _signal_value(record.policy.trust_signals, "toolbox_sudo_observed:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
-                    ),
-                ]
-            )
+            _append_surface_route_lines(lines, record, "toolbox")
+        if record.execution_route.route_name.startswith("distrobox."):
+            _append_surface_route_lines(lines, record, "distrobox")
 
     if record.toolbox_profile is not None:
-        lines.extend(
-            [
-                "",
-                "Toolbox profile",
-                field("linux_family", record.toolbox_profile.linux_family_label),
-                field("distro_id", record.toolbox_profile.distro_id or "-"),
-                field("distro_like", ", ".join(record.toolbox_profile.distro_like) or "-"),
-                field("mutability", record.toolbox_profile.mutability_label),
-                field("support_tier", record.toolbox_profile.support_tier_label),
-                field("compatibility", record.toolbox_profile.compatibility_frontier_label),
-                field("package_backends", record.toolbox_profile.package_backends_label),
-                field("observed_tools", record.toolbox_profile.observed_package_tools_label),
-                field(
-                    "observed_third_party_tools",
-                    record.toolbox_profile.observed_third_party_package_tools_label,
-                ),
-            ]
-        )
+        _append_environment_profile_lines(lines, record.toolbox_profile, "Toolbox profile")
+
+    if record.distrobox_profile is not None:
+        _append_environment_profile_lines(lines, record.distrobox_profile, "Distrobox profile")
 
     if record.execution is not None:
         lines.extend(

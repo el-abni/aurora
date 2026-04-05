@@ -5,6 +5,7 @@ import os
 from aurora.contracts.host import HostProfile
 
 from .mutability import detect_mutability
+from .distrobox import observe_distrobox_environments
 from .probes import detect_available_commands, read_os_release, split_like
 from .profile_facts import (
     HOST_PACKAGE_BACKENDS,
@@ -35,6 +36,7 @@ def detect_host_profile(environ: dict[str, str] | None = None) -> HostProfile:
         resolved_environ,
     )
     observed_toolbox_environments = observe_toolbox_environments(resolved_environ)
+    observed_distrobox_environments = observe_distrobox_environments(resolved_environ)
     support_tier = support_tier_for_profile(linux_family, mutability)
 
     return HostProfile(
@@ -49,4 +51,5 @@ def detect_host_profile(environ: dict[str, str] | None = None) -> HostProfile:
         support_tier=support_tier,
         observed_environment_tools=observed_environment_tools,
         observed_toolbox_environments=observed_toolbox_environments,
+        observed_distrobox_environments=observed_distrobox_environments,
     )

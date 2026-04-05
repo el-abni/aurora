@@ -52,3 +52,4 @@ class DecisionRecord:
     execution: ExecutionResult | None = None
     environment_resolution: EnvironmentResolution | None = None
     toolbox_profile: HostProfile | None = None
+    distrobox_profile: HostProfile | None = None

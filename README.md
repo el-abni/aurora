@@ -1,24 +1,25 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v0.5.0-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v0.5.1-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com política explícita, observabilidade própria e execução real sobre um contrato pequeno e auditável.
 
-A release pública atual é a `v0.5.0`. Ela abre `toolbox` como **superfície operacional mediada explícita**, distinta do host e distinta das fontes terceiras já abertas em `AUR`, `COPR`, `PPA` e `flatpak`.
+A release pública atual é a `v0.5.1`. Ela abre `distrobox` como **segunda superfície operacional mediada explícita**, distinta do host, distinta de `toolbox` e distinta das fontes terceiras já abertas em `AUR`, `COPR`, `PPA` e `flatpak`.
 
-Na `v0.5.0`, a superfície pública continua pequena:
+Na `v0.5.1`, a superfície pública continua pequena:
 
 - `host_package` para pacotes do host no `execution_surface=host`;
 - `AUR` como fonte explícita de terceiro dentro de `host_package`;
 - `COPR` como fonte explícita de terceiro dentro de `host_package`;
 - `PPA` como fonte explícita de terceiro dentro de `host_package`;
 - `user_software` para software do usuário via `flatpak`;
-- `toolbox` como `execution_surface` explícita para operar pacote distro-managed dentro de um ambiente mediado nomeado.
+- `toolbox` como `execution_surface` explícita para operar pacote distro-managed dentro de um ambiente mediado nomeado;
+- `distrobox` como `execution_surface` explícita para operar pacote distro-managed dentro de um ambiente mediado nomeado.
 
-Leitura correta da `v0.5.0`:
+Leitura correta da `v0.5.1`:
 
 - `toolbox` não é fonte de pacote;
 - `toolbox` não é `host_package` com outro nome;
@@ -27,7 +28,12 @@ Leitura correta da `v0.5.0`:
 - `toolbox` usa `source_type=toolbox_host_package_manager` e `trust_level=mediated_environment`;
 - `toolbox.instalar` e `toolbox.remover` exigem nome exato de pacote nesta release;
 - `toolbox.procurar` existe justamente para descobrir esse nome;
-- `host` e `toolbox` aparecem separados em request, policy, route, execution e `aurora dev`.
+- `distrobox` também não é fonte, não é alias de `toolbox`, não vira fallback automático e exige ambiente explicitamente nomeado;
+- `distrobox` usa `source_type=distrobox_host_package_manager` e `trust_level=mediated_environment`;
+- `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote nesta release;
+- `distrobox.procurar` existe justamente para descobrir esse nome;
+- `toolbox` e `distrobox` compartilham apenas o miolo de pacote distro-managed dentro do ambiente; observação, seleção, semântica e auditabilidade continuam explícitas por superfície;
+- `host`, `toolbox` e `distrobox` aparecem separados em request, policy, route, execution e `aurora dev`.
 
 ## O que a Aurora faz
 
@@ -35,13 +41,13 @@ A Aurora funciona como uma camada de decisão e execução sobre Linux. Em vez d
 
 - classifica a frase;
 - detecta o host Linux;
-- observa a superfície mediada quando o pedido explicita `toolbox`;
+- observa a superfície mediada quando o pedido explicita `toolbox` ou `distrobox`;
 - aplica política;
 - escolhe a rota cabível no contrato atual;
 - executa com probe de estado quando a ação muda software;
 - expõe um `decision_record` auditável com `aurora dev <frase>`.
 
-## Contrato público da v0.5.0
+## Contrato público da v0.5.1
 
 Rotas reais abertas nesta release:
 
@@ -61,6 +67,9 @@ Rotas reais abertas nesta release:
 - `toolbox.procurar`
 - `toolbox.instalar`
 - `toolbox.remover`
+- `distrobox.procurar`
+- `distrobox.instalar`
+- `distrobox.remover`
 
 Comportamento garantido:
 
@@ -72,8 +81,14 @@ Comportamento garantido:
 - `toolbox` observa qual backend distro-managed está disponível dentro da toolbox e deixa isso visível em `decision_record`;
 - `toolbox.instalar` e `toolbox.remover` aceitam apenas nome exato de pacote nesta release;
 - `toolbox.remover` exige `--confirm`;
-- `toolbox` não se combina com `aur`, `copr`, `ppa` ou remotes `flatpak`;
-- `decision_record` e `aurora dev` deixam visíveis `execution_surface`, `environment_target`, `environment_resolution`, `toolbox_profile`, capacidades observadas, gaps e fronteira host vs toolbox;
+- `distrobox` exige nome explícito de ambiente como `na distrobox <ambiente>`;
+- não existe default implícito de distrobox, autoseleção nem descoberta mágica de ambiente;
+- `distrobox` observa o ambiente nomeado antes de abrir policy e rota;
+- `distrobox` observa qual backend distro-managed está disponível dentro da distrobox e deixa isso visível em `decision_record`;
+- `distrobox.instalar` e `distrobox.remover` aceitam apenas nome exato de pacote nesta release;
+- `distrobox.remover` exige `--confirm`;
+- `toolbox` e `distrobox` não se combinam entre si nem com `aur`, `copr`, `ppa` ou remotes `flatpak`;
+- `decision_record` e `aurora dev` deixam visíveis `execution_surface`, `environment_target`, `environment_resolution`, `toolbox_profile`, `distrobox_profile`, capacidades observadas, gaps e fronteira host vs ambiente mediado;
 - host Atomic/imutável continua bloqueado em `host_package`, e isso não muda o default do produto.
 - `--confirm` e `--yes` funcionam como marcadores equivalentes de confirmação explícita quando a política exigir.
 
@@ -130,6 +145,15 @@ aurora remover ripgrep na toolbox devbox --confirm
 aurora dev "instalar obs-studio na toolbox devbox"
 ```
 
+### Pacotes dentro de distrobox explícita
+
+```bash
+aurora procurar ripgrep na distrobox devbox
+aurora instalar ripgrep na distrobox devbox
+aurora remover ripgrep na distrobox devbox --confirm
+aurora dev "instalar obs-studio na distrobox devbox"
+```
+
 ## Observabilidade
 
 ```bash
@@ -139,6 +163,7 @@ aurora dev "instalar google chrome no aur --confirm"
 aurora dev "procurar obs-studio do copr atim/obs-studio"
 aurora dev "instalar obs-studio do ppa ppa:obsproject/obs-studio --confirm"
 aurora dev "procurar ripgrep na toolbox devbox"
+aurora dev "procurar ripgrep na distrobox devbox"
 ```
 
 ## Compatibilidade Linux
@@ -194,6 +219,19 @@ aurora dev "procurar ripgrep na toolbox devbox"
 - pode funcionar mesmo quando o host é Atomic/imutável, mas isso não equivale a suporte operacional real a imutáveis;
 - não cria toolbox, não administra lifecycle amplo e não vira fallback automático do host.
 
+### `distrobox` explícita
+
+- depende do comando `distrobox` estar presente no host;
+- exige ambiente explicitamente nomeado;
+- opera apenas dentro da distrobox selecionada, nunca no host;
+- observa a família Linux e os `package_backends` dentro da distrobox antes de liberar a rota;
+- cobre `procurar`, `instalar` e `remover`;
+- `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote nesta release;
+- `distrobox.remover` exige confirmação explícita;
+- pode funcionar mesmo quando o host é Atomic/imutável, mas isso não equivale a suporte operacional real a imutáveis;
+- não cria distrobox, não administra lifecycle amplo e não vira fallback automático do host;
+- não apaga a diferença para `toolbox`: a Aurora observa e roteia `distrobox` como superfície própria.
+
 Ferramenta observada no host não vira promessa de suporte automaticamente. A Aurora só abre rota onde já existe policy, execução real e auditoria.
 
 ## Instalação
@@ -243,19 +281,22 @@ A identidade pública da ferramenta é:
 No help público, a versão aparece como:
 
 ```text
-🌌 Aurora v0.5.0
+🌌 Aurora v0.5.1
 ```
 
-## O que a v0.5.0 não promete
+## O que a v0.5.1 não promete
 
 A Aurora ainda não abre:
 
 - fallback automático de pedido nu para AUR;
 - fallback automático do host para `toolbox`;
+- fallback automático do host para `distrobox`;
 - default implícito de toolbox;
-- criação automática de toolbox e administração geral de ambientes;
-- mistura de `toolbox` com AUR, COPR, PPA ou remotes `flatpak`;
+- default implícito de distrobox;
+- criação automática de toolbox, criação automática de distrobox e administração geral de ambientes;
+- mistura de `toolbox` ou `distrobox` com AUR, COPR, PPA ou remotes `flatpak`;
 - canonicalização ampla de alvo para `toolbox.instalar` e `toolbox.remover`;
+- canonicalização ampla de alvo para `distrobox.instalar` e `distrobox.remover`;
 - descoberta automática de repositório COPR;
 - descoberta automática de PPA ou inferência de PPA a partir do nome do pacote;
 - `ppa.procurar`, `ppa.remover` real, cleanup automático, `remove-apt-repository` e lifecycle amplo de PPA;
@@ -263,7 +304,7 @@ A Aurora ainda não abre:
 - add automático de remote arbitrário;
 - administração geral de remotes `flatpak`;
 - AppImage e GitHub Releases;
-- distrobox, `rpm-ostree` e `ujust`;
+- `rpm-ostree` e `ujust`;
 - suporte operacional real a hosts imutáveis;
 - manutenção ampla do host;
 - backlog amplo de arquivos e rede.

@@ -124,8 +124,10 @@ def _is_user_software(record: DecisionRecord) -> bool:
     return record.request.domain_kind == "user_software"
 
 
-def _is_toolbox_surface(record: DecisionRecord) -> bool:
-    return record.request.execution_surface == "toolbox"
+def _mediated_surface_name(record: DecisionRecord) -> str | None:
+    if record.request.execution_surface in {"toolbox", "distrobox"}:
+        return record.request.execution_surface
+    return None
 
 
 def _is_copr_source(record: DecisionRecord) -> bool:
@@ -141,8 +143,9 @@ def _is_aur_source(record: DecisionRecord) -> bool:
 
 
 def _target_label(record: DecisionRecord) -> str:
-    if _is_toolbox_surface(record):
-        return "pacote da toolbox"
+    mediated_surface = _mediated_surface_name(record)
+    if mediated_surface is not None:
+        return f"pacote da {mediated_surface}"
     if _is_copr_source(record):
         return "pacote do COPR"
     if _is_ppa_source(record):
@@ -153,13 +156,14 @@ def _target_label(record: DecisionRecord) -> str:
 
 
 def _location_label(record: DecisionRecord) -> str:
-    if _is_toolbox_surface(record):
+    mediated_surface = _mediated_surface_name(record)
+    if mediated_surface is not None:
         environment_name = (
             record.execution_route.environment_target
             if record.execution_route is not None and record.execution_route.environment_target
             else record.request.environment_target
         )
-        return f"na toolbox '{environment_name or '-'}'"
+        return f"na {mediated_surface} '{environment_name or '-'}'"
     if _is_copr_source(record):
         return "neste host via COPR"
     if _is_ppa_source(record):
@@ -170,7 +174,7 @@ def _location_label(record: DecisionRecord) -> str:
 
 
 def _probe_summary(record: DecisionRecord, package_present: bool) -> str:
-    if _is_toolbox_surface(record):
+    if _mediated_surface_name(record) is not None:
         if package_present:
             return f"pacote presente {_location_label(record)}."
         return f"pacote ausente {_location_label(record)}."

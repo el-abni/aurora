@@ -3,6 +3,7 @@ from __future__ import annotations
 from aurora.contracts.execution import ExecutionRoute
 from aurora.contracts.host import HostProfile
 from aurora.contracts.requests import SemanticRequest
+from aurora.linux.distrobox import build_distrobox_candidate
 from aurora.install.sources.aur import build_aur_candidate
 from aurora.install.sources.copr import build_copr_candidate
 from aurora.install.sources.flatpak import build_flatpak_candidate
@@ -18,6 +19,7 @@ def build_route_candidates(
     target: str | None = None,
     environment_resolution=None,
     toolbox_profile: HostProfile | None = None,
+    distrobox_profile: HostProfile | None = None,
     environ: dict[str, str] | None = None,
 ) -> tuple[ExecutionRoute, ...]:
     if profile is None:
@@ -29,6 +31,14 @@ def build_route_candidates(
             request,
             profile,
             toolbox_profile=toolbox_profile,
+            environment_resolution=environment_resolution,
+            target=target,
+        )
+    elif request.execution_surface == "distrobox":
+        route = build_distrobox_candidate(
+            request,
+            profile,
+            distrobox_profile=distrobox_profile,
             environment_resolution=environment_resolution,
             target=target,
         )

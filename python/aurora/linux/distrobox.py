@@ -22,37 +22,38 @@ from .mediated_host_package import (
     resolve_mediated_target,
 )
 
-_TOOLBOX_LIST_COMMAND = ("toolbox", "list", "--containers")
-_TOOLBOX_COMMAND_PROBE_SCRIPT = command_probe_script()
+_DISTROBOX_LIST_COMMAND = ("distrobox", "list", "--no-color")
+_DISTROBOX_COMMAND_PROBE_SCRIPT = command_probe_script()
+_DISTROBOX_HEADER_TOKENS = {"container name", "name", "id", "status", "image"}
 _HEX_ID_RE = re.compile(r"^[0-9a-f]{6,}$")
 
 
 @dataclass(frozen=True)
-class ToolboxCapabilityProbe:
+class DistroboxCapabilityProbe:
     observed: bool
     observed_environments: tuple[str, ...] = ()
     gap: str = ""
     reason: str = ""
-    command: tuple[str, ...] = _TOOLBOX_LIST_COMMAND
+    command: tuple[str, ...] = _DISTROBOX_LIST_COMMAND
     exit_code: int | None = None
     stdout: str = ""
     stderr: str = ""
 
 
-ToolboxProfileProbe = MediatedProfileProbe
+DistroboxProfileProbe = MediatedProfileProbe
 
 
-def toolbox_name_is_explicit(value: str) -> bool:
+def distrobox_name_is_explicit(value: str) -> bool:
     return environment_name_is_explicit(value)
 
 
-def toolbox_package_name_is_explicit(value: str) -> bool:
+def distrobox_package_name_is_explicit(value: str) -> bool:
     return environment_package_name_is_explicit(value)
 
 
-def _toolbox_available(environ: dict[str, str] | None = None) -> bool:
+def _distrobox_available(environ: dict[str, str] | None = None) -> bool:
     path = None if environ is None else environ.get("PATH", os.environ.get("PATH"))
-    return shutil.which("toolbox", path=path) is not None
+    return shutil.which("distrobox", path=path) is not None
 
 
 def _run_command(
@@ -63,56 +64,68 @@ def _run_command(
     return subprocess.run(command, text=True, capture_output=True, check=False, env=environ)
 
 
-def _toolbox_run_prefix(environment_name: str) -> tuple[str, ...]:
-    return ("toolbox", "run", "--container", environment_name, "--")
+def _distrobox_run_prefix(environment_name: str) -> tuple[str, ...]:
+    return ("distrobox", "enter", "--name", environment_name, "--no-tty", "--")
 
 
-def _toolbox_os_release_command(environment_name: str) -> tuple[str, ...]:
-    return _toolbox_run_prefix(environment_name) + ("cat", "/etc/os-release")
+def _distrobox_os_release_command(environment_name: str) -> tuple[str, ...]:
+    return _distrobox_run_prefix(environment_name) + ("cat", "/etc/os-release")
 
 
-def _toolbox_command_probe_command(environment_name: str) -> tuple[str, ...]:
-    return _toolbox_run_prefix(environment_name) + ("sh", "-c", _TOOLBOX_COMMAND_PROBE_SCRIPT)
+def _distrobox_command_probe_command(environment_name: str) -> tuple[str, ...]:
+    return _distrobox_run_prefix(environment_name) + ("sh", "-c", _DISTROBOX_COMMAND_PROBE_SCRIPT)
 
 
-def _parse_toolbox_names(output: str) -> tuple[str, ...]:
+def _parse_distrobox_names(output: str) -> tuple[str, ...]:
     names: list[str] = []
     for raw_line in output.splitlines():
         line = raw_line.strip()
         if not line:
             continue
-        normalized = " ".join(line.lower().split())
-        if normalized.startswith("container id ") or normalized.startswith("container name "):
+        normalized = " ".join(line.lower().replace("|", " ").split())
+        if normalized in _DISTROBOX_HEADER_TOKENS:
             continue
-        parts = [part.strip() for part in re.split(r"\s{2,}", line) if part.strip()]
-        candidate = ""
+        if normalized.startswith("id ") or normalized.startswith("name ") or normalized.startswith("container name "):
+            continue
+
+        parts = [
+            part.strip()
+            for part in re.split(r"\s{2,}|\t+|\s*\|\s*", line)
+            if part.strip()
+        ]
+        candidates: list[str] = []
         if len(parts) >= 2 and _HEX_ID_RE.fullmatch(parts[0].lower()) is not None:
-            candidate = parts[1]
-        elif parts:
-            candidate = parts[0]
-        if candidate and toolbox_name_is_explicit(candidate) and candidate not in names:
-            names.append(candidate)
+            candidates.append(parts[1])
+        if parts:
+            candidates.append(parts[0])
+
+        for candidate in candidates:
+            if candidate.lower() in {"id", "name", "status", "image"}:
+                continue
+            if distrobox_name_is_explicit(candidate) and candidate not in names:
+                names.append(candidate)
+                break
     return tuple(names)
 
 
-def observe_toolbox_capability(environ: dict[str, str] | None = None) -> ToolboxCapabilityProbe:
-    if not _toolbox_available(environ):
-        return ToolboxCapabilityProbe(
+def observe_distrobox_capability(environ: dict[str, str] | None = None) -> DistroboxCapabilityProbe:
+    if not _distrobox_available(environ):
+        return DistroboxCapabilityProbe(
             observed=False,
-            gap="toolbox_command_not_observed",
+            gap="distrobox_command_not_observed",
             reason=(
-                "o comando 'toolbox' nao foi observado neste host. "
-                "esta release nao cria ambientes automaticamente nem usa toolbox como fallback implicito."
+                "o comando 'distrobox' nao foi observado neste host. "
+                "esta release nao cria ambientes automaticamente nem usa distrobox como fallback implicito."
             ),
         )
 
-    proc = _run_command(_TOOLBOX_LIST_COMMAND, environ=environ)
+    proc = _run_command(_DISTROBOX_LIST_COMMAND, environ=environ)
     if proc.returncode != 0:
-        return ToolboxCapabilityProbe(
+        return DistroboxCapabilityProbe(
             observed=False,
-            gap="toolbox_list_not_observed",
+            gap="distrobox_list_not_observed",
             reason=(
-                "nao consegui observar as toolboxes existentes via 'toolbox list --containers'. "
+                "nao consegui observar as distroboxes existentes via 'distrobox list --no-color'. "
                 "esta release exige observacao explicita do ambiente mediado."
             ),
             exit_code=proc.returncode,
@@ -120,92 +133,92 @@ def observe_toolbox_capability(environ: dict[str, str] | None = None) -> Toolbox
             stderr=proc.stderr,
         )
 
-    return ToolboxCapabilityProbe(
+    return DistroboxCapabilityProbe(
         observed=True,
-        observed_environments=_parse_toolbox_names(proc.stdout),
+        observed_environments=_parse_distrobox_names(proc.stdout),
         exit_code=proc.returncode,
         stdout=proc.stdout,
         stderr=proc.stderr,
     )
 
 
-def observe_toolbox_environments(environ: dict[str, str] | None = None) -> tuple[str, ...]:
-    capability = observe_toolbox_capability(environ=environ)
+def observe_distrobox_environments(environ: dict[str, str] | None = None) -> tuple[str, ...]:
+    capability = observe_distrobox_capability(environ=environ)
     if not capability.observed:
         return ()
     return capability.observed_environments
 
 
-def resolve_toolbox_environment(
+def resolve_distrobox_environment(
     request: SemanticRequest,
     profile: HostProfile | None,
     *,
     environ: dict[str, str] | None = None,
 ) -> EnvironmentResolution | None:
-    if request.execution_surface != "toolbox":
+    if request.execution_surface != "distrobox":
         return None
 
-    observed_environments = profile.observed_toolbox_environments if profile is not None else ()
+    observed_environments = profile.observed_distrobox_environments if profile is not None else ()
     environment_name = request.environment_target.strip()
     if not environment_name:
         return EnvironmentResolution(
-            execution_surface="toolbox",
+            execution_surface="distrobox",
             observed_environments=observed_environments,
             status="missing",
             source="user_input",
             reason=(
-                "toolbox explicita nesta rodada exige o nome do ambiente. "
+                "distrobox explicita nesta rodada exige o nome do ambiente. "
                 "nao existe default implicito, descoberta magica nem autoselecao."
             ),
         )
 
-    if not toolbox_name_is_explicit(environment_name):
+    if not distrobox_name_is_explicit(environment_name):
         return EnvironmentResolution(
-            execution_surface="toolbox",
+            execution_surface="distrobox",
             original_environment=environment_name,
             observed_environments=observed_environments,
             status="unresolved",
             source="user_input",
             reason=(
-                "o nome da toolbox precisa ser um identificador simples e conservador nesta rodada, "
+                "o nome da distrobox precisa ser um identificador simples e conservador nesta rodada, "
                 "sem parsing amplo de argumentos."
             ),
         )
 
     if profile is None:
         return EnvironmentResolution(
-            execution_surface="toolbox",
+            execution_surface="distrobox",
             original_environment=environment_name,
             observed_environments=observed_environments,
             status="unresolved",
             source="host_profile",
-            reason="o host profile nao esta disponivel para abrir a superficie toolbox.",
+            reason="o host profile nao esta disponivel para abrir a superficie distrobox.",
         )
 
-    if "toolbox" not in profile.observed_environment_tools:
+    if "distrobox" not in profile.observed_environment_tools:
         return EnvironmentResolution(
-            execution_surface="toolbox",
+            execution_surface="distrobox",
             original_environment=environment_name,
             observed_environments=observed_environments,
             status="unresolved",
             source="host_observation",
             reason=(
-                "o comando 'toolbox' nao foi observado neste host. "
-                "esta release nao cria ambientes automaticamente nem usa toolbox como fallback implicito."
+                "o comando 'distrobox' nao foi observado neste host. "
+                "esta release nao cria ambientes automaticamente nem usa distrobox como fallback implicito."
             ),
         )
 
-    probe_command = _toolbox_os_release_command(environment_name)
+    probe_command = _distrobox_os_release_command(environment_name)
     proc = _run_command(probe_command, environ=environ)
     if proc.returncode != 0:
         return EnvironmentResolution(
-            execution_surface="toolbox",
+            execution_surface="distrobox",
             original_environment=environment_name,
             observed_environments=observed_environments,
             status="not_found",
-            source="toolbox_run_probe",
+            source="distrobox_enter_probe",
             reason=(
-                f"a toolbox explicita '{environment_name}' nao foi resolvida por probe controlado. "
+                f"a distrobox explicita '{environment_name}' nao foi resolvida por probe controlado. "
                 "esta release nao cria ambiente automaticamente nem assume nomes aproximados."
             ),
             diagnostic_command=probe_command,
@@ -215,14 +228,14 @@ def resolve_toolbox_environment(
         )
 
     return EnvironmentResolution(
-        execution_surface="toolbox",
+        execution_surface="distrobox",
         original_environment=environment_name,
         resolved_environment=environment_name,
         observed_environments=observed_environments,
         status="resolved",
-        source="toolbox_run_probe",
+        source="distrobox_enter_probe",
         reason=(
-            f"a toolbox explicita '{environment_name}' foi observada por probe controlado "
+            f"a distrobox explicita '{environment_name}' foi observada por probe controlado "
             "antes do planejamento da rota."
         ),
         diagnostic_command=probe_command,
@@ -232,62 +245,62 @@ def resolve_toolbox_environment(
     )
 
 
-def observe_toolbox_profile(
+def observe_distrobox_profile(
     environment_name: str,
     *,
     environ: dict[str, str] | None = None,
-) -> ToolboxProfileProbe:
+) -> DistroboxProfileProbe:
     return observe_environment_profile(
-        "toolbox",
+        "distrobox",
         environment_name,
         run_command=_run_command,
-        os_release_command=_toolbox_os_release_command(environment_name),
-        command_probe_command=_toolbox_command_probe_command(environment_name),
+        os_release_command=_distrobox_os_release_command(environment_name),
+        command_probe_command=_distrobox_command_probe_command(environment_name),
         environ=environ,
     )
 
 
-def resolve_toolbox_target(
+def resolve_distrobox_target(
     request: SemanticRequest,
     _profile: HostProfile | None,
     *,
     environ: dict[str, str] | None = None,
 ) -> TargetResolution | None:
     del environ
-    return resolve_mediated_target(request, "toolbox")
+    return resolve_mediated_target(request, "distrobox")
 
 
-def toolbox_target_resolution_blocks(resolution: TargetResolution | None) -> bool:
+def distrobox_target_resolution_blocks(resolution: TargetResolution | None) -> bool:
     return mediated_target_resolution_blocks(resolution)
 
 
-def build_toolbox_candidate(
+def build_distrobox_candidate(
     request: SemanticRequest,
     host_profile: HostProfile,
     *,
-    toolbox_profile: HostProfile | None,
+    distrobox_profile: HostProfile | None,
     environment_resolution: EnvironmentResolution | None,
     target: str | None = None,
 ) -> ExecutionRoute | None:
     notes = (
-        "toolbox entra como superficie operacional mediada explicita nesta rodada.",
+        "distrobox entra como superficie operacional mediada explicita nesta rodada.",
         "toolbox e distrobox compartilham apenas o miolo de pacote distro-managed dentro do ambiente; a observacao e a semantica de superficie continuam distintas.",
         (
-            f"ambiente toolbox selecionado explicitamente: {environment_resolution.resolved_environment}."
+            f"ambiente distrobox selecionado explicitamente: {environment_resolution.resolved_environment}."
             if environment_resolution is not None and environment_resolution.resolved_environment
-            else "ambiente toolbox ainda nao resolvido."
+            else "ambiente distrobox ainda nao resolvido."
         ),
-        "a fronteira host vs toolbox permanece visivel: a mutacao acontece dentro do ambiente mediado, nao no host.",
-        "esta frente nao cria toolbox automaticamente, nao administra lifecycle amplo e nao vira fallback implicito do host.",
-        "esta frente cobre apenas pacote do host dentro da toolbox, sem misturar AUR, COPR, PPA ou flatpak.",
+        "a fronteira host vs distrobox permanece visivel: a mutacao acontece dentro do ambiente mediado, nao no host.",
+        "esta frente nao cria distrobox automaticamente, nao administra lifecycle amplo e nao vira fallback implicito do host.",
+        "esta frente cobre apenas pacote do host dentro da distrobox, sem misturar AUR, COPR, PPA ou flatpak.",
     )
     del host_profile
     return build_mediated_candidate(
         request,
-        "toolbox",
-        environment_profile=toolbox_profile,
+        "distrobox",
+        environment_profile=distrobox_profile,
         environment_resolution=environment_resolution,
-        run_prefix=_toolbox_run_prefix,
+        run_prefix=_distrobox_run_prefix,
         target=target,
         notes=notes,
     )

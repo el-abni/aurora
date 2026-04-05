@@ -1,5 +1,33 @@
 # Changelog
 
+## 🌌 Aurora v0.5.1
+
+Fechamento pequeno da frente `distrobox` para abrir uma segunda superfície mediada explícita, sem colapsar `toolbox` e `distrobox` numa pseudoentidade única e sem fingir que isso já resolve hosts imutáveis.
+
+### Adicionado
+
+- `execution_surface=distrobox` e `environment_target` explícito no contrato de request, policy, route e `decision_record`.
+- `distrobox.procurar`, `distrobox.instalar` e `distrobox.remover` como rotas reais sobre pacote distro-managed dentro de uma distrobox explicitamente nomeada.
+- observação explícita de `distrobox` no host, das distroboxes existentes e do backend observado dentro do ambiente selecionado.
+- `distrobox_profile` em `aurora dev` para deixar visível a fronteira host vs distrobox.
+
+### Alterado
+
+- `distrobox` não entra como fonte; entra como superfície operacional mediada sobre `host_package`.
+- `toolbox` e `distrobox` agora compartilham apenas o miolo de pacote distro-managed dentro do ambiente, mantendo observação, sinais e rotas separados por superfície.
+- `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote nesta release; a descoberta de nome humano fica em `distrobox.procurar`.
+- `distrobox.remover` exige confirmação explícita para manter visível a mutação dentro do ambiente mediado.
+- README, help e docs técnicas passam a refletir a `v0.5.1` como release pública atual.
+
+### Continua fora da v0.5.1
+
+- fallback automático do host para `distrobox`;
+- default implícito de distrobox, autoseleção por ambiguidade ou descoberta mágica de ambiente;
+- criação automática de distrobox e administração ampla de lifecycle;
+- mistura de `distrobox` com `toolbox`, AUR, COPR, PPA ou remotes `flatpak`;
+- canonicalização ampla de alvo para `distrobox.instalar` e `distrobox.remover`;
+- `rpm-ostree`, `ujust` e suporte operacional real a hosts imutáveis.
+
 ## 🌌 Aurora v0.5.0
 
 Fechamento pequeno da frente `toolbox` para abrir um ambiente mediado explícito e distinto do host, sem fingir que isso já resolve suporte operacional real a hosts imutáveis.

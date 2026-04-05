@@ -58,21 +58,25 @@ def git_ls_files() -> list[str]:
 
 
 def main() -> int:
-    ensure(VERSION == "v0.5.0", "VERSION precisa estar promovido para v0.5.0 no fechamento desta release")
+    ensure(VERSION == "v0.5.1", "VERSION precisa estar promovido para v0.5.1 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v0.5.0")
+    ok("VERSION promovido para v0.5.1")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
-    ensure("## 🌌 Aurora v0.5.0" in changelog, "CHANGELOG.md precisa abrir a release publica v0.5.0")
-    ensure("## 🌌 Aurora v0.4.1" in changelog, "CHANGELOG.md precisa preservar a release publica v0.4.1")
+    ensure("## 🌌 Aurora v0.5.1" in changelog, "CHANGELOG.md precisa abrir a release publica v0.5.1")
+    ensure("## 🌌 Aurora v0.5.0" in changelog, "CHANGELOG.md precisa preservar a release publica v0.5.0")
     for term in (
         "toolbox",
+        "distrobox",
         "execution_surface",
         "environment_target",
         "toolbox.procurar",
         "toolbox.instalar",
         "toolbox.remover",
+        "distrobox.procurar",
+        "distrobox.instalar",
+        "distrobox.remover",
         "fallback",
         "nome exato",
         "ppa.instalar",
@@ -100,12 +104,18 @@ def main() -> int:
         "flatpak",
         "ppa",
         "toolbox",
+        "distrobox",
         "toolbox.procurar",
         "toolbox.instalar",
         "toolbox.remover",
+        "distrobox.procurar",
+        "distrobox.instalar",
+        "distrobox.remover",
         "toolbox_host_package_manager",
+        "distrobox_host_package_manager",
         "mediated_environment",
         "na toolbox <ambiente>",
+        "na distrobox <ambiente>",
         "nome exato",
         "fallback",
         "ppa.instalar",
@@ -147,13 +157,18 @@ def main() -> int:
         "toolbox.procurar",
         "toolbox.instalar",
         "toolbox.remover",
+        "distrobox.procurar",
+        "distrobox.instalar",
+        "distrobox.remover",
     ):
         ensure(route_name in architecture, f"ARCHITECTURE precisa listar a rota {route_name}")
     for term in (
         "toolbox",
+        "distrobox",
         "execution_surface",
         "environment_resolution",
         "toolbox_profile",
+        "distrobox_profile",
         "nome exato",
         "fallback",
         "ppa:owner/name",
@@ -193,6 +208,7 @@ def main() -> int:
         "dpkg",
         "ppa.remover",
         "toolbox",
+        "distrobox",
         "sudo",
         "nome exato",
         "fallback",
@@ -222,6 +238,7 @@ def main() -> int:
         "ppa_repository",
         "flatpak_remote",
         "toolbox_host_package_manager",
+        "distrobox_host_package_manager",
         "distribution_managed",
         "third_party_build",
         "third_party_repository",
@@ -231,7 +248,12 @@ def main() -> int:
         "toolbox_resolved_environment",
         "toolbox_package_backends",
         "toolbox_sudo_observed",
+        "distrobox_requested_environment",
+        "distrobox_resolved_environment",
+        "distrobox_package_backends",
+        "distrobox_sudo_observed",
         "na toolbox",
+        "na distrobox",
         "nome exato",
         "flathub",
         "flatpak_effective_remote",
@@ -253,7 +275,7 @@ def main() -> int:
     heritage = read("docs/AURY_HERITAGE_MAP.md")
     heritage_normalized = normalize(heritage)
     ensure(VERSION in heritage, "AURY_HERITAGE_MAP precisa refletir a release publica atual")
-    for term in ("aury", "herdado", "host_package", "user_software", "aur", "copr", "ppa", "flatpak", "toolbox"):
+    for term in ("aury", "herdado", "host_package", "user_software", "aur", "copr", "ppa", "flatpak", "toolbox", "distrobox"):
         ensure(term in heritage_normalized or term in heritage, f"AURY_HERITAGE_MAP precisa citar {term}")
     assert_no_auroboros("docs/AURY_HERITAGE_MAP.md", heritage)
     ok("docs/AURY_HERITAGE_MAP.md alinhado")
@@ -270,6 +292,7 @@ def main() -> int:
         "ppa",
         "flatpak",
         "toolbox",
+        "distrobox",
         "ppa_repository",
         "ppa.instalar",
         "ppa.remover",
@@ -279,7 +302,11 @@ def main() -> int:
         "toolbox.instalar",
         "toolbox.remover",
         "toolbox_host_package_manager",
+        "distrobox.instalar",
+        "distrobox.remover",
+        "distrobox_host_package_manager",
         "na toolbox <ambiente>",
+        "na distrobox <ambiente>",
         "nome exato",
         "flatpak remotes",
         "remote-ls",
@@ -311,6 +338,14 @@ def main() -> int:
     ensure(
         "aurora remover <pacote> na toolbox <ambiente> --confirm" in help_text,
         "resources/help.txt precisa mostrar a sintaxe publica de remocao em toolbox explicita",
+    )
+    ensure(
+        "aurora procurar <pacote> na distrobox <ambiente>" in help_text,
+        "resources/help.txt precisa mostrar a sintaxe publica de busca em distrobox explicita",
+    )
+    ensure(
+        "aurora remover <pacote> na distrobox <ambiente> --confirm" in help_text,
+        "resources/help.txt precisa mostrar a sintaxe publica de remocao em distrobox explicita",
     )
     assert_no_auroboros("resources/help.txt", help_text)
     ok("resources/help.txt alinhado")

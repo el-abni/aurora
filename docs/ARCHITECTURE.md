@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.5.0
+# Architecture - Aurora v0.5.1
 
 ## Tese curta
 
@@ -9,7 +9,8 @@ Aurora continua sendo um produto **100% Python** com contratos pequenos e observ
 - `COPR` como fonte explícita de terceiro para pacote do host em Fedora;
 - `PPA` como fonte explícita de terceiro para pacote do host em Ubuntu;
 - `user_software` para software do usuário via `flatpak`;
-- `toolbox` como `execution_surface` explícita para pacote distro-managed dentro de um ambiente mediado nomeado.
+- `toolbox` como `execution_surface` explícita para pacote distro-managed dentro de um ambiente mediado nomeado;
+- `distrobox` como `execution_surface` explícita para pacote distro-managed dentro de um ambiente mediado nomeado.
 
 Ela não depende de Fish como centro do runtime, não trata ferramenta observada como promessa de suporte e não colapsa host e ambiente mediado numa rota opaca.
 
@@ -17,12 +18,12 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 
 1. `cli.py` recebe o comando público.
 2. `semantics/` normaliza a frase e classifica a intenção mínima.
-3. `linux/host_profile.py` detecta família, mutabilidade, distro, ferramentas observadas e toolboxes observadas no host.
-4. `install/domain_classifier.py` decide entre default de `host_package`, fontes explícitas `AUR`, `COPR`, `PPA`, `user_software` via `flatpak` e `execution_surface=toolbox`.
-5. `linux/toolbox.py` resolve o ambiente mediado quando a frase marca `toolbox` e observa a família Linux e o backend dentro desse ambiente.
+3. `linux/host_profile.py` detecta família, mutabilidade, distro, ferramentas observadas, toolboxes observadas e distroboxes observadas no host.
+4. `install/domain_classifier.py` decide entre default de `host_package`, fontes explícitas `AUR`, `COPR`, `PPA`, `user_software` via `flatpak`, `execution_surface=toolbox` e `execution_surface=distrobox`.
+5. `linux/toolbox.py` e `linux/distrobox.py` resolvem o ambiente mediado quando a frase marca a superfície e observam a família Linux e o backend dentro desse ambiente.
 6. `install/policy_engine.py` produz o juízo de política.
 7. `install/candidates.py` e `install/route_selector.py` escolhem a rota executável.
-8. `install/execution_handoff.py` executa, faz probes e mantém visível se a ação ocorre no host ou dentro da toolbox.
+8. `install/execution_handoff.py` executa, faz probes e mantém visível se a ação ocorre no host, dentro da toolbox ou dentro da distrobox.
 9. `observability/` registra e renderiza o `decision_record`.
 
 ## Módulos principais
@@ -40,7 +41,8 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - detecção de mutabilidade;
 - matriz por família;
 - rotas concretas de `host_package`;
-- observação e roteamento contido de `toolbox`;
+- observação e roteamento contido de `toolbox` e `distrobox`;
+- compartilhamento mínimo do miolo de pacote distro-managed dentro de ambiente mediado, sem apagar a distinção entre as superfícies;
 - fronteira entre backend oficial do host, fontes terceiras explícitas e ambiente mediado explícito.
 
 ### `install/`
@@ -58,6 +60,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - `decision_record`;
 - `environment_resolution`;
 - `toolbox_profile`;
+- `distrobox_profile`;
 - renderização curta e expandida;
 - `aurora dev`.
 
@@ -68,7 +71,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - mensagens de confirmação;
 - mensagens de resultado.
 
-## Rotas abertas na v0.5.0
+## Rotas abertas na v0.5.1
 
 ### `host_package`
 
@@ -167,13 +170,35 @@ Garantias:
 - a mutação acontece dentro da toolbox e não toca o host;
 - não existe default implícito de toolbox, autocriação, lifecycle amplo, mistura com AUR/COPR/PPA/flatpak nem fallback host -> toolbox.
 
+### `distrobox` explícita
+
+Rotas reais:
+
+- `distrobox.procurar`
+- `distrobox.instalar`
+- `distrobox.remover`
+
+Garantias:
+
+- `distrobox` entra como `execution_surface`, não como `requested_source`;
+- a frase precisa carregar o nome explícito do ambiente em `na distrobox <ambiente>`;
+- `distrobox` observa o ambiente antes de abrir policy e route;
+- `distrobox` observa `linux_family`, `support_tier`, `package_backends` e `sudo` dentro do ambiente selecionado;
+- `distrobox.procurar` pode usar busca humana dentro da distrobox selecionada;
+- `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote nesta release;
+- `distrobox.remover` exige confirmação explícita;
+- a mutação acontece dentro da distrobox e não toca o host;
+- `toolbox` e `distrobox` compartilham apenas o miolo de pacote distro-managed dentro do ambiente; a observação, a resolução de ambiente e os sinais de policy continuam separados;
+- não existe default implícito de distrobox, autocriação, lifecycle amplo, mistura com AUR/COPR/PPA/flatpak nem fallback host -> distrobox.
+
 ## Fronteiras deliberadas
 
-A `v0.5.0` continua pequena de propósito:
+A `v0.5.1` continua pequena de propósito:
 
 - pedido nu continua em `host_package` no host;
 - `toolbox` não vira escape hatch implícito para Atomic/imutáveis;
-- `toolbox` não prepara abstração geral para distrobox;
+- `distrobox` também não vira escape hatch implícito para Atomic/imutáveis;
 - `toolbox.instalar` e `toolbox.remover` não fazem canonicalização ampla de alvo;
-- `AUR`, `COPR`, `PPA` e `flatpak` continuam separados de `toolbox`;
+- `distrobox.instalar` e `distrobox.remover` não fazem canonicalização ampla de alvo;
+- `AUR`, `COPR`, `PPA` e `flatpak` continuam separados de `toolbox` e de `distrobox`;
 - hosts imutáveis reais continuam fora da superfície operacional ampla do produto, mesmo com `toolbox` agora aberta de forma explícita.
