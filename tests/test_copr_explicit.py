@@ -178,7 +178,7 @@ class CoprExplicitTests(unittest.TestCase):
             )
             proc = run_module("procurar", "yt-dlp", "do", "copr", "atim/obs-studio", env=env)
             self.assertEqual(proc.returncode, 0)
-            self.assertIn("não encontrei resultados", proc.stdout)
+            self.assertIn("Não encontrei resultados", proc.stdout)
             self.assertIn("backend 'copr'", proc.stdout)
 
     def test_copr_search_blocks_when_dnf_copr_capability_is_not_observed(self) -> None:

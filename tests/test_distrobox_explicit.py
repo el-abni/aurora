@@ -120,6 +120,21 @@ class DistroboxExplicitTests(unittest.TestCase):
             self.assertEqual(payload["execution"]["post_probe"]["package_present"], False)
             self.assertEqual(state_files["devbox"].read_text(encoding="utf-8").strip(), "")
 
+    def test_distrobox_remove_cli_announces_mediated_execution_and_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            env, state_files = self._single_distrobox_env(Path(tmp), installed=("ripgrep",))
+            proc = run_module("remover", "ripgrep", "na", "distrobox", "devbox", "--confirm", env=env)
+
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("Vou iniciar a execução mediada na distrobox 'devbox'", proc.stdout)
+            self.assertIn("pode haver espera silenciosa", proc.stdout)
+            self.assertIn("pode pedir senha", proc.stdout)
+            self.assertIn("exigir um Enter extra ao final", proc.stdout)
+            self.assertIn("A execução mediada na distrobox 'devbox' devolveu o controle", proc.stdout)
+            self.assertIn("Agora a Aurora vai validar se o estado final realmente fechou.", proc.stdout)
+            self.assertIn("Pronto, eu confirmei que o pacote da distrobox 'ripgrep' foi removido.", proc.stdout)
+            self.assertEqual(state_files["devbox"].read_text(encoding="utf-8").strip(), "")
+
     def test_distrobox_blocks_when_environment_name_is_missing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             env, _state_files = self._single_distrobox_env(Path(tmp))

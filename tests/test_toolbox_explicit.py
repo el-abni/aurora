@@ -99,6 +99,21 @@ class ToolboxExplicitTests(unittest.TestCase):
             )
             self.assertIn("ripgrep", state_files["devbox"].read_text(encoding="utf-8"))
 
+    def test_toolbox_install_cli_announces_mediated_execution_and_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            env, state_files = self._single_toolbox_env(Path(tmp))
+            proc = run_module("instalar", "ripgrep", "na", "toolbox", "devbox", env=env)
+
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("Vou iniciar a execução mediada na toolbox 'devbox'", proc.stdout)
+            self.assertIn("pode haver espera silenciosa", proc.stdout)
+            self.assertIn("pode pedir senha", proc.stdout)
+            self.assertIn("exigir um Enter extra ao final", proc.stdout)
+            self.assertIn("A execução mediada na toolbox 'devbox' devolveu o controle", proc.stdout)
+            self.assertIn("Agora a Aurora vai validar se o estado final realmente fechou.", proc.stdout)
+            self.assertIn("Pronto, eu confirmei que o pacote da toolbox 'ripgrep' está instalado.", proc.stdout)
+            self.assertIn("ripgrep", state_files["devbox"].read_text(encoding="utf-8"))
+
     def test_toolbox_remove_requires_confirmation_and_executes_when_confirmed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             env, state_files = self._single_toolbox_env(Path(tmp), installed=("ripgrep",))

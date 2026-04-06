@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.6.1
+# Architecture - Aurora v0.6.2
 
 ## Tese curta
 
@@ -76,7 +76,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - mensagens de confirmação;
 - mensagens de resultado.
 
-## Rotas abertas na v0.6.1
+## Rotas abertas na v0.6.2
 
 ### `host_package`
 
@@ -100,6 +100,7 @@ Garantias:
 - usa apenas `paru` e `yay`;
 - quando ambos estão observados, a ordem do contrato é `paru`, depois `yay`;
 - `aur.instalar` usa handoff interativo e avisa explicitamente quando o usuário precisa assumir o terminal;
+- o handoff AUR também deixa explícitos pausa silenciosa de build e Enter extra em alguns terminais;
 - a confirmação pós-instalação AUR valida a presença final no host sem depender só de `pacman -Qm`;
 - `aur.remover` continua não interativo;
 - helper observado fora do contrato continua visível, mas bloqueado como rota.
@@ -173,6 +174,7 @@ Garantias:
 - `toolbox.procurar` pode usar busca humana dentro da toolbox selecionada;
 - `toolbox.instalar` e `toolbox.remover` exigem nome exato de pacote nesta release;
 - `toolbox.remover` exige confirmação explícita;
+- as mutações em `toolbox` avisam início da execução, espera possível, retorno do controle e validação final;
 - a mutação acontece dentro da toolbox e não toca o host;
 - não existe default implícito de toolbox, autocriação, lifecycle amplo, mistura com AUR/COPR/PPA/flatpak nem fallback host -> toolbox.
 
@@ -193,6 +195,7 @@ Garantias:
 - `distrobox.procurar` pode usar busca humana dentro da distrobox selecionada;
 - `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote nesta release;
 - `distrobox.remover` exige confirmação explícita;
+- as mutações em `distrobox` avisam início da execução, espera possível, retorno do controle e validação final;
 - a mutação acontece dentro da distrobox e não toca o host;
 - `toolbox` e `distrobox` compartilham apenas o miolo de pacote distro-managed dentro do ambiente; a observação, a resolução de ambiente e os sinais de policy continuam separados;
 - não existe default implícito de distrobox, autocriação, lifecycle amplo, mistura com AUR/COPR/PPA/flatpak nem fallback host -> distrobox.
@@ -217,7 +220,7 @@ Garantias:
 
 ## Fronteiras deliberadas
 
-A `v0.6.1` continua pequena de propósito:
+A `v0.6.2` continua pequena de propósito:
 
 - pedido nu continua em `host_package` no host;
 - em host imutável, pedido nu bloqueia com `immutable_observed_surfaces` e `immutable_selected_surface=block`;

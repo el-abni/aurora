@@ -36,7 +36,7 @@ Comandos públicos:
 - aurora --help
 - aurora --version
 
-Contrato público da v0.6.1:
+Contrato público da v0.6.2:
 - produto 100% Python;
 - launchers oficiais: aurora e auro;
 - domínios ativos: host_package e user_software;
@@ -67,7 +67,9 @@ Contrato público da v0.6.1:
 - host imutável deixa visíveis immutable_observed_surfaces e immutable_selected_surface;
 - rpm-ostree observa status --json, pending deployment e transaction antes de liberar mutação;
 - aur.instalar pode entregar o terminal ao helper interativo, avisando que o helper pode pedir Enter, seleção, revisão de build ou senha;
+- aur.instalar também avisa quando pode haver pausa silenciosa de build e, em alguns terminais, Enter extra ao final;
 - quando o helper AUR devolve o terminal, a Aurora ainda valida o estado final;
+- toolbox.instalar/toolbox.remover e distrobox.instalar/distrobox.remover avisam início da execução mediada, espera possível, retorno do controle e validação final;
 - a confirmação pós-instalação AUR valida a presença final no host sem depender apenas de pacman -Qm;
 - falhas operacionais importantes tentam mostrar o motivo útil devolvido pelo backend sem despejar log bruto.
 
@@ -88,7 +90,7 @@ Compatibilidade:
 - rpm-ostree: depende do comando rpm-ostree no host imutável, exige pedido explícito, bloqueia pending deployment/transação ativa e pode exigir reboot para aplicar;
 - host_package em Atomic/imutáveis: exige seleção explícita entre flatpak, toolbox, distrobox, rpm-ostree ou bloqueio.
 
-Fora da v0.6.1:
+Fora da v0.6.2:
 - fallback automático de pedido nu para AUR;
 - fallback automático do host para toolbox;
 - fallback automático do host para distrobox;

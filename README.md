@@ -1,15 +1,15 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v0.6.1-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v0.6.2-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com política explícita, observabilidade própria e execução real sobre um contrato pequeno e auditável.
 
-A release pública atual é a `v0.6.1`. Ela preserva o corte da `v0.6.0`, mas troca expansão por revisão: endurece o runtime, melhora confirmação pós-mutação, polimento textual e observabilidade da superfície pública já aberta.
+A release pública atual é a `v0.6.2`. Ela preserva o corte da `v0.6.1`, mas fecha o polimento operacional final: endurece a UX pública, melhora o fluxo percebido em AUR/toolbox/distrobox e limpa mensagens que ainda soavam como log cru.
 
-Na `v0.6.1`, a superfície pública continua pequena:
+Na `v0.6.2`, a superfície pública continua pequena:
 
 - `host_package` para pacotes do host no `execution_surface=host`;
 - `AUR` como fonte explícita de terceiro dentro de `host_package`;
@@ -20,7 +20,7 @@ Na `v0.6.1`, a superfície pública continua pequena:
 - `distrobox` como `execution_surface` explícita para operar pacote distro-managed dentro de um ambiente mediado nomeado.
 - `rpm-ostree` como `execution_surface` explícita para layering/uninstall no host imutável.
 
-Leitura correta da `v0.6.1`:
+Leitura correta da `v0.6.2`:
 
 - `toolbox` não é fonte de pacote;
 - `toolbox` não é `host_package` com outro nome;
@@ -42,12 +42,13 @@ Leitura correta da `v0.6.1`:
 - pedido nu em host imutável não sofre fallback mágico: a Aurora mostra as superfícies observadas e bloqueia quando a frase não escolhe uma delas;
 - `host`, `toolbox`, `distrobox` e `rpm_ostree` aparecem separados em request, policy, route, execution e `aurora dev`.
 
-O foco da `v0.6.1` é hardening:
+O foco da `v0.6.2` é hardening:
 
 - erro operacional agora tenta carregar o motivo útil devolvido pelo backend, sem despejar log bruto;
 - `aur.instalar` confirma a presença final no host sem depender só de `pacman -Qm`;
-- o handoff interativo para helpers AUR prepara melhor o usuário para prompts, Enter e retorno do terminal;
-- help, mensagens, summaries e decision record receberam revisão de texto e de placeholders públicos.
+- o handoff interativo para helpers AUR prepara melhor o usuário para prompts, Enter, pausa silenciosa e retorno do terminal;
+- `toolbox` e `distrobox` anunciam melhor início, espera, retorno do controle e validação final nas mutações mediadas;
+- help, mensagens, summaries e `decision_record` receberam nova revisão de texto, caixa, pontuação e placeholders públicos.
 
 ## O que a Aurora faz
 
@@ -62,7 +63,7 @@ A Aurora funciona como uma camada de decisão e execução sobre Linux. Em vez d
 - executa com probe de estado quando a ação muda software;
 - expõe um `decision_record` auditável com `aurora dev <frase>`, incluindo `immutable_observed_surfaces`, `immutable_selected_surface` e `rpm_ostree_status` quando cabível.
 
-## Contrato público da v0.6.1
+## Contrato público da v0.6.2
 
 Rotas reais abertas nesta release:
 
@@ -98,12 +99,14 @@ Comportamento garantido:
 - `toolbox` observa qual backend distro-managed está disponível dentro da toolbox e deixa isso visível em `decision_record`;
 - `toolbox.instalar` e `toolbox.remover` aceitam apenas nome exato de pacote nesta release;
 - `toolbox.remover` exige `--confirm`;
+- mutações em `toolbox` avisam quando a execução mediada começa, quando pode haver espera silenciosa ou senha e quando a Aurora ainda vai validar o estado final;
 - `distrobox` exige nome explícito de ambiente como `na distrobox <ambiente>`;
 - não existe default implícito de distrobox, autoseleção nem descoberta mágica de ambiente;
 - `distrobox` observa o ambiente nomeado antes de abrir policy e rota;
 - `distrobox` observa qual backend distro-managed está disponível dentro da distrobox e deixa isso visível em `decision_record`;
 - `distrobox.instalar` e `distrobox.remover` aceitam apenas nome exato de pacote nesta release;
 - `distrobox.remover` exige `--confirm`;
+- mutações em `distrobox` avisam quando a execução mediada começa, quando pode haver espera silenciosa ou senha e quando a Aurora ainda vai validar o estado final;
 - `rpm-ostree` entra apenas por frase marcada como `no rpm-ostree`;
 - `rpm_ostree.instalar` e `rpm_ostree.remover` aceitam apenas nome exato de pacote nesta release;
 - `rpm_ostree.remover` exige `--confirm`;
@@ -209,6 +212,7 @@ aurora dev "instalar htop no rpm-ostree"
 - suportado agora: hosts Arch/derivados mutáveis com `paru` ou `yay` observado;
 - usa política própria, `source_type=aur_repository` e `trust_level=third_party_build`;
 - `aur.instalar` pode abrir fluxo interativo real do helper e prepara explicitamente o usuário para prompts e retorno do terminal;
+- o fluxo AUR também avisa sobre pausa silenciosa de build e possibilidade de Enter extra ao final em alguns terminais;
 - a confirmação pós-instalação AUR valida a presença final no host, sem depender apenas de `pacman -Qm`;
 - `aur.remover` continua fora do passthrough interativo desta release;
 - helper AUR fora do contrato não vira fallback nem rota executável.
@@ -325,10 +329,10 @@ A identidade pública da ferramenta é:
 No help público, a versão aparece como:
 
 ```text
-🌌 Aurora v0.6.1
+🌌 Aurora v0.6.2
 ```
 
-## O que a v0.6.1 não promete
+## O que a v0.6.2 não promete
 
 A Aurora ainda não abre:
 

@@ -7,9 +7,12 @@ _WORD_REPLACEMENTS = (
     ("acao", "ação"),
     ("ambigua", "ambígua"),
     ("ambiguidade", "ambiguidade"),
+    ("analitico", "analítico"),
     ("automatica", "automática"),
     ("automatico", "automático"),
     ("automáticos", "automáticos"),
+    ("auditavel", "auditável"),
+    ("basicos", "básicos"),
     ("canonica", "canônica"),
     ("canonico", "canônico"),
     ("confirmacao", "confirmação"),
@@ -25,15 +28,19 @@ _WORD_REPLACEMENTS = (
     ("familia", "família"),
     ("heuristica", "heurística"),
     ("imutavel", "imutável"),
+    ("implicita", "implícita"),
+    ("implicito", "implícito"),
     ("instalacao", "instalação"),
     ("interacao", "interação"),
     ("intermediaria", "intermediária"),
     ("ja", "já"),
     ("logica", "lógica"),
+    ("magica", "mágica"),
     ("maxima", "máxima"),
     ("medicao", "medição"),
     ("minima", "mínima"),
     ("minimo", "mínimo"),
+    ("multiplos", "múltiplos"),
     ("mutacao", "mutação"),
     ("mutavel", "mutável"),
     ("nao", "não"),
@@ -45,6 +52,8 @@ _WORD_REPLACEMENTS = (
     ("preparacao", "preparação"),
     ("proveniencia", "proveniência"),
     ("proximo", "próximo"),
+    ("publica", "pública"),
+    ("publico", "público"),
     ("remocao", "remoção"),
     ("repositorio", "repositório"),
     ("repositorios", "repositórios"),
@@ -52,6 +61,10 @@ _WORD_REPLACEMENTS = (
     ("restricao", "restrição"),
     ("revisao", "revisão"),
     ("ruido", "ruído"),
+    ("seletiva", "seletiva"),
+    ("semantica", "semântica"),
+    ("sintese", "síntese"),
+    ("sozinha", "sozinha"),
     ("selecao", "seleção"),
     ("sensivel", "sensível"),
     ("so", "só"),
@@ -60,11 +73,18 @@ _WORD_REPLACEMENTS = (
     ("tecnica", "técnica"),
     ("tecnico", "técnico"),
     ("transacao", "transação"),
+    ("transicao", "transição"),
     ("unica", "única"),
+    ("unico", "único"),
     ("usuario", "usuário"),
     ("usuarios", "usuários"),
     ("util", "útil"),
     ("visivel", "visível"),
+    ("autoselecao", "autosseleção"),
+    ("parseavel", "parseável"),
+    ("previo", "prévio"),
+    ("rapida", "rápida"),
+    ("rapido", "rápido"),
 )
 
 
@@ -76,8 +96,15 @@ def polish_public_text(text: str) -> str:
     for raw, replacement in _WORD_REPLACEMENTS:
         polished = re.sub(rf"\b{raw}\b", replacement, polished)
 
-    match = re.search(r"[A-Za-zÀ-ÿ]", polished)
-    if match is not None:
-        index = match.start()
-        polished = polished[:index] + polished[index].upper() + polished[index + 1 :]
-    return polished
+    chars = list(polished)
+    capitalize_next = True
+    for index, char in enumerate(chars):
+        if capitalize_next and re.match(r"[A-Za-zÀ-ÿ]", char):
+            chars[index] = char.upper()
+            capitalize_next = False
+            continue
+        if char in ".!?;":
+            capitalize_next = True
+        elif not char.isspace() and char not in "\"'([{":
+            capitalize_next = False
+    return "".join(chars)

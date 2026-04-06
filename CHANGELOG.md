@@ -1,5 +1,29 @@
 # Changelog
 
+## 🌌 Aurora v0.6.2
+
+Release pequena de polimento operacional, UX pública e endurecimento final sobre a base já revisada na `v0.6.1`. O corte desta rodada não abre frente nova: ele melhora o fluxo percebido pelo usuário, fecha mensagens públicas ainda secas e deixa AUR, toolbox e distrobox mais claros no momento de execução.
+
+### Corrigido
+
+- `aur.instalar` passa a avisar de forma mais clara quando o helper assume o terminal, inclusive em casos de pausa silenciosa durante build e possibilidade de Enter extra ao final;
+- mutações mediadas em `toolbox` e `distrobox` agora anunciam início, espera possível, retorno do controle e validação final do estado;
+- bloqueios, erros, `noops`, confirmações e sucessos ganham wording mais claro, com melhor caixa, pontuação e acabamento de produto.
+
+### Alterado
+
+- a superfície pública em pt-BR foi revisada com mais agressividade em `messages.py`, `text_polish.py`, help, docs mínimas e `aurora dev`;
+- notas e reasons das superfícies mediadas ficaram mais legíveis em `decision_record`, sem mudar o contrato nem a semântica real das rotas;
+- help, README e docs públicas passam a refletir a `v0.6.2` como release pública atual.
+
+### Continua fora da v0.6.2
+
+- qualquer nova fonte, nova superfície, nova família ou nova frente de produto;
+- passthrough anárquico, fallback automático, descoberta mágica ou parser amplo;
+- AppImage, GitHub Releases e `ujust`;
+- manutenção ampla do host, arquivos e rede;
+- qualquer expansão disfarçada enquanto a linha ainda está sendo endurecida.
+
 ## 🌌 Aurora v0.6.1
 
 Release de revisão, correção, polimento e congelamento sobre a base já aberta na `v0.6.0`. O corte desta rodada não abre nova frente: ele endurece a superfície pública existente, melhora a observabilidade do runtime, reduz falso negativo conhecido de confirmação AUR e deixa o produto mais claro antes do próximo ciclo.

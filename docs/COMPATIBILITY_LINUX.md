@@ -1,4 +1,4 @@
-# Compatibilidade Linux - Aurora v0.6.1
+# Compatibilidade Linux - Aurora v0.6.2
 
 ## Matriz atual de `host_package`
 
@@ -20,10 +20,11 @@
 | Demais famílias Linux | fora do recorte | sem rota executável |
 | Atomic / imutáveis | bloqueado por política | sem mutação via AUR |
 
-Leitura correta desta frente na `v0.6.1`:
+Leitura correta desta frente na `v0.6.2`:
 
 - `aur.instalar` continua interativo quando o helper precisa assumir o terminal;
 - a Aurora avisa o handoff e deixa explícito que o helper pode pedir Enter, seleção, revisão de build ou senha;
+- a Aurora também avisa quando pode haver pausa silenciosa de build e, em alguns terminais, Enter extra ao final;
 - a confirmação pós-instalação fecha pela presença final do pacote no host, enquanto a honestidade da rota AUR continua ancorada na resolução e no helper explícitos.
 
 ## Frente `COPR` explícito
@@ -47,7 +48,7 @@ Leitura correta desta frente na `v0.6.1`:
 
 ## `user_software` via `flatpak`
 
-Na `v0.6.1`, `flatpak` continua sendo a frente explícita de software do usuário.
+Na `v0.6.2`, `flatpak` continua sendo a frente explícita de software do usuário.
 
 Leitura correta desta frente:
 
@@ -63,7 +64,7 @@ Leitura correta desta frente:
 
 ## Frente `toolbox` explícita
 
-Na `v0.6.1`, `toolbox` entra como superfície operacional mediada, não como fonte.
+Na `v0.6.2`, `toolbox` entra como superfície operacional mediada, não como fonte.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
@@ -80,13 +81,14 @@ Leitura correta desta frente:
 - `toolbox.procurar` aceita busca humana dentro do ambiente selecionado;
 - `toolbox.instalar` e `toolbox.remover` exigem nome exato de pacote;
 - `toolbox.remover` exige confirmação explícita;
+- o runtime avisa início da execução, espera possível, retorno do controle e validação final nas mutações mediadas;
 - a mutação acontece dentro da toolbox e não no host;
 - em host imutável, a escolha explícita fica auditável como `immutable_selected_surface=toolbox`;
 - não existe default implícito, criação automática, lifecycle amplo nem fallback host -> toolbox.
 
 ## Frente `distrobox` explícita
 
-Na `v0.6.1`, `distrobox` entra como segunda superfície operacional mediada, não como fonte.
+Na `v0.6.2`, `distrobox` entra como segunda superfície operacional mediada, não como fonte.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
@@ -103,13 +105,14 @@ Leitura correta desta frente:
 - `distrobox.procurar` aceita busca humana dentro do ambiente selecionado;
 - `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote;
 - `distrobox.remover` exige confirmação explícita;
+- o runtime avisa início da execução, espera possível, retorno do controle e validação final nas mutações mediadas;
 - a mutação acontece dentro da distrobox e não no host;
 - em host imutável, a escolha explícita fica auditável como `immutable_selected_surface=distrobox`;
 - não existe default implícito, criação automática, lifecycle amplo nem fallback host -> distrobox.
 
 ## Frente `rpm-ostree` explícito
 
-Na `v0.6.1`, `rpm-ostree` entra como superfície explícita de host imutável.
+Na `v0.6.2`, `rpm-ostree` entra como superfície explícita de host imutável.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |

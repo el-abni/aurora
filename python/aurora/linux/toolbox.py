@@ -101,8 +101,8 @@ def observe_toolbox_capability(environ: dict[str, str] | None = None) -> Toolbox
             observed=False,
             gap="toolbox_command_not_observed",
             reason=(
-                "o comando 'toolbox' nao foi observado neste host. "
-                "esta release nao cria ambientes automaticamente nem usa toolbox como fallback implicito."
+                "O comando 'toolbox' não foi observado neste host. "
+                "Esta release não cria ambientes automaticamente nem usa toolbox como fallback implícito."
             ),
         )
 
@@ -112,8 +112,8 @@ def observe_toolbox_capability(environ: dict[str, str] | None = None) -> Toolbox
             observed=False,
             gap="toolbox_list_not_observed",
             reason=(
-                "nao consegui observar as toolboxes existentes via 'toolbox list --containers'. "
-                "esta release exige observacao explicita do ambiente mediado."
+                "Não consegui observar as toolboxes existentes via 'toolbox list --containers'. "
+                "Esta release exige observação explícita do ambiente mediado."
             ),
             exit_code=proc.returncode,
             stdout=proc.stdout,
@@ -154,8 +154,8 @@ def resolve_toolbox_environment(
             status="missing",
             source="user_input",
             reason=(
-                "toolbox explicita nesta rodada exige o nome do ambiente. "
-                "nao existe default implicito, descoberta magica nem autoselecao."
+                "Toolbox explícita nesta rodada exige o nome do ambiente. "
+                "Não existe default implícito, descoberta mágica nem autosseleção."
             ),
         )
 
@@ -167,7 +167,7 @@ def resolve_toolbox_environment(
             status="unresolved",
             source="user_input",
             reason=(
-                "o nome da toolbox precisa ser um identificador simples e conservador nesta rodada, "
+                "O nome da toolbox precisa ser um identificador simples e conservador nesta rodada, "
                 "sem parsing amplo de argumentos."
             ),
         )
@@ -179,7 +179,7 @@ def resolve_toolbox_environment(
             observed_environments=observed_environments,
             status="unresolved",
             source="host_profile",
-            reason="o host profile nao esta disponivel para abrir a superficie toolbox.",
+            reason="O host profile não está disponível para abrir a superfície toolbox.",
         )
 
     if "toolbox" not in profile.observed_environment_tools:
@@ -190,8 +190,8 @@ def resolve_toolbox_environment(
             status="unresolved",
             source="host_observation",
             reason=(
-                "o comando 'toolbox' nao foi observado neste host. "
-                "esta release nao cria ambientes automaticamente nem usa toolbox como fallback implicito."
+                "O comando 'toolbox' não foi observado neste host. "
+                "Esta release não cria ambientes automaticamente nem usa toolbox como fallback implícito."
             ),
         )
 
@@ -205,8 +205,8 @@ def resolve_toolbox_environment(
             status="not_found",
             source="toolbox_run_probe",
             reason=(
-                f"a toolbox explicita '{environment_name}' nao foi resolvida por probe controlado. "
-                "esta release nao cria ambiente automaticamente nem assume nomes aproximados."
+                f"A toolbox explícita '{environment_name}' não foi resolvida por probe controlado. "
+                "Esta release não cria ambiente automaticamente nem assume nomes aproximados."
             ),
             diagnostic_command=probe_command,
             diagnostic_exit_code=proc.returncode,
@@ -222,7 +222,7 @@ def resolve_toolbox_environment(
         status="resolved",
         source="toolbox_run_probe",
         reason=(
-            f"a toolbox explicita '{environment_name}' foi observada por probe controlado "
+            f"A toolbox explícita '{environment_name}' foi observada por probe controlado "
             "antes do planejamento da rota."
         ),
         diagnostic_command=probe_command,
@@ -270,16 +270,16 @@ def build_toolbox_candidate(
     target: str | None = None,
 ) -> ExecutionRoute | None:
     notes = (
-        "toolbox entra como superficie operacional mediada explicita nesta rodada.",
-        "toolbox e distrobox compartilham apenas o miolo de pacote distro-managed dentro do ambiente; a observacao e a semantica de superficie continuam distintas.",
+        "Toolbox entra como superfície operacional mediada explícita nesta rodada.",
+        "Toolbox e distrobox compartilham apenas o miolo de pacote distro-managed dentro do ambiente; a observação e a semântica de superfície continuam distintas.",
         (
-            f"ambiente toolbox selecionado explicitamente: {environment_resolution.resolved_environment}."
+            f"Ambiente toolbox selecionado explicitamente: {environment_resolution.resolved_environment}."
             if environment_resolution is not None and environment_resolution.resolved_environment
-            else "ambiente toolbox ainda nao resolvido."
+            else "Ambiente toolbox ainda não resolvido."
         ),
-        "a fronteira host vs toolbox permanece visivel: a mutacao acontece dentro do ambiente mediado, nao no host.",
-        "esta frente nao cria toolbox automaticamente, nao administra lifecycle amplo e nao vira fallback implicito do host.",
-        "esta frente cobre apenas pacote do host dentro da toolbox, sem misturar AUR, COPR, PPA ou flatpak.",
+        "A fronteira host vs toolbox permanece visível: a mutação acontece dentro do ambiente mediado, não no host.",
+        "Esta frente não cria toolbox automaticamente, não administra lifecycle amplo e não vira fallback implícito do host.",
+        "Esta frente cobre apenas pacote do host dentro da toolbox, sem misturar AUR, COPR, PPA ou flatpak.",
     )
     del host_profile
     return build_mediated_candidate(

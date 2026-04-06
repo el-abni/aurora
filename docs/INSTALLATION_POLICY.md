@@ -1,8 +1,8 @@
-# Installation Policy - Aurora v0.6.1
+# Installation Policy - Aurora v0.6.2
 
 ## Escopo real da política
 
-Na `v0.6.1`, a política operacional da Aurora governa dois domínios, três superfícies explícitas fora do host mutável comum e oito leituras reais de rota:
+Na `v0.6.2`, a política operacional da Aurora governa dois domínios, três superfícies explícitas fora do host mutável comum e oito leituras reais de rota:
 
 - `host_package` com `execution_surface=host` e `source_type=host_package_manager`;
 - `host_package` explicitamente marcado com `source_type=aur_repository`;
@@ -50,6 +50,7 @@ Os campos ativos desta release são:
 - usa apenas `paru` e `yay`;
 - `aur.instalar` e `aur.remover` exigem confirmação explícita;
 - `aur.instalar` pode entregar o terminal ao helper para revisão/build interativos e avisa explicitamente que o helper pode pedir Enter, seleção, revisão ou senha;
+- o fluxo AUR também avisa quando pode haver pausa silenciosa durante build e, em alguns terminais, Enter extra ao final;
 - a confirmação pós-instalação AUR valida a presença final no host e não trata `pacman -Qm` como único critério de sucesso;
 - `aur.remover` permanece no caminho não interativo desta release;
 - continua bloqueado fora de Arch mutável, sem `pacman` observado, sem helper aceito ou com helper fora do contrato como único helper disponível.
@@ -106,6 +107,7 @@ Os campos ativos desta release são:
 - `toolbox.instalar` não exige confirmação, mas depende de backend distro-managed e `sudo` observados dentro do ambiente selecionado;
 - `toolbox.remover` exige confirmação explícita;
 - `toolbox.instalar` e `toolbox.remover` exigem nome exato de pacote;
+- o runtime avisa início da execução mediada, espera possível, retorno do controle e validação final nas mutações em toolbox;
 - a política mantém gaps estruturais visíveis: `toolbox_default_selection_not_opened`, `toolbox_create_not_opened`, `toolbox_lifecycle_not_opened`, `toolbox_host_fallback_not_opened` e `toolbox_mutation_requires_exact_package_name`;
 - host Atomic/imutável não bloqueia `toolbox` por si só, mas também não abre suporte amplo a imutáveis;
 - em host imutável, a política deixa explícito `immutable_selected_surface=toolbox`.
@@ -122,6 +124,7 @@ Os campos ativos desta release são:
 - `distrobox.instalar` não exige confirmação, mas depende de backend distro-managed e `sudo` observados dentro do ambiente selecionado;
 - `distrobox.remover` exige confirmação explícita;
 - `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote;
+- o runtime avisa início da execução mediada, espera possível, retorno do controle e validação final nas mutações em distrobox;
 - a política mantém gaps estruturais visíveis: `distrobox_default_selection_not_opened`, `distrobox_create_not_opened`, `distrobox_lifecycle_not_opened`, `distrobox_host_fallback_not_opened` e `distrobox_mutation_requires_exact_package_name`;
 - host Atomic/imutável não bloqueia `distrobox` por si só, mas também não abre suporte amplo a imutáveis;
 - em host imutável, a política deixa explícito `immutable_selected_surface=distrobox`.
@@ -153,7 +156,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v0.6.1`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v0.6.2`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -215,7 +218,7 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 
 ## O que ainda não está aberto
 
-Continuam fora da `v0.6.1`:
+Continuam fora da `v0.6.2`:
 
 - fallback automático do host para `toolbox`;
 - fallback automático do host para `distrobox`;

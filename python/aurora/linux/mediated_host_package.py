@@ -61,7 +61,7 @@ def observe_environment_profile(
             observed=False,
             gap=f"{execution_surface}_environment_missing",
             reason=(
-                f"faltou o nome do ambiente {execution_surface} para observar o backend interno."
+                f"Faltou o nome do ambiente {execution_surface} para observar o backend interno."
             ),
         )
 
@@ -71,8 +71,8 @@ def observe_environment_profile(
             observed=False,
             gap=f"{execution_surface}_profile_not_observed",
             reason=(
-                f"nao consegui ler /etc/os-release dentro da {execution_surface} '{environment_name}' "
-                "para determinar a familia Linux mediada."
+                f"Não consegui ler /etc/os-release dentro da {execution_surface} '{environment_name}' "
+                "para determinar a família Linux mediada."
             ),
             command=os_release_command,
             exit_code=os_release_proc.returncode,
@@ -92,8 +92,8 @@ def observe_environment_profile(
             observed=False,
             gap=f"{execution_surface}_commands_not_observed",
             reason=(
-                f"nao consegui observar os comandos basicos dentro da {execution_surface} '{environment_name}' "
-                "para montar uma rota mediada auditavel."
+                f"Não consegui observar os comandos básicos dentro da {execution_surface} '{environment_name}' "
+                "para montar uma rota mediada auditável."
             ),
             command=command_probe_command,
             exit_code=commands_proc.returncode,
@@ -153,8 +153,8 @@ def resolve_mediated_target(
             source="user_input_package_name",
             canonicalized=False,
             reason=(
-                f"a mutacao dentro da {execution_surface} recebeu um nome de pacote explicito e conservador, "
-                "entao o alvo foi usado diretamente."
+                f"A mutação dentro da {execution_surface} recebeu um nome de pacote explícito e conservador, "
+                "então o alvo foi usado diretamente."
             ),
         )
 
@@ -164,7 +164,7 @@ def resolve_mediated_target(
         source=f"{execution_surface}_user_input",
         reason=(
             f"{execution_surface}.instalar e {execution_surface}.remover exigem o nome real do pacote nesta release. "
-            f"Use {execution_surface}.procurar para descobrir o nome exato antes da mutacao."
+            f"Use {execution_surface}.procurar para descobrir o nome exato antes da mutação."
         ),
     )
 
@@ -272,7 +272,8 @@ def build_mediated_candidate(
         implemented=True,
         requires_privilege_escalation=True,
         notes=notes + (
-            f"mutacao mediada usa probe antes e depois da execucao dentro da {execution_surface}.",
+            f"A mutação mediada usa probe antes e depois da execução dentro da {execution_surface}.",
+            f"A Aurora valida o estado final depois que o backend interno devolve o controle na {execution_surface}.",
         ),
         execution_surface=execution_surface,
         environment_target=environment_name,

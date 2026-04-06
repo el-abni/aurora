@@ -34,6 +34,8 @@ from aurora.presentation.messages import (
     confirmation_required_message,
     interactive_handoff_return_message,
     interactive_handoff_start_message,
+    mediated_execution_return_message,
+    mediated_execution_start_message,
     mutation_success_message,
     no_results_message,
     package_not_found_message,
@@ -189,6 +191,10 @@ def _mediated_surface_name(record: DecisionRecord) -> str | None:
     if record.request.execution_surface in {"toolbox", "distrobox"}:
         return record.request.execution_surface
     return None
+
+
+def _should_announce_mediated_execution(record: DecisionRecord) -> bool:
+    return _mediated_surface_name(record) is not None
 
 
 def _is_rpm_ostree_surface(record: DecisionRecord) -> bool:
@@ -587,11 +593,27 @@ def _execute_mutation(
 
     if route.interactive_passthrough and announce is not None:
         announce(interactive_handoff_start_message(route.backend_name))
+    elif _should_announce_mediated_execution(record) and announce is not None:
+        announce(
+            mediated_execution_start_message(
+                _mediated_surface_name(record) or "ambiente mediado",
+                route.environment_target,
+                route.backend_name,
+            )
+        )
 
     command_runner = run_interactive if route.interactive_passthrough else run
     proc = command_runner(route.command)
     if route.interactive_passthrough and announce is not None:
         announce(interactive_handoff_return_message(route.backend_name, proc.returncode))
+    elif _should_announce_mediated_execution(record) and announce is not None:
+        announce(
+            mediated_execution_return_message(
+                _mediated_surface_name(record) or "ambiente mediado",
+                route.environment_target,
+                proc.returncode,
+            )
+        )
     if proc.returncode != 0:
         if _mutation_reports_not_found(record, proc.stdout, proc.stderr):
             message = package_not_found_message(

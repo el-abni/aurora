@@ -63,12 +63,12 @@ def _summary_for_request(request: SemanticRequest) -> str:
         if request.intent == "procurar":
             return f"Inspecionar o pacote '{request.target}' na superfície rpm-ostree do host imutável."
         if request.intent == "instalar":
-            return f"Adicionar o pacote '{request.target}' ao proximo deployment rpm-ostree."
+            return f"Adicionar o pacote '{request.target}' ao próximo deployment rpm-ostree."
         if request.intent == "remover":
-            return f"Remover o pacote '{request.target}' do proximo deployment rpm-ostree."
+            return f"Remover o pacote '{request.target}' do próximo deployment rpm-ostree."
 
     if request.execution_surface == "distrobox" and request.domain_kind == "host_package":
-        environment_label = request.environment_target or "distrobox explicitamente pedida"
+        environment_label = request.environment_target or "distrobox explicitamente solicitada"
         if request.intent == "procurar":
             return f"Procurar o pacote '{request.target}' dentro da distrobox '{environment_label}'."
         if request.intent == "instalar":
@@ -77,7 +77,7 @@ def _summary_for_request(request: SemanticRequest) -> str:
             return f"Remover o pacote '{request.target}' dentro da distrobox '{environment_label}'."
 
     if request.execution_surface == "toolbox" and request.domain_kind == "host_package":
-        environment_label = request.environment_target or "toolbox explicitamente pedida"
+        environment_label = request.environment_target or "toolbox explicitamente solicitada"
         if request.intent == "procurar":
             return f"Procurar o pacote '{request.target}' dentro da toolbox '{environment_label}'."
         if request.intent == "instalar":

@@ -489,12 +489,17 @@ exit 1
             )
             proc = run_module("instalar", "google", "chrome", "no", "aur", "--confirm", env=env)
             self.assertEqual(proc.returncode, 0)
-            self.assertIn("vou entregar o terminal ao helper interativo 'paru'", proc.stdout)
+            self.assertIn("Agora o terminal está com o helper interativo 'paru'", proc.stdout)
             self.assertIn("ele pode pedir Enter, seleção, revisão de build ou senha", proc.stdout)
+            self.assertIn("pode haver uma pausa silenciosa durante o build", proc.stdout)
+            self.assertIn("Enter extra ao final", proc.stdout)
             self.assertIn("installed google-chrome", proc.stdout)
-            self.assertIn("o helper interativo 'paru' devolveu o terminal", proc.stdout)
-            self.assertIn("Agora vou validar se o estado final realmente fechou.", proc.stdout)
-            self.assertIn("pronto, o pacote solicitado via AUR 'google chrome' está instalado", proc.stdout)
+            self.assertIn("O helper interativo 'paru' devolveu o controle do terminal", proc.stdout)
+            self.assertIn("Agora a Aurora vai validar se o estado final realmente fechou.", proc.stdout)
+            self.assertIn(
+                "Pronto, eu confirmei que o pacote solicitado via AUR 'google chrome' está instalado",
+                proc.stdout,
+            )
             self.assertIn("google-chrome", aur_state_file.read_text(encoding="utf-8"))
 
     def test_aur_mutation_strips_source_and_control_markers_before_resolution(self) -> None:
@@ -575,7 +580,7 @@ exit 1
             self.assertEqual(payload["target_resolution"]["status"], "ambiguous")
             self.assertNotIn("execution_route", payload)
             self.assertEqual(payload["execution"]["status"], "blocked")
-            self.assertIn("bloqueado por resolução de alvo", message)
+            self.assertIn("Bloqueado por resolução de alvo", message)
 
     def test_aur_install_blocks_on_missing_reliable_match_before_confirmation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -595,7 +600,7 @@ exit 1
             self.assertEqual(payload["target_resolution"]["consulted_targets"], ["google-chrome", "google chrome"])
             self.assertNotIn("execution_route", payload)
             self.assertEqual(payload["execution"]["status"], "blocked")
-            self.assertIn("bloqueado por resolução de alvo", message)
+            self.assertIn("Bloqueado por resolução de alvo", message)
 
     def test_aur_remove_resolves_foreign_package_from_human_target(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -112,7 +112,7 @@ class HostPackageMutationTests(unittest.TestCase):
             self.assertEqual(payload["target_resolution"]["status"], "ambiguous")
             self.assertEqual(set(payload["target_resolution"]["candidates"]), {"obs-studio", "obs_studio"})
             self.assertNotIn("execution_route", payload)
-            self.assertIn("bloqueado por resolução de alvo", message)
+            self.assertIn("Bloqueado por resolução de alvo", message)
 
     def test_compound_human_name_blocks_when_no_exact_package_match_exists(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -130,7 +130,7 @@ class HostPackageMutationTests(unittest.TestCase):
             self.assertEqual(payload["outcome"], "blocked")
             self.assertEqual(payload["target_resolution"]["status"], "not_found")
             self.assertNotIn("execution_route", payload)
-            self.assertIn("bloqueado por resolução de alvo", message)
+            self.assertIn("Bloqueado por resolução de alvo", message)
 
     def test_install_executes_across_supported_families(self) -> None:
         cases = [
@@ -222,7 +222,7 @@ class HostPackageMutationTests(unittest.TestCase):
             env = {"PATH": f"{bin_dir}:{Path('/usr/bin')}", "AURORA_OS_RELEASE_PATH": str(root / 'os-release')}
             proc = run_module("instalar", "firefox", env=env)
             self.assertEqual(proc.returncode, 1)
-            self.assertIn("bloqueado por política", proc.stdout)
+            self.assertIn("Bloqueado por política", proc.stdout)
 
     def test_sensitive_remove_requires_confirmation_and_respects_confirm_flag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

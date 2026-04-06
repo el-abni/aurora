@@ -4,50 +4,89 @@ from aurora.presentation.text_polish import polish_public_text
 
 
 def invalid_command_message() -> str:
-    return "❌ comando inválido"
+    return "❌ Comando inválido."
 
 
 def backend_missing_message(name: str) -> str:
-    return f"❌ backend '{name}' não está disponível"
+    return f"❌ Backend '{name}' não está disponível."
 
 
 def backend_failed_message(name: str, *, exit_code: int | None = None, detail: str = "") -> str:
-    base = f"❌ backend '{name}' retornou erro operacional"
+    base = f"❌ Falha operacional no backend '{name}'"
     if exit_code is not None:
         base += f" (exit code {exit_code})"
     if detail:
         return f"{base}. Motivo informado pelo backend: {detail}"
-    return base
+    return f"{base}."
 
 
 def interactive_handoff_start_message(name: str) -> str:
     return (
-        f"ℹ️ vou entregar o terminal ao helper interativo '{name}'. "
-        "A partir daqui, leia e responda aos prompts do helper; ele pode pedir Enter, seleção, revisão de build ou senha. "
-        "Quando ele devolver o terminal, a Aurora valida o estado final."
+        f"ℹ Agora o terminal está com o helper interativo '{name}'. "
+        "Leia e responda aos prompts do helper; ele pode pedir Enter, seleção, revisão de build ou senha. "
+        "Também pode haver uma pausa silenciosa durante o build e, em alguns terminais, um Enter extra ao final. "
+        "Quando o helper devolver o controle, a Aurora valida o estado final."
     )
 
 
 def interactive_handoff_return_message(name: str, exit_code: int) -> str:
     if exit_code == 0:
         return (
-            f"ℹ️ o helper interativo '{name}' devolveu o terminal. "
-            "Agora vou validar se o estado final realmente fechou."
+            f"ℹ O helper interativo '{name}' devolveu o controle do terminal. "
+            "Agora a Aurora vai validar se o estado final realmente fechou."
         )
     return (
-        f"ℹ️ o helper interativo '{name}' devolveu o terminal com exit code {exit_code}. "
-        "Vou encerrar a rota com o status reportado pelo backend."
+        f"ℹ O helper interativo '{name}' devolveu o controle do terminal com exit code {exit_code}. "
+        "A Aurora vai encerrar a rota com o status reportado pelo backend."
+    )
+
+
+def mediated_execution_start_message(
+    execution_surface: str,
+    environment_name: str,
+    backend_name: str,
+) -> str:
+    environment_label = (
+        f"na {execution_surface} '{environment_name}'"
+        if environment_name
+        else f"na {execution_surface} selecionada"
+    )
+    return (
+        f"ℹ Vou iniciar a execução mediada {environment_label} com o backend '{backend_name}'. "
+        "A partir daqui, pode haver espera silenciosa enquanto o backend interno trabalha; ele também pode pedir senha e, em alguns terminais, exigir um Enter extra ao final. "
+        "Quando o comando devolver o controle, a Aurora valida o estado final."
+    )
+
+
+def mediated_execution_return_message(
+    execution_surface: str,
+    environment_name: str,
+    exit_code: int,
+) -> str:
+    environment_label = (
+        f"na {execution_surface} '{environment_name}'"
+        if environment_name
+        else f"na {execution_surface} selecionada"
+    )
+    if exit_code == 0:
+        return (
+            f"ℹ A execução mediada {environment_label} devolveu o controle. "
+            "Agora a Aurora vai validar se o estado final realmente fechou."
+        )
+    return (
+        f"ℹ A execução mediada {environment_label} devolveu o controle com exit code {exit_code}. "
+        "A Aurora vai encerrar a rota com o status reportado pelo backend."
     )
 
 
 def no_results_message(target: str, backend_name: str) -> str:
-    return f"ℹ️ não encontrei resultados para '{target}' no backend '{backend_name}'."
+    return f"ℹ Não encontrei resultados para '{target}' no backend '{backend_name}'."
 
 
 def search_results_message(target: str, backend_name: str, details: str) -> str:
     if not details.strip():
-        return f"✅ encontrei resultados para '{target}' no backend '{backend_name}'."
-    return f"✅ encontrei resultados para '{target}' no backend '{backend_name}':\n{details.rstrip()}"
+        return f"✅ Encontrei resultados para '{target}' no backend '{backend_name}'."
+    return f"✅ Encontrei resultados para '{target}' no backend '{backend_name}':\n{details.rstrip()}"
 
 
 def package_not_found_message(
@@ -58,8 +97,8 @@ def package_not_found_message(
     target_label: str = "pacote",
 ) -> str:
     if intent == "instalar":
-        return f"❌ não encontrei o {target_label} '{target}' no backend '{backend_name}'."
-    return f"❌ não consegui localizar o {target_label} '{target}' no backend '{backend_name}' para remover."
+        return f"❌ Não encontrei o {target_label} '{target}' no backend '{backend_name}'."
+    return f"❌ Não consegui localizar o {target_label} '{target}' no backend '{backend_name}' para remover."
 
 
 def noop_message(
@@ -70,8 +109,8 @@ def noop_message(
     location_label: str = "neste host",
 ) -> str:
     if intent == "instalar":
-        return f"ℹ️ o {target_label} '{target}' já está instalado {location_label}. Nada foi feito."
-    return f"ℹ️ o {target_label} '{target}' já não está instalado {location_label}. Nada foi feito."
+        return f"ℹ O {target_label} '{target}' já está instalado {location_label}. Nenhuma ação foi necessária."
+    return f"ℹ O {target_label} '{target}' já não está instalado {location_label}. Nenhuma ação foi necessária."
 
 
 def mutation_success_message(
@@ -81,37 +120,37 @@ def mutation_success_message(
     target_label: str = "pacote",
 ) -> str:
     if intent == "instalar":
-        return f"✅ pronto, o {target_label} '{target}' está instalado."
-    return f"✅ pronto, o {target_label} '{target}' foi removido."
+        return f"✅ Pronto, eu confirmei que o {target_label} '{target}' está instalado."
+    return f"✅ Pronto, eu confirmei que o {target_label} '{target}' foi removido."
 
 
 def rpm_ostree_noop_message(intent: str, target: str) -> str:
     if intent == "instalar":
         return (
-            f"ℹ️ o pacote '{target}' já aparece no deployment atual ou no próximo deployment rpm-ostree. "
-            "Nada foi feito."
+            f"ℹ O pacote '{target}' já aparece no deployment atual ou no próximo deployment rpm-ostree. "
+            "Nenhuma ação foi necessária."
         )
     return (
-        f"ℹ️ o pacote '{target}' já não aparece como camada solicitada no deployment efetivo rpm-ostree. "
-        "Nada foi feito."
+        f"ℹ O pacote '{target}' já não aparece como camada solicitada no deployment efetivo rpm-ostree. "
+        "Nenhuma ação foi necessária."
     )
 
 
 def rpm_ostree_mutation_success_message(intent: str, target: str) -> str:
     if intent == "instalar":
         return (
-            f"✅ pronto, o pacote '{target}' foi adicionado ao próximo deployment rpm-ostree. "
+            f"✅ Pronto, eu confirmei que o pacote '{target}' foi adicionado ao próximo deployment rpm-ostree. "
             "Reinicie para aplicar."
         )
     return (
-        f"✅ pronto, o pacote '{target}' foi removido do próximo deployment rpm-ostree. "
+        f"✅ Pronto, eu confirmei que o pacote '{target}' foi removido do próximo deployment rpm-ostree. "
         "Reinicie para aplicar."
     )
 
 
 def state_probe_missing_message(backend_name: str, probe_label: str) -> str:
     return (
-        f"❌ a confirmação de estado para o backend '{backend_name}' depende da ferramenta "
+        f"❌ A confirmação de estado para o backend '{backend_name}' depende da ferramenta "
         f"auxiliar '{probe_label}', que não está disponível."
     )
 
@@ -124,20 +163,20 @@ def state_confirmation_failed_message(
     detail: str = "",
 ) -> str:
     if intent == "instalar":
-        base = f"❌ o backend '{backend_name}' terminou sem eu conseguir confirmar a instalação de '{target}'."
+        base = f"❌ O backend '{backend_name}' terminou, mas eu não consegui confirmar a instalação de '{target}'."
     else:
-        base = f"❌ o backend '{backend_name}' terminou sem eu conseguir confirmar a remoção de '{target}'."
+        base = f"❌ O backend '{backend_name}' terminou, mas eu não consegui confirmar a remoção de '{target}'."
     if detail:
         return f"{base} Estado observado depois da execução: {detail}"
     return base
 
 
 def blocked_message(reason: str) -> str:
-    return f"❌ bloqueado por política: {polish_public_text(reason)}"
+    return f"❌ Bloqueado por política: {polish_public_text(reason)}"
 
 
 def target_resolution_blocked_message(reason: str) -> str:
-    return f"❌ bloqueado por resolução de alvo: {polish_public_text(reason)}"
+    return f"❌ Bloqueado por resolução de alvo: {polish_public_text(reason)}"
 
 
 def confirmation_required_message(
@@ -148,13 +187,13 @@ def confirmation_required_message(
     target_label: str = "pacote",
 ) -> str:
     return (
-        f"❌ a mutação do {target_label} '{target}' exige confirmação explícita nesta rodada "
+        f"❌ Confirmação obrigatória: a mutação do {target_label} '{target}' exige confirmação explícita nesta rodada "
         f"(criticidade {software_criticality}; reversão {reversal_level}). Use --confirm para prosseguir."
     )
 
 
 def out_of_scope_message(reason: str) -> str:
-    return f"❌ fora do recorte atual: {polish_public_text(reason)}"
+    return f"❌ Fora do recorte atual: {polish_public_text(reason)}"
 
 
 def not_implemented_message(intent: str, domain_kind: str) -> str:

@@ -293,7 +293,7 @@ def _search_resolution_candidates(
             consulted_targets=search_queries,
             status="unresolved",
             source="aur_search",
-            reason=f"o helper AUR '{helper}' nao esta disponivel para resolver este alvo.",
+            reason=f"O helper AUR '{helper}' não está disponível para resolver este alvo.",
         )
 
     for query in search_queries:
@@ -345,7 +345,7 @@ def _search_resolution_candidates(
             status="unresolved",
             source="aur_search",
             reason=(
-                f"nao consegui interpretar candidatos confiaveis para '{target}' a partir da busca "
+                f"Não consegui interpretar candidatos confiáveis para '{target}' a partir da busca "
                 f"controlada do helper '{helper}'."
             ),
             diagnostic_command=diagnostic_command,
@@ -383,7 +383,7 @@ def _search_resolution_candidates(
         status="not_found",
         source="aur_search",
         reason=(
-            f"nao encontrei um pacote AUR com correspondencia exata e confiavel para '{target}'. "
+            f"Não encontrei um pacote AUR com correspondência exata e confiável para '{target}'. "
             "Use o nome real do pacote AUR ou refine o pedido."
         ),
     )
@@ -407,7 +407,7 @@ def _installed_resolution(
             consulted_targets=consulted_targets,
             status="unresolved",
             source=source,
-            reason="o backend oficial pacman nao esta disponivel para inspecionar o estado do host.",
+            reason="O backend oficial pacman não está disponível para inspecionar o estado do host.",
         )
 
     proc = _run_command(("pacman", query_flag), environ=environ)
@@ -418,7 +418,7 @@ def _installed_resolution(
             consulted_targets=consulted_targets,
             status="unresolved",
             source=source,
-            reason="nao consegui ler o estado instalado do host para resolver este alvo AUR.",
+            reason="Não consegui ler o estado instalado do host para resolver este alvo AUR.",
             diagnostic_command=("pacman", query_flag),
             diagnostic_exit_code=proc.returncode,
             diagnostic_stdout=proc.stdout,
@@ -468,8 +468,8 @@ def _native_source_mismatch(
         canonicalized=native_resolution.canonicalized,
         candidates=native_resolution.candidates,
         reason=(
-            f"o pacote '{native_resolution.resolved_target}' esta instalado como pacote oficial do host via "
-            "pacman; o pedido foi marcado explicitamente como AUR e nao foi promovido por fallback."
+            f"O pacote '{native_resolution.resolved_target}' está instalado como pacote oficial do host via "
+            "pacman; o pedido foi marcado explicitamente como AUR e não foi promovido por fallback."
         ),
     )
 
@@ -499,13 +499,13 @@ def resolve_aur_target(
         canonicalized = consulted_target != target
         if canonicalized:
             reason = (
-                f"o alvo humano '{target}' foi refinado para a consulta AUR '{consulted_target}' "
-                "para reduzir ruido de busca, sem promover isso a resolucao final de pacote."
+                f"O alvo humano '{target}' foi refinado para a consulta AUR '{consulted_target}' "
+                "para reduzir ruído de busca, sem promover isso à resolução final de pacote."
             )
             source = "aur_search_query_normalized"
             status = "query_refined"
         else:
-            reason = f"o alvo de busca AUR '{target}' foi consultado diretamente."
+            reason = f"O alvo de busca AUR '{target}' foi consultado diretamente."
             source = "user_input_search_query"
             status = "query_direct"
         return TargetResolution(
@@ -540,11 +540,11 @@ def resolve_aur_target(
             source=search_resolution.source,
             no_match_status="not_found",
             no_match_reason=(
-                f"nao encontrei um pacote AUR com correspondencia exata e confiavel para '{target}'. "
+                f"Não encontrei um pacote AUR com correspondência exata e confiável para '{target}'. "
                 "Use o nome real do pacote AUR ou refine o pedido."
             ),
             resolved_reason=(
-                "o alvo humano '{target}' foi resolvido por busca controlada no AUR"
+                "O alvo humano '{target}' foi resolvido por busca controlada no AUR"
                 f"{search_resolution.reason_suffix} para o pacote "
                 "'{package_name}'."
             ),
@@ -584,9 +584,9 @@ def resolve_aur_target(
         source="pacman_foreign_list",
         no_match_status="absent",
         no_match_reason=(
-            f"nao encontrei um pacote AUR instalado com correspondencia exata e confiavel para '{target}'."
+            f"Não encontrei um pacote AUR instalado com correspondência exata e confiável para '{target}'."
         ),
-        resolved_reason="o alvo humano '{target}' foi resolvido entre os pacotes foreign para '{package_name}'.",
+        resolved_reason="O alvo humano '{target}' foi resolvido entre os pacotes foreign para '{package_name}'.",
         environ=environ,
     )
     if foreign_resolution.status == "absent":
@@ -640,17 +640,17 @@ def _route_notes(
     supported_helpers = ", ".join(_SUPPORTED_AUR_HELPERS)
     notes = [
         "AUR entra como fonte explícita de terceiro nesta rodada.",
-        f"helpers aceitos nesta rodada: {supported_helpers}.",
-        f"helper escolhido para esta rota: {helper} (primeiro helper suportado observado na ordem do contrato).",
-        "a busca pode refinar a consulta para a forma package-like quando isso reduz ruído sem resolver o pacote automaticamente.",
-        "a mutação usa resolved_target apenas quando a correspondência exata fecha de forma confiável.",
-        "a confirmação pós-mutação observa presença real no host com pacman -Q; o recorte AUR continua ancorado na resolução e no helper explícitos.",
-        "o pedido explícito de AUR não sofre fallback para host_package oficial.",
+        f"Helpers aceitos nesta rodada: {supported_helpers}.",
+        f"Helper escolhido para esta rota: {helper} (primeiro helper suportado observado na ordem do contrato).",
+        "A busca pode refinar a consulta para a forma package-like quando isso reduz ruído sem resolver o pacote automaticamente.",
+        "A mutação usa resolved_target apenas quando a correspondência exata fecha de forma confiável.",
+        "A confirmação pós-mutação observa presença real no host com pacman -Q; o recorte AUR continua ancorado na resolução e no helper explícitos.",
+        "O pedido explícito de AUR não sofre fallback para host_package oficial.",
     ]
     if observed_helpers:
-        notes.append(f"helpers AUR observados no host: {', '.join(observed_helpers)}.")
+        notes.append(f"Helpers AUR observados no host: {', '.join(observed_helpers)}.")
     if out_of_contract_helpers:
-        notes.append(f"helpers AUR observados fora do contrato: {', '.join(out_of_contract_helpers)}.")
+        notes.append(f"Helpers AUR observados fora do contrato: {', '.join(out_of_contract_helpers)}.")
     return tuple(notes)
 
 
@@ -701,7 +701,8 @@ def build_aur_candidate(
             interactive_passthrough=True,
             notes=notes
             + (
-                "a instalação real via AUR entrega stdin/stdout/stderr ao helper para revisão, prompts e build interativos.",
+                "A instalação real via AUR entrega stdin/stdout/stderr ao helper para revisão, prompts e build interativos.",
+                "O fluxo pode ter pausas silenciosas durante o build e, em alguns terminais, pode exigir um Enter extra ao final antes do retorno do prompt.",
             ),
         )
 

@@ -70,7 +70,7 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             )
             proc = run_module("procurar", "firefox", "no", "flatpak", env=env)
             self.assertEqual(proc.returncode, 0)
-            self.assertIn("encontrei resultados", proc.stdout)
+            self.assertIn("Encontrei resultados", proc.stdout)
             self.assertIn("flathub", proc.stdout)
 
     def test_flatpak_search_uses_explicit_remote_when_supported(self) -> None:
@@ -86,7 +86,7 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             )
             proc = run_module("procurar", "firefox", "no", "flatpak", "flathub-beta", env=env)
             self.assertEqual(proc.returncode, 0)
-            self.assertIn("encontrei resultados", proc.stdout)
+            self.assertIn("Encontrei resultados", proc.stdout)
             self.assertIn("flathub-beta", proc.stdout)
 
     def test_atomic_host_keeps_naked_search_on_host_package_but_allows_explicit_flatpak(self) -> None:
@@ -105,7 +105,7 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             explicit = run_module("procurar", "firefox", "no", "flatpak", env=env)
 
             self.assertEqual(naked.returncode, 1)
-            self.assertIn("bloqueado por política", naked.stdout)
+            self.assertIn("Bloqueado por política", naked.stdout)
             self.assertEqual(explicit.returncode, 0)
             self.assertIn("backend 'flatpak'", explicit.stdout)
 
@@ -318,7 +318,7 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             )
             proc = run_module("instalar", "com.obsproject.Studio", "no", "flatpak", env=env)
             self.assertEqual(proc.returncode, 1)
-            self.assertIn("não encontrei o software 'com.obsproject.Studio'", proc.stdout)
+            self.assertIn("Não encontrei o software 'com.obsproject.Studio'", proc.stdout)
 
     def test_flatpak_install_blocks_when_target_resolution_is_ambiguous(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -343,7 +343,7 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             self.assertEqual(payload["target_resolution"]["status"], "ambiguous")
             self.assertEqual(len(payload["target_resolution"]["candidates"]), 2)
             self.assertNotIn("execution_route", payload)
-            self.assertIn("bloqueado por resolução de alvo", message)
+            self.assertIn("Bloqueado por resolução de alvo", message)
 
     def test_flatpak_install_blocks_when_target_resolution_finds_no_exact_match(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -363,7 +363,7 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             self.assertEqual(exit_code, 1)
             self.assertEqual(payload["target_resolution"]["status"], "not_found")
             self.assertNotIn("execution_route", payload)
-            self.assertIn("bloqueado por resolução de alvo", message)
+            self.assertIn("Bloqueado por resolução de alvo", message)
 
     def test_flatpak_install_blocks_when_explicit_remote_is_not_observed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -466,7 +466,7 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             payload = decision_record_to_dict(record)
             self.assertEqual(exit_code, 1)
             self.assertEqual(payload["target_resolution"]["status"], "source_mismatch")
-            self.assertIn("bloqueado por resolução de alvo", message)
+            self.assertIn("Bloqueado por resolução de alvo", message)
             self.assertIn("org.mozilla.Firefox", state_file.read_text(encoding="utf-8"))
 
     def test_flatpak_remove_executes_via_cli_for_compound_name_without_quotes(self) -> None:

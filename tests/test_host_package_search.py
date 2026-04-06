@@ -21,7 +21,7 @@ class HostPackageSearchTests(unittest.TestCase):
             )
             proc = run_module("procurar", "firefox", env=env)
             self.assertEqual(proc.returncode, 0)
-            self.assertIn("encontrei resultados", proc.stdout)
+            self.assertIn("Encontrei resultados", proc.stdout)
             self.assertIn("extra/firefox 1.0", proc.stdout)
 
     def test_arch_search_stays_anchored_in_pacman_when_paru_is_present(self) -> None:
@@ -57,7 +57,7 @@ class HostPackageSearchTests(unittest.TestCase):
             )
             proc = run_module("procurar", "firefox", env=env)
             self.assertEqual(proc.returncode, 0)
-            self.assertIn("não encontrei resultados", proc.stdout)
+            self.assertIn("Não encontrei resultados", proc.stdout)
 
     def test_planner_maps_family_specific_search_routes(self) -> None:
         cases = [
@@ -89,7 +89,7 @@ class HostPackageSearchTests(unittest.TestCase):
             env = {"PATH": str(bin_dir), "AURORA_OS_RELEASE_PATH": str(root / "os-release")}
             proc = run_module("procurar", "firefox", env=env)
             self.assertEqual(proc.returncode, 1)
-            self.assertIn("bloqueado por política", proc.stdout)
+            self.assertIn("Bloqueado por política", proc.stdout)
 
 
 if __name__ == "__main__":
