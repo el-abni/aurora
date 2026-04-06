@@ -41,6 +41,26 @@ class EnvironmentResolution:
 
 
 @dataclass(frozen=True)
+class RpmOstreeStatusObservation:
+    observed: bool
+    status: str = "not_requested"
+    source: str = ""
+    reason: str = ""
+    transaction_active: bool = False
+    booted_requested_packages: tuple[str, ...] = ()
+    booted_packages: tuple[str, ...] = ()
+    booted_base_removals: tuple[str, ...] = ()
+    pending_deployment: bool = False
+    pending_requested_packages: tuple[str, ...] = ()
+    pending_packages: tuple[str, ...] = ()
+    pending_base_removals: tuple[str, ...] = ()
+    diagnostic_command: tuple[str, ...] = ()
+    diagnostic_exit_code: int | None = None
+    diagnostic_stdout: str = ""
+    diagnostic_stderr: str = ""
+
+
+@dataclass(frozen=True)
 class DecisionRecord:
     request: SemanticRequest
     host_profile: HostProfile | None
@@ -53,3 +73,4 @@ class DecisionRecord:
     environment_resolution: EnvironmentResolution | None = None
     toolbox_profile: HostProfile | None = None
     distrobox_profile: HostProfile | None = None
+    rpm_ostree_status: RpmOstreeStatusObservation | None = None

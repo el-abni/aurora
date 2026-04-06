@@ -36,6 +36,11 @@ from aurora.linux.distrobox import (
 )
 from aurora.linux.host_profile import detect_host_profile
 from aurora.linux.host_package import resolve_host_package_target
+from aurora.linux.rpm_ostree import (
+    observe_rpm_ostree_status,
+    resolve_rpm_ostree_target,
+    rpm_ostree_target_resolution_blocks,
+)
 from aurora.linux.toolbox import (
     observe_toolbox_profile,
     resolve_toolbox_environment,
@@ -48,6 +53,14 @@ from aurora.semantics.pipeline import has_confirmation_marker
 def _summary_for_request(request: SemanticRequest) -> str:
     if not request.target:
         return "Sem acao aberta."
+
+    if request.execution_surface == "rpm_ostree" and request.domain_kind == "host_package":
+        if request.intent == "procurar":
+            return f"Inspecionar o pacote '{request.target}' na superficie rpm-ostree do host imutavel."
+        if request.intent == "instalar":
+            return f"Adicionar o pacote '{request.target}' ao proximo deployment rpm-ostree."
+        if request.intent == "remover":
+            return f"Remover o pacote '{request.target}' do proximo deployment rpm-ostree."
 
     if request.execution_surface == "distrobox" and request.domain_kind == "host_package":
         environment_label = request.environment_target or "distrobox explicitamente pedida"
@@ -200,6 +213,8 @@ def _resolve_target(
     toolbox_profile=None,
     environ: dict[str, str] | None = None,
 ):
+    if request.execution_surface == "rpm_ostree":
+        return resolve_rpm_ostree_target(request, profile, environ=environ)
     if request.execution_surface == "distrobox":
         return resolve_distrobox_target(request, toolbox_profile, environ=environ)
     if request.execution_surface == "toolbox":
@@ -218,6 +233,10 @@ def _resolve_target(
 
 
 def _resolved_target(request: SemanticRequest, target_resolution) -> str:
+    if request.execution_surface == "rpm_ostree":
+        if target_resolution is not None and target_resolution.resolved_target:
+            return target_resolution.resolved_target
+        return request.target
     if request.execution_surface == "distrobox":
         if target_resolution is not None and target_resolution.resolved_target:
             return target_resolution.resolved_target
@@ -242,6 +261,8 @@ def _resolved_target(request: SemanticRequest, target_resolution) -> str:
 def _target_resolution_blocks(request: SemanticRequest, target_resolution) -> bool:
     if target_resolution is None:
         return False
+    if request.execution_surface == "rpm_ostree":
+        return rpm_ostree_target_resolution_blocks(target_resolution)
     if request.execution_surface == "distrobox":
         return distrobox_target_resolution_blocks(target_resolution)
     if request.execution_surface == "toolbox":
@@ -284,10 +305,13 @@ def plan_request(
     toolbox_profile_probe = None
     distrobox_profile = None
     distrobox_profile_probe = None
+    rpm_ostree_status = None
     confirmation_supplied = _confirmation_supplied(request, confirmed=confirmed)
 
     if request.domain_kind in {"host_package", "user_software"}:
         profile = detect_host_profile(environ)
+        if request.execution_surface == "rpm_ostree":
+            rpm_ostree_status = observe_rpm_ostree_status(environ=environ)
         environment_resolution = _resolve_environment(request, profile, environ=environ)
         if (
             request.execution_surface in {"toolbox", "distrobox"}
@@ -319,6 +343,7 @@ def plan_request(
             toolbox_profile_probe=toolbox_profile_probe,
             distrobox_profile=distrobox_profile,
             distrobox_profile_probe=distrobox_profile_probe,
+            rpm_ostree_status=rpm_ostree_status,
         )
         target_resolution = _resolve_target(
             request,
@@ -336,6 +361,7 @@ def plan_request(
                     environment_resolution=environment_resolution,
                     toolbox_profile=toolbox_profile,
                     distrobox_profile=distrobox_profile,
+                    rpm_ostree_status=rpm_ostree_status,
                 )
             )
 
@@ -360,6 +386,7 @@ def plan_request(
         environment_resolution=environment_resolution,
         toolbox_profile=toolbox_profile,
         distrobox_profile=distrobox_profile,
+        rpm_ostree_status=rpm_ostree_status,
     )
 
 

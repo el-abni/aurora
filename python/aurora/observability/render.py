@@ -17,6 +17,8 @@ def _signal_value(signals: tuple[str, ...], prefix: str) -> str | None:
 
 
 def _scope_label(record: DecisionRecord) -> str:
+    if record.request.execution_surface == "rpm_ostree" and record.request.domain_kind == "host_package":
+        return "pacote do host via rpm-ostree"
     if record.request.execution_surface == "distrobox" and record.request.domain_kind == "host_package":
         return "pacote do host dentro da distrobox"
     if record.request.execution_surface == "toolbox" and record.request.domain_kind == "host_package":
@@ -207,6 +209,10 @@ def render_decision_record(record: DecisionRecord) -> str:
                     "observed_distrobox_environments",
                     record.host_profile.observed_distrobox_environments_label,
                 ),
+                field(
+                    "observed_immutable_surfaces",
+                    record.host_profile.observed_immutable_surfaces_label,
+                ),
             ]
         )
 
@@ -310,8 +316,68 @@ def render_decision_record(record: DecisionRecord) -> str:
                     ),
                 ]
             )
+        lines.extend(
+            [
+                field(
+                    "immutable_host",
+                    _signal_value(record.policy.trust_signals, "immutable_host:") or "-",
+                ),
+                field(
+                    "immutable_observed_surfaces",
+                    _signal_value(record.policy.trust_signals, "immutable_observed_surfaces:") or "-",
+                ),
+                field(
+                    "immutable_selected_surface",
+                    _signal_value(record.policy.trust_signals, "immutable_selected_surface:") or "-",
+                ),
+                field(
+                    "immutable_toolbox_environments",
+                    _signal_value(record.policy.trust_signals, "immutable_toolbox_environments:") or "-",
+                ),
+                field(
+                    "immutable_distrobox_environments",
+                    _signal_value(record.policy.trust_signals, "immutable_distrobox_environments:") or "-",
+                ),
+            ]
+        )
         if record.request.execution_surface in {"toolbox", "distrobox"}:
             _append_surface_policy_lines(lines, record, record.request.execution_surface)
+        if record.request.execution_surface == "rpm_ostree":
+            lines.extend(
+                [
+                    field(
+                        "rpm_ostree_status",
+                        _signal_value(record.policy.trust_signals, "rpm_ostree_status:") or "-",
+                    ),
+                    field(
+                        "rpm_ostree_booted_requested_packages",
+                        _signal_value(record.policy.trust_signals, "rpm_ostree_booted_requested_packages:")
+                        or "-",
+                    ),
+                    field(
+                        "rpm_ostree_booted_packages",
+                        _signal_value(record.policy.trust_signals, "rpm_ostree_booted_packages:") or "-",
+                    ),
+                    field(
+                        "rpm_ostree_pending_deployment",
+                        _signal_value(record.policy.trust_signals, "rpm_ostree_pending_deployment:")
+                        or "-",
+                    ),
+                    field(
+                        "rpm_ostree_pending_requested_packages",
+                        _signal_value(record.policy.trust_signals, "rpm_ostree_pending_requested_packages:")
+                        or "-",
+                    ),
+                    field(
+                        "rpm_ostree_pending_packages",
+                        _signal_value(record.policy.trust_signals, "rpm_ostree_pending_packages:") or "-",
+                    ),
+                    field(
+                        "rpm_ostree_transaction_active",
+                        _signal_value(record.policy.trust_signals, "rpm_ostree_transaction_active:") or "-",
+                    ),
+                ]
+            )
 
     if record.environment_resolution is not None:
         lines.extend(
@@ -543,6 +609,56 @@ def render_decision_record(record: DecisionRecord) -> str:
                     ),
                 ]
             )
+        if record.execution_route.route_name.startswith("rpm_ostree."):
+            lines.extend(
+                [
+                    field(
+                        "immutable_observed_surfaces",
+                        (
+                            _signal_value(record.policy.trust_signals, "immutable_observed_surfaces:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                    field(
+                        "immutable_selected_surface",
+                        (
+                            _signal_value(record.policy.trust_signals, "immutable_selected_surface:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                    field(
+                        "rpm_ostree_status",
+                        (
+                            _signal_value(record.policy.trust_signals, "rpm_ostree_status:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                    field(
+                        "rpm_ostree_pending_deployment",
+                        (
+                            _signal_value(record.policy.trust_signals, "rpm_ostree_pending_deployment:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                    field(
+                        "rpm_ostree_pending_requested_packages",
+                        (
+                            _signal_value(record.policy.trust_signals, "rpm_ostree_pending_requested_packages:")
+                            if record.policy is not None
+                            else "-"
+                        )
+                        or "-",
+                    ),
+                ]
+            )
         if record.execution_route.route_name.startswith("toolbox."):
             _append_surface_route_lines(lines, record, "toolbox")
         if record.execution_route.route_name.startswith("distrobox."):
@@ -553,6 +669,49 @@ def render_decision_record(record: DecisionRecord) -> str:
 
     if record.distrobox_profile is not None:
         _append_environment_profile_lines(lines, record.distrobox_profile, "Distrobox profile")
+
+    if record.rpm_ostree_status is not None:
+        lines.extend(
+            [
+                "",
+                "rpm-ostree status",
+                field("observed", str(record.rpm_ostree_status.observed).lower()),
+                field("status", record.rpm_ostree_status.status),
+                field("source", record.rpm_ostree_status.source or "-"),
+                field("reason", record.rpm_ostree_status.reason),
+                field("transaction_active", str(record.rpm_ostree_status.transaction_active).lower()),
+                field(
+                    "booted_requested_packages",
+                    ", ".join(record.rpm_ostree_status.booted_requested_packages) or "-",
+                ),
+                field("booted_packages", ", ".join(record.rpm_ostree_status.booted_packages) or "-"),
+                field(
+                    "booted_base_removals",
+                    ", ".join(record.rpm_ostree_status.booted_base_removals) or "-",
+                ),
+                field("pending_deployment", str(record.rpm_ostree_status.pending_deployment).lower()),
+                field(
+                    "pending_requested_packages",
+                    ", ".join(record.rpm_ostree_status.pending_requested_packages) or "-",
+                ),
+                field("pending_packages", ", ".join(record.rpm_ostree_status.pending_packages) or "-"),
+                field(
+                    "pending_base_removals",
+                    ", ".join(record.rpm_ostree_status.pending_base_removals) or "-",
+                ),
+                field("diagnostic_command", " ".join(record.rpm_ostree_status.diagnostic_command) or "-"),
+                field(
+                    "diagnostic_exit_code",
+                    (
+                        str(record.rpm_ostree_status.diagnostic_exit_code)
+                        if record.rpm_ostree_status.diagnostic_exit_code is not None
+                        else "-"
+                    ),
+                ),
+                field("diagnostic_stdout", _compact_diagnostic(record.rpm_ostree_status.diagnostic_stdout)),
+                field("diagnostic_stderr", _compact_diagnostic(record.rpm_ostree_status.diagnostic_stderr)),
+            ]
+        )
 
     if record.execution is not None:
         lines.extend(

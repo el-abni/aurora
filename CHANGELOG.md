@@ -1,5 +1,37 @@
 # Changelog
 
+## 🌌 Aurora v0.6.0
+
+Fechamento contido, mas estrutural, da primeira frente operacional real para hosts imutáveis: `rpm-ostree` entra como superfície explícita, e o host Atomic/imutável deixa de ser apenas um bloqueio genérico para virar uma decisão auditável entre `flatpak`, `toolbox`, `distrobox`, `rpm-ostree` ou bloqueio.
+
+### Adicionado
+
+- `execution_surface=rpm_ostree` como nova superfície explícita de host imutável.
+- `rpm_ostree.instalar` e `rpm_ostree.remover` como primeiro corte real de layering/uninstall via `rpm-ostree`.
+- observação estruturada de `rpm-ostree status --json`, incluindo `pending deployment`, transação ativa e pacotes solicitados no deployment booted/default.
+- sinais explícitos de host imutável em `policy`, `route`, `decision_record` e `aurora dev`, como `immutable_observed_surfaces` e `immutable_selected_surface`.
+
+### Alterado
+
+- host Atomic/imutável já não responde apenas com bloqueio genérico em `host_package`: o bloqueio de pedido nu agora expõe quais superfícies foram observadas e por que a Aurora não infere entre elas.
+- `flatpak`, `toolbox` e `distrobox` continuam explícitos, mas passam a carregar seleção auditável de superfície quando o host é imutável.
+- `rpm-ostree` não entra como `requested_source`; entra como superfície operacional distinta do host mutável comum e distinta de ambiente mediado.
+- `rpm_ostree.instalar` e `rpm_ostree.remover` exigem nome exato de pacote nesta release.
+- `rpm_ostree.procurar` continua fora do corte executável e bloqueia com explicação honesta.
+- `rpm_ostree.remover` exige confirmação explícita.
+- mutações bem-sucedidas em `rpm-ostree` deixam visível que o efeito foi para o próximo deployment e pode exigir reboot.
+- README, help e docs técnicas passam a refletir a `v0.6.0` como release pública atual.
+
+### Continua fora da v0.6.0
+
+- fallback automático do host para `flatpak`, `toolbox`, `distrobox` ou `rpm-ostree`;
+- `rpm-ostree.procurar`;
+- `apply-live`, `override remove`, reboot automático e chaining amplo de transações `rpm-ostree`;
+- `ujust`;
+- manutenção ampla do host imutável;
+- suporte genérico a qualquer host imutável fora do corte explícito desta release;
+- mistura de `rpm-ostree` com AUR, COPR, PPA, `flatpak` remotes, `toolbox` ou `distrobox` na mesma frase.
+
 ## 🌌 Aurora v0.5.1
 
 Fechamento pequeno da frente `distrobox` para abrir uma segunda superfície mediada explícita, sem colapsar `toolbox` e `distrobox` numa pseudoentidade única e sem fingir que isso já resolve hosts imutáveis.

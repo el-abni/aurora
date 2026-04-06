@@ -4,6 +4,7 @@ from aurora.contracts.execution import ExecutionRoute
 from aurora.contracts.host import HostProfile
 from aurora.contracts.requests import SemanticRequest
 from aurora.linux.distrobox import build_distrobox_candidate
+from aurora.linux.rpm_ostree import build_rpm_ostree_candidate
 from aurora.install.sources.aur import build_aur_candidate
 from aurora.install.sources.copr import build_copr_candidate
 from aurora.install.sources.flatpak import build_flatpak_candidate
@@ -20,6 +21,7 @@ def build_route_candidates(
     environment_resolution=None,
     toolbox_profile: HostProfile | None = None,
     distrobox_profile: HostProfile | None = None,
+    rpm_ostree_status=None,
     environ: dict[str, str] | None = None,
 ) -> tuple[ExecutionRoute, ...]:
     if profile is None:
@@ -41,6 +43,13 @@ def build_route_candidates(
             distrobox_profile=distrobox_profile,
             environment_resolution=environment_resolution,
             target=target,
+        )
+    elif request.execution_surface == "rpm_ostree":
+        route = build_rpm_ostree_candidate(
+            request,
+            profile,
+            target=target,
+            status_observation=rpm_ostree_status,
         )
     elif request.domain_kind == "host_package":
         if request.requested_source == "ppa":

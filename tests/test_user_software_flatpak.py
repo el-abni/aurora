@@ -127,6 +127,21 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             self.assertIn("flatpak_remote_origin:   default", rendered)
             self.assertIn("observations:", rendered)
 
+    def test_atomic_flatpak_dev_record_marks_surface_selection(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="bazzite",
+                distro_like="fedora",
+                repo_apps=("firefox|Firefox",),
+                name="Bazzite",
+            )
+            write_stub(root / "bin", "dnf", "#!/bin/sh\nexit 0\n")
+
+            rendered = render_dev_report("procurar firefox no flatpak", environ=env)
+            self.assertIn("immutable_selected_surface: flatpak", rendered)
+
     def test_flatpak_install_resolves_hyphenated_human_target_to_app_id(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

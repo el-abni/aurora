@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.5.1
+# Architecture - Aurora v0.6.0
 
 ## Tese curta
 
@@ -11,6 +11,7 @@ Aurora continua sendo um produto **100% Python** com contratos pequenos e observ
 - `user_software` para software do usuário via `flatpak`;
 - `toolbox` como `execution_surface` explícita para pacote distro-managed dentro de um ambiente mediado nomeado;
 - `distrobox` como `execution_surface` explícita para pacote distro-managed dentro de um ambiente mediado nomeado.
+- `rpm-ostree` como `execution_surface` explícita para layering/uninstall no host imutável.
 
 Ela não depende de Fish como centro do runtime, não trata ferramenta observada como promessa de suporte e não colapsa host e ambiente mediado numa rota opaca.
 
@@ -19,12 +20,13 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 1. `cli.py` recebe o comando público.
 2. `semantics/` normaliza a frase e classifica a intenção mínima.
 3. `linux/host_profile.py` detecta família, mutabilidade, distro, ferramentas observadas, toolboxes observadas e distroboxes observadas no host.
-4. `install/domain_classifier.py` decide entre default de `host_package`, fontes explícitas `AUR`, `COPR`, `PPA`, `user_software` via `flatpak`, `execution_surface=toolbox` e `execution_surface=distrobox`.
+4. `install/domain_classifier.py` decide entre default de `host_package`, fontes explícitas `AUR`, `COPR`, `PPA`, `user_software` via `flatpak`, `execution_surface=toolbox`, `execution_surface=distrobox` e `execution_surface=rpm_ostree`.
 5. `linux/toolbox.py` e `linux/distrobox.py` resolvem o ambiente mediado quando a frase marca a superfície e observam a família Linux e o backend dentro desse ambiente.
-6. `install/policy_engine.py` produz o juízo de política.
-7. `install/candidates.py` e `install/route_selector.py` escolhem a rota executável.
-8. `install/execution_handoff.py` executa, faz probes e mantém visível se a ação ocorre no host, dentro da toolbox ou dentro da distrobox.
-9. `observability/` registra e renderiza o `decision_record`.
+6. `linux/rpm_ostree.py` observa `rpm-ostree status --json` quando a frase marca a superfície imutável do host.
+7. `install/policy_engine.py` produz o juízo de política.
+8. `install/candidates.py` e `install/route_selector.py` escolhem a rota executável.
+9. `install/execution_handoff.py` executa, faz probes e mantém visível se a ação ocorre no host mutável, no host imutável via `rpm-ostree`, dentro da toolbox ou dentro da distrobox.
+10. `observability/` registra e renderiza o `decision_record`.
 
 ## Módulos principais
 
@@ -42,8 +44,9 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - matriz por família;
 - rotas concretas de `host_package`;
 - observação e roteamento contido de `toolbox` e `distrobox`;
+- observação e roteamento contido de `rpm-ostree` como superfície de host imutável;
 - compartilhamento mínimo do miolo de pacote distro-managed dentro de ambiente mediado, sem apagar a distinção entre as superfícies;
-- fronteira entre backend oficial do host, fontes terceiras explícitas e ambiente mediado explícito.
+- fronteira entre backend oficial do host mutável, fontes terceiras explícitas, ambiente mediado explícito e host imutável explícito.
 
 ### `install/`
 
@@ -61,6 +64,8 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - `environment_resolution`;
 - `toolbox_profile`;
 - `distrobox_profile`;
+- `rpm_ostree_status`;
+- `immutable_selected_surface`;
 - renderização curta e expandida;
 - `aurora dev`.
 
@@ -71,7 +76,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - mensagens de confirmação;
 - mensagens de resultado.
 
-## Rotas abertas na v0.5.1
+## Rotas abertas na v0.6.0
 
 ### `host_package`
 
@@ -191,14 +196,35 @@ Garantias:
 - `toolbox` e `distrobox` compartilham apenas o miolo de pacote distro-managed dentro do ambiente; a observação, a resolução de ambiente e os sinais de policy continuam separados;
 - não existe default implícito de distrobox, autocriação, lifecycle amplo, mistura com AUR/COPR/PPA/flatpak nem fallback host -> distrobox.
 
+### `rpm-ostree` explícito
+
+Rotas reais:
+
+- `rpm_ostree.instalar`
+- `rpm_ostree.remover`
+
+Garantias:
+
+- `rpm-ostree` entra como `execution_surface`, não como `requested_source`;
+- a frase precisa marcar a superfície explicitamente, por exemplo `no rpm-ostree`;
+- a frente observa `rpm-ostree status --json` antes de liberar mutação;
+- `rpm_ostree.instalar` e `rpm_ostree.remover` exigem nome exato de pacote;
+- `rpm_ostree.remover` exige confirmação explícita;
+- a rota deixa visível se já existe `pending deployment` ou transação ativa;
+- a confirmação de sucesso observa o deployment `default/pending`, não promete `apply-live`;
+- `rpm_ostree.procurar` ainda não entra como rota executável nesta release.
+
 ## Fronteiras deliberadas
 
-A `v0.5.1` continua pequena de propósito:
+A `v0.6.0` continua pequena de propósito:
 
 - pedido nu continua em `host_package` no host;
+- em host imutável, pedido nu bloqueia com `immutable_observed_surfaces` e `immutable_selected_surface=block`;
 - `toolbox` não vira escape hatch implícito para Atomic/imutáveis;
 - `distrobox` também não vira escape hatch implícito para Atomic/imutáveis;
+- `rpm-ostree` também não vira backend mágico para qualquer limitação do host;
 - `toolbox.instalar` e `toolbox.remover` não fazem canonicalização ampla de alvo;
 - `distrobox.instalar` e `distrobox.remover` não fazem canonicalização ampla de alvo;
+- `rpm_ostree.instalar` e `rpm_ostree.remover` não abrem `apply-live`, reboot automático, `override remove` nem chaining amplo;
 - `AUR`, `COPR`, `PPA` e `flatpak` continuam separados de `toolbox` e de `distrobox`;
-- hosts imutáveis reais continuam fora da superfície operacional ampla do produto, mesmo com `toolbox` agora aberta de forma explícita.
+- hosts imutáveis reais continuam fora da superfície operacional ampla do produto, mesmo com `flatpak`, `toolbox`, `distrobox` e `rpm-ostree` já amarrados de forma explícita.

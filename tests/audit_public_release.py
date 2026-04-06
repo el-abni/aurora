@@ -58,17 +58,25 @@ def git_ls_files() -> list[str]:
 
 
 def main() -> int:
-    ensure(VERSION == "v0.5.1", "VERSION precisa estar promovido para v0.5.1 no fechamento desta release")
+    ensure(VERSION == "v0.6.0", "VERSION precisa estar promovido para v0.6.0 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v0.5.1")
+    ok("VERSION promovido para v0.6.0")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
-    ensure("## 🌌 Aurora v0.5.1" in changelog, "CHANGELOG.md precisa abrir a release publica v0.5.1")
+    ensure("## 🌌 Aurora v0.6.0" in changelog, "CHANGELOG.md precisa abrir a release publica v0.6.0")
+    ensure("## 🌌 Aurora v0.5.1" in changelog, "CHANGELOG.md precisa preservar a release publica v0.5.1")
     ensure("## 🌌 Aurora v0.5.0" in changelog, "CHANGELOG.md precisa preservar a release publica v0.5.0")
     for term in (
         "toolbox",
         "distrobox",
+        "rpm-ostree",
+        "rpm_ostree.instalar",
+        "rpm_ostree.remover",
+        "rpm_ostree.procurar",
+        "immutable_selected_surface",
+        "pending deployment",
+        "status --json",
         "execution_surface",
         "environment_target",
         "toolbox.procurar",
@@ -105,6 +113,16 @@ def main() -> int:
         "ppa",
         "toolbox",
         "distrobox",
+        "rpm-ostree",
+        "rpm_ostree",
+        "rpm_ostree.instalar",
+        "rpm_ostree.remover",
+        "rpm_ostree.procurar",
+        "rpm_ostree_layering",
+        "immutable_selected_surface",
+        "immutable_observed_surfaces",
+        "pending deployment",
+        "status --json",
         "toolbox.procurar",
         "toolbox.instalar",
         "toolbox.remover",
@@ -127,6 +145,7 @@ def main() -> int:
         "flatpak remotes",
         "remote-ls",
         "flathub",
+        "host imutável",
         "--confirm",
         "--yes",
     ):
@@ -160,11 +179,19 @@ def main() -> int:
         "distrobox.procurar",
         "distrobox.instalar",
         "distrobox.remover",
+        "rpm_ostree.instalar",
+        "rpm_ostree.remover",
     ):
         ensure(route_name in architecture, f"ARCHITECTURE precisa listar a rota {route_name}")
     for term in (
         "toolbox",
         "distrobox",
+        "rpm-ostree",
+        "rpm_ostree_status",
+        "immutable_selected_surface",
+        "immutable_observed_surfaces",
+        "pending deployment",
+        "status --json",
         "execution_surface",
         "environment_resolution",
         "toolbox_profile",
@@ -209,6 +236,13 @@ def main() -> int:
         "ppa.remover",
         "toolbox",
         "distrobox",
+        "rpm-ostree",
+        "rpm_ostree.instalar",
+        "rpm_ostree.remover",
+        "rpm_ostree.procurar",
+        "immutable_selected_surface",
+        "pending deployment",
+        "status --json",
         "sudo",
         "nome exato",
         "fallback",
@@ -239,11 +273,18 @@ def main() -> int:
         "flatpak_remote",
         "toolbox_host_package_manager",
         "distrobox_host_package_manager",
+        "rpm_ostree_layering",
         "distribution_managed",
         "third_party_build",
         "third_party_repository",
         "guarded",
         "mediated_environment",
+        "immutable_host_surface",
+        "immutable_selected_surface",
+        "immutable_observed_surfaces",
+        "rpm_ostree_status",
+        "pending deployment",
+        "status --json",
         "toolbox_requested_environment",
         "toolbox_resolved_environment",
         "toolbox_package_backends",
@@ -275,7 +316,19 @@ def main() -> int:
     heritage = read("docs/AURY_HERITAGE_MAP.md")
     heritage_normalized = normalize(heritage)
     ensure(VERSION in heritage, "AURY_HERITAGE_MAP precisa refletir a release publica atual")
-    for term in ("aury", "herdado", "host_package", "user_software", "aur", "copr", "ppa", "flatpak", "toolbox", "distrobox"):
+    for term in (
+        "aury",
+        "herdado",
+        "host_package",
+        "user_software",
+        "aur",
+        "copr",
+        "ppa",
+        "flatpak",
+        "toolbox",
+        "distrobox",
+        "rpm-ostree",
+    ):
         ensure(term in heritage_normalized or term in heritage, f"AURY_HERITAGE_MAP precisa citar {term}")
     assert_no_auroboros("docs/AURY_HERITAGE_MAP.md", heritage)
     ok("docs/AURY_HERITAGE_MAP.md alinhado")
@@ -293,6 +346,14 @@ def main() -> int:
         "flatpak",
         "toolbox",
         "distrobox",
+        "rpm-ostree",
+        "rpm_ostree",
+        "rpm_ostree.instalar",
+        "rpm_ostree.remover",
+        "rpm_ostree_layering",
+        "immutable_selected_surface",
+        "pending deployment",
+        "status --json",
         "ppa_repository",
         "ppa.instalar",
         "ppa.remover",
@@ -346,6 +407,14 @@ def main() -> int:
     ensure(
         "aurora remover <pacote> na distrobox <ambiente> --confirm" in help_text,
         "resources/help.txt precisa mostrar a sintaxe publica de remocao em distrobox explicita",
+    )
+    ensure(
+        "aurora instalar <pacote> no rpm-ostree" in help_text,
+        "resources/help.txt precisa mostrar a sintaxe publica de instalacao rpm-ostree explicita",
+    )
+    ensure(
+        "aurora remover <pacote> no rpm-ostree --confirm" in help_text,
+        "resources/help.txt precisa mostrar a sintaxe publica de remocao rpm-ostree explicita",
     )
     assert_no_auroboros("resources/help.txt", help_text)
     ok("resources/help.txt alinhado")

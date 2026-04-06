@@ -30,17 +30,19 @@ Comandos públicos:
 - aurora procurar <pacote> na distrobox <ambiente>
 - aurora instalar <pacote> na distrobox <ambiente>
 - aurora remover <pacote> na distrobox <ambiente> --confirm
+- aurora instalar <pacote> no rpm-ostree
+- aurora remover <pacote> no rpm-ostree --confirm
 - aurora dev <frase>
 - aurora --help
 - aurora --version
 
-Contrato público da v0.5.1:
+Contrato público da v0.6.0:
 - produto 100% Python;
 - launchers oficiais: aurora e auro;
 - domínios ativos: host_package e user_software;
-- execution surfaces reais: host, toolbox e distrobox;
-- fontes reais: host_package_manager, aur_repository, copr_repository, ppa_repository, flatpak_remote, toolbox_host_package_manager e distrobox_host_package_manager;
-- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.procurar/instalar/remover, ppa.instalar, flatpak.procurar/instalar/remover, toolbox.procurar/instalar/remover e distrobox.procurar/instalar/remover;
+- execution surfaces reais: host, toolbox, distrobox e rpm_ostree;
+- fontes reais: host_package_manager, aur_repository, copr_repository, ppa_repository, flatpak_remote, toolbox_host_package_manager, distrobox_host_package_manager e rpm_ostree_layering;
+- rotas reais: host_package.search/instalar/remover, aur.procurar/instalar/remover, copr.procurar/instalar/remover, ppa.instalar, flatpak.procurar/instalar/remover, toolbox.procurar/instalar/remover, distrobox.procurar/instalar/remover e rpm_ostree.instalar/remover;
 - pedidos nus continuam em host_package no host;
 - AUR só entra por frase marcada com aur;
 - COPR só entra por frase marcada com copr e owner/project explicito;
@@ -48,42 +50,52 @@ Contrato público da v0.5.1:
 - pedidos com flatpak/flathub vao para user_software;
 - toolbox entra apenas por frase marcada como toolbox e com ambiente explicito;
 - distrobox entra apenas por frase marcada como distrobox e com ambiente explicito;
+- rpm-ostree entra apenas por frase marcada como rpm-ostree;
 - toolbox nao vira fallback do host e nao cria ambiente automaticamente;
 - distrobox nao vira fallback do host e nao cria ambiente automaticamente;
+- rpm-ostree nao vira fallback magico do host e nao abre apply-live automaticamente;
 - toolbox.instalar e toolbox.remover exigem nome exato de pacote nesta release;
 - distrobox.instalar e distrobox.remover exigem nome exato de pacote nesta release;
+- rpm_ostree.instalar e rpm_ostree.remover exigem nome exato de pacote nesta release;
 - toolbox.remover exige confirmacao explicita;
 - distrobox.remover exige confirmacao explicita;
+- rpm_ostree.remover exige confirmacao explicita;
 - flatpak preserva flathub como default em procurar/instalar quando nenhum remote e informado;
 - flatpak aceita remote explicito apenas quando ele ja e observavel via flatpak remotes;
 - flatpak.procurar usa flatpak remote-ls no remote selecionado;
 - flatpak.remover usa remote explicito apenas como restricao de origin.
+- host imutavel deixa visiveis immutable_observed_surfaces e immutable_selected_surface;
+- rpm-ostree observa status --json, pending deployment e transaction antes de liberar mutacao.
 
 Confirmação:
 - use --confirm ou --yes quando a Aurora pedir confirmação explícita;
 - isso também vale quando o marcador entra inline numa frase passada como texto único, inclusive em aurora dev;
-- isso cobre mutações sensíveis de host_package, mutações reais via AUR, mutações reais via COPR, ppa.instalar, remoções reais via flatpak, toolbox.remover e distrobox.remover.
+- isso cobre mutações sensíveis de host_package, mutações reais via AUR, mutações reais via COPR, ppa.instalar, remoções reais via flatpak, toolbox.remover, distrobox.remover e rpm_ostree.remover.
 
 Compatibilidade:
 - host_package: Arch, Debian/Ubuntu, Fedora e OpenSUSE mutáveis;
-- host_package em Atomic/imutáveis: bloqueado por política;
+- host_package em Atomic/imutáveis: pedido nu bloqueia e exige superfície explícita;
 - AUR explícito: Arch mutável com helper paru ou yay observado;
 - COPR explícito: Fedora mutável com dnf copr observado, consulta restrita ao repositório owner/project explícito;
 - PPA explícito: Ubuntu mutável com ppa:owner/name explícito, add-apt-repository, apt-get e dpkg observados;
 - flatpak: depende do backend estar presente no host, atua no escopo do usuário e nao faz add automatico de remote;
 - toolbox: depende do comando toolbox no host, exige ambiente explicito, observa backend dentro do ambiente mediado e nao equivale a suporte amplo a imutáveis.
 - distrobox: depende do comando distrobox no host, exige ambiente explicito, observa backend dentro do ambiente mediado e nao equivale a suporte amplo a imutáveis.
+- rpm-ostree: depende do comando rpm-ostree no host imutavel, exige pedido explicito, bloqueia pending deployment/transacao ativa e pode exigir reboot para aplicar.
+- host_package em Atomic/imutáveis: exige selecao explicita entre flatpak, toolbox, distrobox, rpm-ostree ou bloqueio.
 
-Fora da v0.5.1:
+Fora da v0.6.0:
 - fallback automático de pedido nu para AUR;
 - fallback automático do host para toolbox;
 - fallback automático do host para distrobox;
+- fallback automático do host para rpm-ostree;
 - default implícito de toolbox e descoberta mágica de ambiente;
 - default implícito de distrobox e descoberta mágica de ambiente;
 - criação automática de toolbox, criação automática de distrobox e administração ampla de lifecycle;
-- mistura de toolbox ou distrobox com AUR, COPR, PPA ou flatpak;
+- mistura de toolbox, distrobox ou rpm-ostree com AUR, COPR, PPA ou flatpak;
 - canonicalização ampla de alvo para toolbox.instalar e toolbox.remover;
 - canonicalização ampla de alvo para distrobox.instalar e distrobox.remover;
+- rpm_ostree.procurar, apply-live, override remove, reboot automático e chaining amplo de transações;
 - descoberta automática de repositório COPR;
 - descoberta automática de PPA ou inferência de PPA a partir do nome do pacote;
 - ppa.procurar, ppa.remover real, remove-apt-repository e lifecycle amplo de PPA;
@@ -92,6 +104,6 @@ Fora da v0.5.1:
 - administração geral de remotes flatpak;
 - helpers AUR além de paru e yay, e passthrough interativo para aur.remover;
 - AppImage e GitHub Releases;
-- rpm-ostree e ujust;
-- suporte operacional real a hosts imutáveis;
+- ujust;
+- suporte genérico a hosts imutáveis fora do corte flatpak/toolbox/distrobox/rpm-ostree;
 - manutenção ampla do host, arquivos e rede.

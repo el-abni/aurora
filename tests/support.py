@@ -2136,3 +2136,266 @@ def setup_distrobox_testbed(
         },
         state_files,
     )
+
+
+def setup_rpm_ostree_testbed(
+    root: Path,
+    *,
+    host_distro_id: str,
+    host_distro_like: str,
+    repo_packages: tuple[str, ...] = (),
+    booted_requested_packages: tuple[str, ...] = (),
+    booted_packages: tuple[str, ...] = (),
+    pending_requested_packages: tuple[str, ...] = (),
+    pending_packages: tuple[str, ...] = (),
+    booted_base_removals: tuple[str, ...] = (),
+    pending_base_removals: tuple[str, ...] = (),
+    transaction_active: bool = False,
+    include_flatpak: bool = False,
+    toolbox_environments: tuple[str, ...] = (),
+    distrobox_environments: tuple[str, ...] = (),
+    host_name: str = "",
+) -> tuple[dict[str, str], dict[str, Path]]:
+    bin_dir = root / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    repo_file = root / "rpm-ostree-repo.txt"
+    booted_requested_file = root / "rpm-ostree-booted-requested.txt"
+    booted_packages_file = root / "rpm-ostree-booted-packages.txt"
+    booted_base_removals_file = root / "rpm-ostree-booted-base-removals.txt"
+    pending_requested_file = root / "rpm-ostree-pending-requested.txt"
+    pending_packages_file = root / "rpm-ostree-pending-packages.txt"
+    pending_base_removals_file = root / "rpm-ostree-pending-base-removals.txt"
+    pending_marker_file = root / "rpm-ostree-pending-marker.txt"
+    transaction_file = root / "rpm-ostree-transaction.txt"
+
+    normalized_repo_packages: list[tuple[str, str]] = []
+    for entry in repo_packages:
+        package_name, separator, label_value = entry.partition("|")
+        package_name = package_name.strip()
+        display_label = label_value.strip() if separator else package_name
+        if package_name:
+            normalized_repo_packages.append((package_name, display_label or package_name))
+
+    repo_file.write_text(
+        "\n".join(f"{package_name}\t{display_label}" for package_name, display_label in normalized_repo_packages)
+        + ("\n" if normalized_repo_packages else ""),
+        encoding="utf-8",
+    )
+    booted_requested_file.write_text(
+        "\n".join(booted_requested_packages) + ("\n" if booted_requested_packages else ""),
+        encoding="utf-8",
+    )
+    booted_packages_file.write_text(
+        "\n".join(booted_packages) + ("\n" if booted_packages else ""),
+        encoding="utf-8",
+    )
+    booted_base_removals_file.write_text(
+        "\n".join(booted_base_removals) + ("\n" if booted_base_removals else ""),
+        encoding="utf-8",
+    )
+    pending_requested_file.write_text(
+        "\n".join(pending_requested_packages) + ("\n" if pending_requested_packages else ""),
+        encoding="utf-8",
+    )
+    pending_packages_file.write_text(
+        "\n".join(pending_packages) + ("\n" if pending_packages else ""),
+        encoding="utf-8",
+    )
+    pending_base_removals_file.write_text(
+        "\n".join(pending_base_removals) + ("\n" if pending_base_removals else ""),
+        encoding="utf-8",
+    )
+    pending_marker_file.write_text(
+        "pending\n"
+        if pending_requested_packages or pending_packages or pending_base_removals
+        else "",
+        encoding="utf-8",
+    )
+    transaction_file.write_text("active\n" if transaction_active else "", encoding="utf-8")
+
+    write_os_release(
+        root,
+        distro_id=host_distro_id,
+        distro_like=host_distro_like,
+        name=host_name or host_distro_id,
+    )
+    write_stub(bin_dir, "sudo", "#!/bin/sh\nexec \"$@\"\n")
+    write_stub(bin_dir, "dnf", "#!/bin/sh\nexit 0\n")
+    if include_flatpak:
+        write_stub(bin_dir, "flatpak", "#!/bin/sh\nexit 0\n")
+
+    if toolbox_environments:
+        toolbox_body_lines = [
+            "#!/bin/sh",
+            'if [ "$1" = "list" ] && [ "$2" = "--containers" ]; then',
+            '  echo "CONTAINER ID  CONTAINER NAME    CREATED       STATUS   IMAGE NAME"',
+        ]
+        for index, environment_name in enumerate(toolbox_environments, start=1):
+            toolbox_body_lines.append(
+                f'  printf "%012x  {environment_name}  2 hours ago  running  quay.io/fedora/fedora-toolbox:41\\n" {index}'
+            )
+        toolbox_body_lines.extend(
+            [
+                "  exit 0",
+                "fi",
+                'echo "unsupported toolbox invocation" >&2',
+                "exit 1",
+            ]
+        )
+        write_stub(bin_dir, "toolbox", "\n".join(toolbox_body_lines) + "\n")
+
+    if distrobox_environments:
+        distrobox_body_lines = [
+            "#!/bin/sh",
+            'if [ "$1" = "list" ]; then',
+            '  echo "ID | NAME | STATUS | IMAGE"',
+        ]
+        for index, environment_name in enumerate(distrobox_environments, start=1):
+            distrobox_body_lines.append(
+                f'  printf "%012x | {environment_name} | running | docker.io/library/test:latest\\n" {index}'
+            )
+        distrobox_body_lines.extend(
+            [
+                "  exit 0",
+                "fi",
+                'echo "unsupported distrobox invocation" >&2',
+                "exit 1",
+            ]
+        )
+        write_stub(bin_dir, "distrobox", "\n".join(distrobox_body_lines) + "\n")
+
+    write_stub(
+        bin_dir,
+        "rpm-ostree",
+        textwrap.dedent(
+            f"""\
+            #!/bin/sh
+            repo_file="{repo_file}"
+            booted_requested_file="{booted_requested_file}"
+            booted_packages_file="{booted_packages_file}"
+            booted_base_removals_file="{booted_base_removals_file}"
+            pending_requested_file="{pending_requested_file}"
+            pending_packages_file="{pending_packages_file}"
+            pending_base_removals_file="{pending_base_removals_file}"
+            pending_marker_file="{pending_marker_file}"
+            transaction_file="{transaction_file}"
+            json_array() {{
+              file="$1"
+              first=1
+              printf '['
+              while IFS= read -r line; do
+                [ -n "$line" ] || continue
+                if [ "$first" -eq 0 ]; then
+                  printf ','
+                fi
+                escaped="$(printf "%s" "$line" | /usr/bin/sed 's/\\\\/\\\\\\\\/g; s/"/\\\\\\"/g')"
+                printf '"%s"' "$escaped"
+                first=0
+              done < "$file"
+              printf ']'
+            }}
+            append_unique() {{
+              file="$1"
+              value="$2"
+              /usr/bin/grep -qx "$value" "$file" 2>/dev/null && return 0
+              printf '%s\\n' "$value" >> "$file"
+            }}
+            remove_value() {{
+              file="$1"
+              value="$2"
+              tmp="$file.tmp"
+              /usr/bin/grep -vx "$value" "$file" > "$tmp" || true
+              /usr/bin/mv "$tmp" "$file"
+            }}
+            has_value() {{
+              file="$1"
+              value="$2"
+              /usr/bin/grep -qx "$value" "$file"
+            }}
+            has_repo() {{
+              /usr/bin/awk -F '\\t' -v target="$1" '$1 == target {{ found = 1 }} END {{ exit found ? 0 : 1 }}' "$repo_file"
+            }}
+            has_pending() {{
+              [ -s "$pending_marker_file" ] || [ -s "$pending_requested_file" ] || [ -s "$pending_packages_file" ] || [ -s "$pending_base_removals_file" ]
+            }}
+            seed_pending_from_booted() {{
+              /usr/bin/cp "$booted_requested_file" "$pending_requested_file"
+              /usr/bin/cp "$booted_packages_file" "$pending_packages_file"
+              /usr/bin/cp "$booted_base_removals_file" "$pending_base_removals_file"
+              printf 'pending\\n' > "$pending_marker_file"
+            }}
+            if [ "$1" = "status" ] && [ "$2" = "--json" ]; then
+              printf '{{'
+              printf '"transaction":'
+              if [ -s "$transaction_file" ]; then
+                printf '{{"kind":"test"}}'
+              else
+                printf 'null'
+              fi
+              printf ',"deployments":['
+              if has_pending; then
+                printf '{{"booted":false,"staged":true,"requested-packages":'
+                json_array "$pending_requested_file"
+                printf ',"packages":'
+                json_array "$pending_packages_file"
+                printf ',"base-removals":'
+                json_array "$pending_base_removals_file"
+                printf '}},'
+              fi
+              printf '{{"booted":true,"requested-packages":'
+              json_array "$booted_requested_file"
+              printf ',"packages":'
+              json_array "$booted_packages_file"
+              printf ',"base-removals":'
+              json_array "$booted_base_removals_file"
+              printf '}}]}}'
+              printf '\\n'
+              exit 0
+            fi
+            if [ "$1" = "install" ]; then
+              target="$2"
+              if ! has_repo "$target"; then
+                echo "Packages not found: $target" >&2
+                exit 1
+              fi
+              seed_pending_from_booted
+              append_unique "$pending_requested_file" "$target"
+              append_unique "$pending_packages_file" "$target"
+              echo "layered $target"
+              exit 0
+            fi
+            if [ "$1" = "uninstall" ]; then
+              target="$2"
+              if ! has_value "$booted_requested_file" "$target" && ! has_value "$booted_packages_file" "$target"; then
+                echo "Package/capability '$target' is not currently requested" >&2
+                exit 1
+              fi
+              seed_pending_from_booted
+              remove_value "$pending_requested_file" "$target"
+              remove_value "$pending_packages_file" "$target"
+              echo "unlayered $target"
+              exit 0
+            fi
+            echo "unsupported rpm-ostree invocation" >&2
+            exit 1
+            """
+        ),
+    )
+
+    return (
+        {
+            "PATH": str(bin_dir),
+            "AURORA_OS_RELEASE_PATH": str(root / "os-release"),
+        },
+        {
+            "repo": repo_file,
+            "booted_requested": booted_requested_file,
+            "booted_packages": booted_packages_file,
+            "booted_base_removals": booted_base_removals_file,
+            "pending_requested": pending_requested_file,
+            "pending_packages": pending_packages_file,
+            "pending_base_removals": pending_base_removals_file,
+            "pending_marker": pending_marker_file,
+            "transaction": transaction_file,
+        },
+    )

@@ -63,6 +63,7 @@ class ToolboxExplicitTests(unittest.TestCase):
             self.assertEqual(payload["policy"]["source_type"], "toolbox_host_package_manager")
             self.assertEqual(payload["policy"]["execution_surface"], "toolbox")
             self.assertEqual(payload["policy"]["trust_level"], "mediated_environment")
+            self.assertEqual(payload["policy"]["immutable_selected_surface"], "toolbox")
             self.assertEqual(payload["policy"]["policy_outcome"], "allow")
             self.assertEqual(payload["toolbox_profile"]["linux_family"], "fedora")
             self.assertEqual(payload["toolbox_profile"]["package_backends"], ["dnf"])

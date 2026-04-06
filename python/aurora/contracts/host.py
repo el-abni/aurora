@@ -19,6 +19,26 @@ class HostProfile:
     observed_distrobox_environments: tuple[str, ...] = ()
 
     @property
+    def observed_immutable_surfaces(self) -> tuple[str, ...]:
+        if self.mutability != "atomic":
+            return ()
+
+        surfaces: list[str] = []
+        if "flatpak" in self.observed_package_tools:
+            surfaces.append("flatpak")
+        if "rpm-ostree" in self.observed_package_tools:
+            surfaces.append("rpm-ostree")
+        if self.observed_toolbox_environments:
+            surfaces.append(f"toolbox[{','.join(self.observed_toolbox_environments)}]")
+        elif "toolbox" in self.observed_environment_tools:
+            surfaces.append("toolbox")
+        if self.observed_distrobox_environments:
+            surfaces.append(f"distrobox[{','.join(self.observed_distrobox_environments)}]")
+        elif "distrobox" in self.observed_environment_tools:
+            surfaces.append("distrobox")
+        return tuple(surfaces)
+
+    @property
     def linux_family_label(self) -> str:
         return "desconhecida" if self.linux_family == "unknown" else self.linux_family
 
@@ -39,7 +59,11 @@ class HostProfile:
     @property
     def compatibility_frontier_label(self) -> str:
         if self.mutability == "atomic":
-            return "bloqueado por politica"
+            if "rpm-ostree" in self.observed_package_tools:
+                return "imutavel com rpm-ostree explicito"
+            if self.observed_immutable_surfaces:
+                return "imutavel com superficies explicitas limitadas"
+            return "imutavel sem superficie adequada observada"
         if self.support_tier == "tier_1":
             return "suportado agora"
         if self.support_tier == "tier_2":
@@ -79,3 +103,9 @@ class HostProfile:
         if not self.observed_distrobox_environments:
             return "-"
         return ", ".join(self.observed_distrobox_environments)
+
+    @property
+    def observed_immutable_surfaces_label(self) -> str:
+        if not self.observed_immutable_surfaces:
+            return "-"
+        return ", ".join(self.observed_immutable_surfaces)

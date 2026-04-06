@@ -7,6 +7,7 @@ from aurora.contracts.requests import SemanticRequest
 from aurora.install.sources.flatpak import flatpak_remote_name_is_explicit
 from aurora.install.sources.ppa import ppa_coordinate_is_explicit
 from aurora.linux.distrobox import distrobox_name_is_explicit
+from aurora.linux.rpm_ostree import rpm_ostree_package_name_is_explicit
 from aurora.linux.toolbox import toolbox_name_is_explicit
 from aurora.semantics.entities import extract_package_target, extract_target_token_pairs
 from aurora.semantics.intent import canonicalize_intent
@@ -15,6 +16,7 @@ from aurora.semantics.pipeline import prepare_text
 _FLATPAK_HINT_TOKENS = {"flatpak", "flathub"}
 _TOOLBOX_HINT_TOKENS = {"toolbox"}
 _DISTROBOX_HINT_TOKENS = {"distrobox"}
+_RPM_OSTREE_HINT_TOKENS = {"rpm-ostree"}
 _AUR_HINT_TOKENS = {"aur"}
 _COPR_HINT_TOKENS = {"copr"}
 _PPA_HINT_TOKENS = {"ppa"}
@@ -60,6 +62,13 @@ class _ToolboxSelection:
 class _DistroboxSelection:
     target: str = ""
     environment_target: str = ""
+    hint_found: bool = False
+    reason: str = ""
+
+
+@dataclass(frozen=True)
+class _RpmOstreeSelection:
+    target: str = ""
     hint_found: bool = False
     reason: str = ""
 
@@ -385,6 +394,63 @@ def _extract_distrobox_selection(action) -> _DistroboxSelection:
     return _DistroboxSelection()
 
 
+def _extract_rpm_ostree_selection(action) -> _RpmOstreeSelection:
+    pairs = extract_target_token_pairs(action)
+    conflicting_hints = (
+        _FLATPAK_HINT_TOKENS
+        | _AUR_HINT_TOKENS
+        | _COPR_HINT_TOKENS
+        | _PPA_HINT_TOKENS
+        | _TOOLBOX_HINT_TOKENS
+        | _DISTROBOX_HINT_TOKENS
+    )
+    for index in range(1, len(pairs)):
+        if pairs[index - 1][1] not in _SOURCE_PREPOSITIONS or pairs[index][1] not in _RPM_OSTREE_HINT_TOKENS:
+            continue
+
+        target_pairs = pairs[: index - 1]
+        trailing_pairs = pairs[index + 1 :]
+        if not target_pairs:
+            return _RpmOstreeSelection(
+                hint_found=True,
+                reason="faltou o alvo do pacote marcado para rpm-ostree explicito.",
+            )
+
+        if trailing_pairs:
+            return _RpmOstreeSelection(
+                target=" ".join(original for original, _normalized in target_pairs).strip(),
+                hint_found=True,
+                reason=(
+                    "rpm-ostree explicito nesta rodada aceita apenas o nome conservador do pacote antes do hint, "
+                    "sem argumentos extras depois da superficie."
+                ),
+            )
+
+        if any(normalized in conflicting_hints for _original, normalized in target_pairs):
+            return _RpmOstreeSelection(
+                target=" ".join(original for original, _normalized in target_pairs).strip(),
+                hint_found=True,
+                reason=(
+                    "rpm-ostree explicito nesta rodada nao se combina com aur, copr, ppa, flatpak, toolbox ou distrobox. "
+                    "escolha uma unica superficie operacional."
+                ),
+            )
+
+        target = " ".join(original for original, _normalized in target_pairs).strip()
+        if " " not in target and rpm_ostree_package_name_is_explicit(target):
+            return _RpmOstreeSelection(
+                target=target,
+                hint_found=True,
+            )
+
+        return _RpmOstreeSelection(
+            target=target,
+            hint_found=True,
+        )
+
+    return _RpmOstreeSelection()
+
+
 def classify_text(text: str) -> SemanticRequest:
     phrase, actions = prepare_text(text)
     if not actions:
@@ -422,6 +488,7 @@ def classify_text(text: str) -> SemanticRequest:
         source_coordinate_required = False
         toolbox_selection = _extract_toolbox_selection(action)
         distrobox_selection = _extract_distrobox_selection(action)
+        rpm_ostree_selection = _extract_rpm_ostree_selection(action)
         if toolbox_selection.hint_found:
             target = toolbox_selection.target
             environment_target = toolbox_selection.environment_target
@@ -485,6 +552,22 @@ def classify_text(text: str) -> SemanticRequest:
                     "pedido explicitamente marcado como 'distrobox', entao foi enquadrado em host_package "
                     "sobre superficie mediada e ainda exige resolucao explicita do ambiente."
                 )
+            )
+        elif rpm_ostree_selection.hint_found:
+            target = rpm_ostree_selection.target
+            observations = (
+                "domain_selection:explicit_host_package_surface",
+                "surface_hint:rpm-ostree",
+            )
+            domain_kind = "host_package"
+            execution_surface = "rpm_ostree"
+            missing_target_reason = (
+                rpm_ostree_selection.reason
+                or "faltou o alvo do pacote marcado para rpm-ostree explicito."
+            )
+            consistent_reason = (
+                "pedido explicitamente marcado como 'rpm-ostree', entao foi enquadrado em host_package "
+                "sobre superficie explicita de host imutavel."
             )
         else:
             flatpak_selection = _extract_flatpak_selection(action)
@@ -616,6 +699,21 @@ def classify_text(text: str) -> SemanticRequest:
                 target=target,
                 status="BLOCKED",
                 reason=distrobox_selection.reason,
+                observations=observations,
+            )
+        if execution_surface == "rpm_ostree" and rpm_ostree_selection.reason:
+            return SemanticRequest(
+                original_text=action.original_action,
+                normalized_text=action.normalized_action,
+                intent=intent,
+                domain_kind=domain_kind,
+                execution_surface=execution_surface,
+                requested_source=requested_source,
+                source_coordinate=source_coordinate,
+                environment_target=environment_target,
+                target=target,
+                status="BLOCKED",
+                reason=rpm_ostree_selection.reason,
                 observations=observations,
             )
         if requested_source == "flatpak" and source_coordinate_required and not source_coordinate:

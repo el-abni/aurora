@@ -1,4 +1,4 @@
-# Compatibilidade Linux - Aurora v0.5.1
+# Compatibilidade Linux - Aurora v0.6.0
 
 ## Matriz atual de `host_package`
 
@@ -8,7 +8,7 @@
 | Debian/Ubuntu e derivadas mutáveis | suportado agora | procurar, instalar, remover |
 | Fedora mutável | suportado agora | procurar, instalar, remover |
 | OpenSUSE mutável | suportado contido | procurar, instalar, remover |
-| Atomic / imutáveis | bloqueado por política | sem mutação de `host_package` |
+| Atomic / imutáveis | decisão explícita por superfície | `flatpak`, `toolbox`, `distrobox`, `rpm-ostree` ou bloqueio |
 
 ## Frente `AUR` explícita
 
@@ -41,13 +41,14 @@
 
 ## `user_software` via `flatpak`
 
-Na `v0.5.1`, `flatpak` continua sendo a frente explícita de software do usuário.
+Na `v0.6.0`, `flatpak` continua sendo a frente explícita de software do usuário.
 
 Leitura correta desta frente:
 
 - depende do backend `flatpak` estar presente no host;
 - atua em escopo de usuário;
 - não herda o bloqueio de mutação de `host_package` em Atomic/imutáveis;
+- em host imutável, a escolha explícita fica auditável como `immutable_selected_surface=flatpak`;
 - cobre `procurar`, `instalar` e `remover`;
 - preserva `flathub` como default em `procurar` e `instalar` quando nenhum remote é informado;
 - aceita remote explícito apenas quando esse remote já é observável via `flatpak remotes`;
@@ -56,7 +57,7 @@ Leitura correta desta frente:
 
 ## Frente `toolbox` explícita
 
-Na `v0.5.1`, `toolbox` entra como superfície operacional mediada, não como fonte.
+Na `v0.6.0`, `toolbox` entra como superfície operacional mediada, não como fonte.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
@@ -74,11 +75,12 @@ Leitura correta desta frente:
 - `toolbox.instalar` e `toolbox.remover` exigem nome exato de pacote;
 - `toolbox.remover` exige confirmação explícita;
 - a mutação acontece dentro da toolbox e não no host;
+- em host imutável, a escolha explícita fica auditável como `immutable_selected_surface=toolbox`;
 - não existe default implícito, criação automática, lifecycle amplo nem fallback host -> toolbox.
 
 ## Frente `distrobox` explícita
 
-Na `v0.5.1`, `distrobox` entra como segunda superfície operacional mediada, não como fonte.
+Na `v0.6.0`, `distrobox` entra como segunda superfície operacional mediada, não como fonte.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
@@ -96,7 +98,29 @@ Leitura correta desta frente:
 - `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote;
 - `distrobox.remover` exige confirmação explícita;
 - a mutação acontece dentro da distrobox e não no host;
+- em host imutável, a escolha explícita fica auditável como `immutable_selected_surface=distrobox`;
 - não existe default implícito, criação automática, lifecycle amplo nem fallback host -> distrobox.
+
+## Frente `rpm-ostree` explícito
+
+Na `v0.6.0`, `rpm-ostree` entra como superfície explícita de host imutável.
+
+| Perfil observado | Estado | Escopo real |
+| --- | --- | --- |
+| Host Atomic/imutável com `rpm-ostree` observado, `status --json` parseável e sem transação ativa/pending deployment | suportado agora | instalar e remover por nome exato de pacote |
+| Host Atomic/imutável com `rpm-ostree` observado, mas com transação ativa | bloqueado por política | sem rota executável |
+| Host Atomic/imutável com `rpm-ostree` observado, mas com pending deployment já existente | bloqueado por política | sem rota executável |
+| Host Atomic/imutável sem `rpm-ostree` observado | bloqueado por política | sem rota executável |
+| Host mutável | fora do recorte | use `host_package` normal |
+
+Leitura correta desta frente:
+
+- `rpm-ostree` exige pedido explícito;
+- `rpm_ostree.instalar` e `rpm_ostree.remover` exigem nome exato de pacote;
+- `rpm_ostree.procurar` ainda não foi aberta;
+- a confirmação de sucesso observa o deployment `default/pending`, não promete `apply-live`;
+- uma mutação bem-sucedida pode exigir reboot para aplicar o deployment resultante;
+- `rpm-ostree` não equivale a suporte genérico a qualquer host imutável.
 
 ## Leitura operacional das frentes explícitas
 
@@ -144,6 +168,13 @@ Leitura correta desta frente:
 - `distrobox.instalar` e `distrobox.remover` não fazem fallback para host, não criam distrobox e não misturam outras fontes;
 - `distrobox` não é alias de `toolbox` e não é promessa ampla para `rpm-ostree` ou hosts imutáveis como um todo.
 
+### `rpm-ostree`
+
+- `rpm_ostree.instalar` e `rpm_ostree.remover` deixam visíveis `execution_surface=rpm_ostree`, `rpm_ostree_status`, `immutable_observed_surfaces` e `immutable_selected_surface`;
+- a rota bloqueia cedo quando já existe `pending deployment` ou transação ativa;
+- a rota não abre `apply-live`, `override remove`, reboot automático ou manutenção ampla do host;
+- `rpm-ostree` não mistura `owner/project`, `from_repo`, `ppa:owner/name`, `toolbox` ou `distrobox` na mesma frase.
+
 ## Leitura correta da fronteira
 
 - `suportado agora` significa rota real aberta com policy, execução e observabilidade;
@@ -158,5 +189,5 @@ Detecção de ferramenta não vira promessa automática de suporte. Isto continu
 - `toolbox` sem pedido explícito e sem ambiente nomeado;
 - `distrobox` sem pedido explícito e sem ambiente nomeado;
 - PPA fora do recorte Ubuntu mutável;
-- `rpm-ostree`;
+- `rpm-ostree` sem pedido explícito;
 - `ujust`.

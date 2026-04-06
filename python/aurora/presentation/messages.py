@@ -71,6 +71,30 @@ def mutation_success_message(
     return f"✅ pronto, o {target_label} '{target}' foi removido."
 
 
+def rpm_ostree_noop_message(intent: str, target: str) -> str:
+    if intent == "instalar":
+        return (
+            f"ℹ️ o pacote '{target}' já aparece no deployment atual ou no próximo deployment rpm-ostree. "
+            "Nada foi feito."
+        )
+    return (
+        f"ℹ️ o pacote '{target}' já não aparece como camada solicitada no deployment efetivo rpm-ostree. "
+        "Nada foi feito."
+    )
+
+
+def rpm_ostree_mutation_success_message(intent: str, target: str) -> str:
+    if intent == "instalar":
+        return (
+            f"✅ pronto, o pacote '{target}' foi adicionado ao próximo deployment rpm-ostree. "
+            "Reinicie para aplicar."
+        )
+    return (
+        f"✅ pronto, o pacote '{target}' foi removido do próximo deployment rpm-ostree. "
+        "Reinicie para aplicar."
+    )
+
+
 def state_probe_missing_message(backend_name: str, probe_label: str) -> str:
     return (
         f"❌ a confirmação de estado para o backend '{backend_name}' depende da ferramenta "

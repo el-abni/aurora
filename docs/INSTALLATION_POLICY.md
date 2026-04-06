@@ -1,8 +1,8 @@
-# Installation Policy - Aurora v0.5.1
+# Installation Policy - Aurora v0.6.0
 
 ## Escopo real da política
 
-Na `v0.5.1`, a política operacional da Aurora governa dois domínios, duas superfícies mediadas explícitas e sete leituras reais de rota:
+Na `v0.6.0`, a política operacional da Aurora governa dois domínios, três superfícies explícitas fora do host mutável comum e oito leituras reais de rota:
 
 - `host_package` com `execution_surface=host` e `source_type=host_package_manager`;
 - `host_package` explicitamente marcado com `source_type=aur_repository`;
@@ -10,6 +10,7 @@ Na `v0.5.1`, a política operacional da Aurora governa dois domínios, duas supe
 - `host_package` explicitamente marcado com `source_type=ppa_repository`;
 - `host_package` explicitamente marcado com `execution_surface=toolbox` e `source_type=toolbox_host_package_manager`;
 - `host_package` explicitamente marcado com `execution_surface=distrobox` e `source_type=distrobox_host_package_manager`;
+- `host_package` explicitamente marcado com `execution_surface=rpm_ostree` e `source_type=rpm_ostree_layering`;
 - `user_software` com `source_type=flatpak_remote`.
 
 A política existe para explicitar contrato, risco e limite da rota. Ela não existe para simular amplitude.
@@ -36,7 +37,8 @@ Os campos ativos desta release são:
 - pedido nu continua em `host_package` no host;
 - `execution_surface=host`;
 - `trust_level=distribution_managed`;
-- mutação do host em perfil Atomic/imutável continua bloqueada;
+- mutação do host em perfil Atomic/imutável continua bloqueada quando a frase não escolhe uma superfície;
+- em host imutável, a política expõe `immutable_observed_surfaces` e `immutable_selected_surface=block` quando a inferência seria frouxa demais;
 - mutações sensíveis pedem confirmação explícita.
 
 ### `AUR` explícito
@@ -89,6 +91,7 @@ Os campos ativos desta release são:
 - `flatpak.procurar` usa `flatpak remote-ls` dentro do remote selecionado;
 - `flatpak.instalar` bloqueia cedo quando o remote default ou explícito não está observado;
 - `flatpak.remover` usa escopo explícito de usuário e exige confirmação real quando a remoção vai acontecer.
+- em host imutável, a política deixa explícito `immutable_selected_surface=flatpak`.
 
 ### `toolbox` explícita
 
@@ -103,7 +106,8 @@ Os campos ativos desta release são:
 - `toolbox.remover` exige confirmação explícita;
 - `toolbox.instalar` e `toolbox.remover` exigem nome exato de pacote;
 - a política mantém gaps estruturais visíveis: `toolbox_default_selection_not_opened`, `toolbox_create_not_opened`, `toolbox_lifecycle_not_opened`, `toolbox_host_fallback_not_opened` e `toolbox_mutation_requires_exact_package_name`;
-- host Atomic/imutável não bloqueia `toolbox` por si só, mas também não abre suporte amplo a imutáveis.
+- host Atomic/imutável não bloqueia `toolbox` por si só, mas também não abre suporte amplo a imutáveis;
+- em host imutável, a política deixa explícito `immutable_selected_surface=toolbox`.
 
 ### `distrobox` explícita
 
@@ -118,7 +122,21 @@ Os campos ativos desta release são:
 - `distrobox.remover` exige confirmação explícita;
 - `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote;
 - a política mantém gaps estruturais visíveis: `distrobox_default_selection_not_opened`, `distrobox_create_not_opened`, `distrobox_lifecycle_not_opened`, `distrobox_host_fallback_not_opened` e `distrobox_mutation_requires_exact_package_name`;
-- host Atomic/imutável não bloqueia `distrobox` por si só, mas também não abre suporte amplo a imutáveis.
+- host Atomic/imutável não bloqueia `distrobox` por si só, mas também não abre suporte amplo a imutáveis;
+- em host imutável, a política deixa explícito `immutable_selected_surface=distrobox`.
+
+### `rpm-ostree` explícito
+
+- pedido explicitamente marcado como `rpm-ostree` continua no domínio `host_package`, mas troca a superfície para `execution_surface=rpm_ostree`;
+- `rpm-ostree` não vira `requested_source`;
+- `source_type=rpm_ostree_layering`;
+- `trust_level=immutable_host_surface`;
+- a política expõe `rpm_ostree_status`, `rpm_ostree_pending_deployment`, `rpm_ostree_transaction_active`, `rpm_ostree_booted_requested_packages` e `rpm_ostree_pending_requested_packages`;
+- `rpm_ostree.instalar` não exige confirmação, mas depende de `rpm-ostree` observado, `status --json` parseável e host imutável real;
+- `rpm_ostree.remover` exige confirmação explícita;
+- `rpm_ostree.instalar` e `rpm_ostree.remover` exigem nome exato de pacote;
+- a política bloqueia quando já existe `pending deployment` ou transação ativa;
+- a política mantém gaps estruturais visíveis: `rpm_ostree_search_not_opened`, `rpm_ostree_apply_live_not_opened`, `rpm_ostree_override_remove_not_opened`, `rpm_ostree_reboot_not_performed_by_aurora`, `rpm_ostree_transaction_chaining_not_opened` e `rpm_ostree_mutation_requires_exact_package_name`.
 
 ## Como a política afeta o runtime
 
@@ -134,7 +152,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v0.5.1`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v0.6.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -160,6 +178,8 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 - `user_scope_removal`
 - `mediated_environment_change`
 - `mediated_environment_removal`
+- `deployment_change`
+- `deployment_change_sensitive`
 
 ## Exemplos de comportamento
 
@@ -169,6 +189,10 @@ Registra o peso de reversão esperado da mutação, por exemplo:
   resultado típico: `require_confirmation`
 - `aurora instalar firefox` em host Atomic/imutável
   resultado típico: `block`
+- `aurora instalar firefox no rpm-ostree`
+  resultado típico: `allow`
+- `aurora remover firefox no rpm-ostree`
+  resultado típico: `require_confirmation`
 - `aurora procurar google chrome no aur`
   resultado típico: `allow`
 - `aurora procurar obs-studio do copr atim/obs-studio`
@@ -185,19 +209,23 @@ Registra o peso de reversão esperado da mutação, por exemplo:
   resultado típico: `allow`
 - `aurora remover ripgrep na distrobox devbox`
   resultado típico: `require_confirmation`
+- `aurora procurar htop no rpm-ostree`
+  resultado típico: `block`
 
 ## O que ainda não está aberto
 
-Continuam fora da `v0.5.1`:
+Continuam fora da `v0.6.0`:
 
 - fallback automático do host para `toolbox`;
 - fallback automático do host para `distrobox`;
+- fallback automático do host para `rpm-ostree`;
 - default implícito de toolbox, autoseleção e descoberta mágica de ambiente;
 - default implícito de distrobox, autoseleção e descoberta mágica de ambiente;
 - criação automática de toolbox, criação automática de distrobox e administração ampla de lifecycle;
-- mistura de `toolbox` ou `distrobox` com `aur`, `copr`, `ppa` ou `flatpak`;
+- mistura de `toolbox`, `distrobox` ou `rpm-ostree` com `aur`, `copr`, `ppa` ou `flatpak`;
 - canonicalização ampla de alvo para `toolbox.instalar` e `toolbox.remover`;
 - canonicalização ampla de alvo para `distrobox.instalar` e `distrobox.remover`;
+- `rpm_ostree.procurar`, `apply-live`, `override remove`, reboot automático e chaining amplo de transações;
 - descoberta automática de repositório COPR;
 - descoberta automática de PPA ou inferência por nome do pacote;
 - `ppa.procurar`, `ppa.remover` real, `remove-apt-repository` e cleanup/lifecycle amplo;
@@ -206,7 +234,7 @@ Continuam fora da `v0.5.1`:
 - administração geral de remotes `flatpak`;
 - helpers AUR além de `paru` e `yay`, e passthrough interativo para `aur.remover`;
 - AppImage e GitHub Releases;
-- `rpm-ostree`, toolbox default implícita, distrobox default implícita e `ujust`;
-- suporte operacional real a hosts imutáveis.
+- toolbox default implícita, distrobox default implícita e `ujust`;
+- suporte genérico a hosts imutáveis fora do corte explícito de `flatpak`, `toolbox`, `distrobox` e `rpm-ostree`.
 
-Se `flatpak`, helper AUR, capacidade COPR, `add-apt-repository`, `toolbox` ou `distrobox` aparecerem no host sem pedido explícito, isso continua sendo apenas observação e não muda o default seguro de `host_package` no host.
+Se `flatpak`, helper AUR, capacidade COPR, `add-apt-repository`, `toolbox`, `distrobox` ou `rpm-ostree` aparecerem no host sem pedido explícito, isso continua sendo apenas observação e não muda o default seguro de `host_package` no host.

@@ -89,11 +89,14 @@ class HostProfileTests(unittest.TestCase):
             bin_dir = root / "bin"
             bin_dir.mkdir()
             write_stub(bin_dir, "dnf", "#!/usr/bin/env bash\nexit 0\n")
+            write_stub(bin_dir, "rpm-ostree", "#!/usr/bin/env bash\nexit 0\n")
             write_os_release(root, distro_id="bazzite", distro_like="fedora", name="Bazzite")
             profile = detect_host_profile(self._env(root))
             self.assertEqual(profile.linux_family, "fedora")
             self.assertEqual(profile.mutability, "atomic")
             self.assertEqual(profile.support_tier, "limited")
+            self.assertEqual(profile.observed_package_tools, ("rpm-ostree",))
+            self.assertEqual(profile.observed_immutable_surfaces, ("rpm-ostree",))
 
 
 if __name__ == "__main__":

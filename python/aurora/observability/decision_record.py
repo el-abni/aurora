@@ -29,6 +29,7 @@ def _host_profile_to_dict(profile) -> dict[str, object]:
         "observed_environment_tools": list(profile.observed_environment_tools),
         "observed_toolbox_environments": list(profile.observed_toolbox_environments),
         "observed_distrobox_environments": list(profile.observed_distrobox_environments),
+        "observed_immutable_surfaces": list(profile.observed_immutable_surfaces),
     }
 
 
@@ -162,6 +163,40 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
                     record.policy.trust_signals,
                     f"{field_name}:",
                 )
+        payload["policy"]["immutable_host"] = _signal_value(
+            record.policy.trust_signals,
+            "immutable_host:",
+        )
+        payload["policy"]["immutable_observed_surfaces"] = _signal_value(
+            record.policy.trust_signals,
+            "immutable_observed_surfaces:",
+        )
+        payload["policy"]["immutable_selected_surface"] = _signal_value(
+            record.policy.trust_signals,
+            "immutable_selected_surface:",
+        )
+        payload["policy"]["immutable_toolbox_environments"] = _signal_value(
+            record.policy.trust_signals,
+            "immutable_toolbox_environments:",
+        )
+        payload["policy"]["immutable_distrobox_environments"] = _signal_value(
+            record.policy.trust_signals,
+            "immutable_distrobox_environments:",
+        )
+        if record.request.execution_surface == "rpm_ostree":
+            for field_name in (
+                "rpm_ostree_status",
+                "rpm_ostree_booted_requested_packages",
+                "rpm_ostree_booted_packages",
+                "rpm_ostree_pending_deployment",
+                "rpm_ostree_pending_requested_packages",
+                "rpm_ostree_pending_packages",
+                "rpm_ostree_transaction_active",
+            ):
+                payload["policy"][field_name] = _signal_value(
+                    record.policy.trust_signals,
+                    f"{field_name}:",
+                )
 
     if record.environment_resolution is not None:
         payload["environment_resolution"] = {
@@ -286,12 +321,45 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
                     record.policy.trust_signals,
                     f"{field_name}:",
                 )
+        if record.execution_route.route_name.startswith("rpm_ostree.") and record.policy is not None:
+            for field_name in (
+                "immutable_observed_surfaces",
+                "immutable_selected_surface",
+                "rpm_ostree_status",
+                "rpm_ostree_pending_deployment",
+                "rpm_ostree_pending_requested_packages",
+                "rpm_ostree_transaction_active",
+            ):
+                payload["execution_route"][field_name] = _signal_value(
+                    record.policy.trust_signals,
+                    f"{field_name}:",
+                )
 
     if record.toolbox_profile is not None:
         payload["toolbox_profile"] = _host_profile_to_dict(record.toolbox_profile)
 
     if record.distrobox_profile is not None:
         payload["distrobox_profile"] = _host_profile_to_dict(record.distrobox_profile)
+
+    if record.rpm_ostree_status is not None:
+        payload["rpm_ostree_status"] = {
+            "observed": record.rpm_ostree_status.observed,
+            "status": record.rpm_ostree_status.status,
+            "source": record.rpm_ostree_status.source,
+            "reason": record.rpm_ostree_status.reason,
+            "transaction_active": record.rpm_ostree_status.transaction_active,
+            "booted_requested_packages": list(record.rpm_ostree_status.booted_requested_packages),
+            "booted_packages": list(record.rpm_ostree_status.booted_packages),
+            "booted_base_removals": list(record.rpm_ostree_status.booted_base_removals),
+            "pending_deployment": record.rpm_ostree_status.pending_deployment,
+            "pending_requested_packages": list(record.rpm_ostree_status.pending_requested_packages),
+            "pending_packages": list(record.rpm_ostree_status.pending_packages),
+            "pending_base_removals": list(record.rpm_ostree_status.pending_base_removals),
+            "diagnostic_command": list(record.rpm_ostree_status.diagnostic_command),
+            "diagnostic_exit_code": record.rpm_ostree_status.diagnostic_exit_code,
+            "diagnostic_stdout": record.rpm_ostree_status.diagnostic_stdout,
+            "diagnostic_stderr": record.rpm_ostree_status.diagnostic_stderr,
+        }
 
     if record.execution is not None:
         payload["execution"] = {

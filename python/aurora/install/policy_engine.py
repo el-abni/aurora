@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 
-from aurora.contracts.decisions import EnvironmentResolution
+from aurora.contracts.decisions import EnvironmentResolution, RpmOstreeStatusObservation
 from aurora.contracts.host import HostProfile
 from aurora.contracts.policy import PolicyAssessment
 from aurora.contracts.requests import SemanticRequest
@@ -25,7 +25,7 @@ from aurora.install.sources.flatpak import (
 )
 from aurora.install.sources.ppa import observe_ppa_capability, supported_ppa_distro_ids
 from aurora.linux.distrobox import DistroboxProfileProbe
-from aurora.linux.immutable_policy import host_package_block_reason
+from aurora.linux.immutable_policy import host_package_block_reason, observed_immutable_surface_signals
 from aurora.linux.toolbox import ToolboxProfileProbe
 
 _CRITICAL_PACKAGE_NAMES = {
@@ -56,6 +56,22 @@ _CRITICAL_PACKAGE_PREFIXES = (
     "openssh",
     "systemd",
 )
+
+
+def _join_signal_items(items: tuple[str, ...]) -> str:
+    return ",".join(items) if items else "-"
+
+
+def _append_immutable_surface_context(
+    trust_signals: list[str],
+    profile: HostProfile | None,
+    *,
+    selected_surface: str,
+) -> None:
+    if profile is None or profile.mutability != "atomic":
+        return
+    trust_signals.extend(observed_immutable_surface_signals(profile))
+    trust_signals.append(f"immutable_selected_surface:{selected_surface}")
 
 
 def _host_package_software_criticality(request: SemanticRequest) -> str:
@@ -116,6 +132,7 @@ def _assess_host_package_policy(
         f"support_tier:{profile.support_tier}",
         f"software_criticality:{software_criticality}",
     ]
+    _append_immutable_surface_context(trust_signals, profile, selected_surface="block")
     if profile.package_backends:
         trust_signals.append(f"observed_backends:{','.join(profile.package_backends)}")
     if profile.linux_family == "arch":
@@ -137,6 +154,7 @@ def _assess_host_package_policy(
     elif profile.mutability == "atomic":
         outcome = "block"
         trust_gaps.append("host_mutation_blocked_on_atomic")
+        trust_gaps.append("immutable_surface_selection_required")
         reason, _message = host_package_block_reason(profile)
     elif profile.support_tier == "out_of_scope":
         outcome = "block"
@@ -251,6 +269,7 @@ def _assess_mediated_environment_policy(
             else f"{execution_surface}_requested_environment:-"
         ),
     ]
+    _append_immutable_surface_context(trust_signals, profile, selected_surface=execution_surface)
     if profile.observed_environment_tools:
         trust_signals.append(f"observed_environment_tools:{','.join(profile.observed_environment_tools)}")
     observed_environments = getattr(profile, f"observed_{execution_surface}_environments")
@@ -439,6 +458,172 @@ def _assess_distrobox_policy(
     )
 
 
+def _rpm_ostree_reversal_level(intent: str, software_criticality: str) -> str:
+    if intent == "procurar":
+        return "informational"
+    if software_criticality in {"high", "sensitive"}:
+        return "deployment_change_sensitive"
+    return "deployment_change"
+
+
+def _assess_rpm_ostree_policy(
+    request: SemanticRequest,
+    profile: HostProfile | None,
+    *,
+    rpm_ostree_status: RpmOstreeStatusObservation | None = None,
+    confirmation_supplied: bool = False,
+) -> PolicyAssessment | None:
+    software_criticality = _host_package_software_criticality(request)
+    reversal_level = _rpm_ostree_reversal_level(request.intent, software_criticality)
+    requires_confirmation = request.intent == "remover"
+
+    if profile is None:
+        return PolicyAssessment(
+            domain_kind="host_package",
+            source_type="rpm_ostree_layering",
+            trust_level="immutable_host_surface",
+            software_criticality=software_criticality,
+            trust_signals=(),
+            trust_gaps=("host_profile_unavailable",),
+            policy_outcome="block",
+            requires_confirmation=requires_confirmation,
+            confirmation_supplied=confirmation_supplied,
+            reversal_level=reversal_level,
+            reason="o host profile nao esta disponivel para abrir a superficie rpm-ostree.",
+            execution_surface="rpm_ostree",
+        )
+
+    trust_signals = [
+        "execution_surface:rpm_ostree",
+        "domain:host_package",
+        "source_type:rpm_ostree_layering",
+        f"host_mutability:{profile.mutability}",
+        f"software_criticality:{software_criticality}",
+    ]
+    _append_immutable_surface_context(trust_signals, profile, selected_surface="rpm_ostree")
+    if rpm_ostree_status is not None:
+        trust_signals.extend(
+            (
+                f"rpm_ostree_status:{rpm_ostree_status.status}",
+                (
+                    f"rpm_ostree_booted_requested_packages:{_join_signal_items(rpm_ostree_status.booted_requested_packages)}"
+                ),
+                f"rpm_ostree_booted_packages:{_join_signal_items(rpm_ostree_status.booted_packages)}",
+                (
+                    f"rpm_ostree_pending_deployment:{'true' if rpm_ostree_status.pending_deployment else 'false'}"
+                ),
+                (
+                    f"rpm_ostree_pending_requested_packages:{_join_signal_items(rpm_ostree_status.pending_requested_packages)}"
+                ),
+                f"rpm_ostree_pending_packages:{_join_signal_items(rpm_ostree_status.pending_packages)}",
+                (
+                    f"rpm_ostree_transaction_active:{'true' if rpm_ostree_status.transaction_active else 'false'}"
+                ),
+            )
+        )
+    if confirmation_supplied:
+        trust_signals.append("confirmation:explicit")
+
+    trust_gaps = [
+        "rpm_ostree_search_not_opened",
+        "rpm_ostree_apply_live_not_opened",
+        "rpm_ostree_override_remove_not_opened",
+        "rpm_ostree_reboot_not_performed_by_aurora",
+        "rpm_ostree_transaction_chaining_not_opened",
+    ]
+    if request.intent in {"instalar", "remover"}:
+        trust_gaps.append("rpm_ostree_mutation_requires_exact_package_name")
+
+    outcome = "allow"
+    reason = "rpm-ostree explicito foi aceito como superficie de host imutavel nesta release."
+
+    if request.status != "CONSISTENT":
+        outcome = "block"
+        trust_gaps.append("request_not_consistent")
+        reason = request.reason
+    elif request.domain_kind != "host_package" or request.requested_source:
+        outcome = "block"
+        trust_gaps.append("rpm_ostree_scope_not_supported")
+        reason = (
+            "rpm-ostree explicito nesta release cobre apenas layering/uninstall de pacote distro-managed no host imutavel, "
+            "sem misturar AUR, COPR, PPA, flatpak, toolbox ou distrobox."
+        )
+    elif profile.mutability != "atomic":
+        outcome = "block"
+        trust_gaps.append("rpm_ostree_requires_atomic_host")
+        reason = (
+            "rpm-ostree explicito foi aberto como superficie de host imutavel. "
+            "Se o host e mutavel, use host_package normal."
+        )
+    elif "rpm-ostree" not in profile.observed_package_tools:
+        outcome = "block"
+        trust_gaps.append("rpm_ostree_command_not_observed")
+        reason = (
+            "o comando 'rpm-ostree' nao foi observado neste host. "
+            "esta release nao inventa uma superficie imutavel que nao esteja presente."
+        )
+    elif request.intent == "procurar":
+        outcome = "block"
+        reason = (
+            "rpm-ostree.procurar ainda nao foi aberta nesta release. "
+            "O primeiro corte cobre apenas install/remove explicitos com nome exato e status auditavel."
+        )
+    elif rpm_ostree_status is None or not rpm_ostree_status.observed:
+        outcome = "block"
+        trust_gaps.append(
+            f"rpm_ostree_status_{rpm_ostree_status.status if rpm_ostree_status is not None else 'missing'}"
+        )
+        reason = (
+            rpm_ostree_status.reason
+            if rpm_ostree_status is not None
+            else "nao consegui observar o estado rpm-ostree deste host."
+        )
+    elif rpm_ostree_status.transaction_active:
+        outcome = "block"
+        trust_gaps.append("rpm_ostree_transaction_active")
+        reason = (
+            "ja existe uma transacao rpm-ostree em andamento. "
+            "esta release nao empilha mutacoes sobre transacao ativa."
+        )
+    elif rpm_ostree_status.pending_deployment:
+        outcome = "block"
+        trust_gaps.append("rpm_ostree_pending_deployment_present")
+        reason = (
+            "ja existe um deployment rpm-ostree pendente neste host. "
+            "esta release nao reinterpreta nem encadeia mudancas pendentes."
+        )
+    elif request.intent == "instalar":
+        reason = (
+            f"rpm-ostree.instalar foi aceito para '{request.target}' no host imutavel. "
+            "A mutacao sera observada no deployment pending/default e pode exigir reboot para aplicar."
+        )
+    elif request.intent == "remover":
+        reason = (
+            f"rpm-ostree.remover foi aceito para '{request.target}' no host imutavel. "
+            "A mutacao continua explicita no deployment pending/default e pode exigir reboot para aplicar."
+        )
+
+    if outcome == "allow" and requires_confirmation and not confirmation_supplied:
+        outcome = "require_confirmation"
+        trust_gaps.append("confirmation_missing_for_rpm_ostree_removal")
+        reason = "rpm-ostree.remover exige confirmacao explicita nesta release."
+
+    return PolicyAssessment(
+        domain_kind="host_package",
+        source_type="rpm_ostree_layering",
+        trust_level="immutable_host_surface",
+        software_criticality=software_criticality,
+        trust_signals=tuple(trust_signals),
+        trust_gaps=tuple(trust_gaps),
+        policy_outcome=outcome,
+        requires_confirmation=requires_confirmation,
+        confirmation_supplied=confirmation_supplied,
+        reversal_level=reversal_level,
+        reason=reason,
+        execution_surface="rpm_ostree",
+    )
+
+
 def _user_software_software_criticality(request: SemanticRequest) -> str:
     if request.intent == "procurar":
         return "low"
@@ -495,6 +680,7 @@ def _assess_user_software_policy(
         f"software_criticality:{software_criticality}",
         f"flatpak_remote_origin:{remote_origin}",
     ]
+    _append_immutable_surface_context(trust_signals, profile, selected_surface="flatpak")
     if requested_remote:
         trust_signals.append(f"flatpak_requested_remote:{requested_remote}")
     if effective_remote:
@@ -1101,7 +1287,15 @@ def assess_policy(
     toolbox_profile_probe: ToolboxProfileProbe | None = None,
     distrobox_profile: HostProfile | None = None,
     distrobox_profile_probe: DistroboxProfileProbe | None = None,
+    rpm_ostree_status: RpmOstreeStatusObservation | None = None,
 ) -> PolicyAssessment | None:
+    if request.execution_surface == "rpm_ostree":
+        return _assess_rpm_ostree_policy(
+            request,
+            profile,
+            rpm_ostree_status=rpm_ostree_status,
+            confirmation_supplied=confirmation_supplied,
+        )
     if request.execution_surface == "distrobox":
         return _assess_distrobox_policy(
             request,

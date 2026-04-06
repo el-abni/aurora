@@ -21,6 +21,11 @@ from aurora.install.sources.flatpak import (
     run_flatpak_search,
 )
 from aurora.linux.host_package import mutation_reports_no_matching_package, search_has_no_results
+from aurora.linux.rpm_ostree import (
+    observe_rpm_ostree_status,
+    rpm_ostree_mutation_reports_no_matching_package,
+    rpm_ostree_target_present,
+)
 from aurora.presentation.messages import (
     backend_failed_message,
     backend_missing_message,
@@ -34,6 +39,8 @@ from aurora.presentation.messages import (
     noop_message,
     not_implemented_message,
     out_of_scope_message,
+    rpm_ostree_mutation_success_message,
+    rpm_ostree_noop_message,
     search_results_message,
     state_confirmation_failed_message,
     state_probe_missing_message,
@@ -96,6 +103,28 @@ def _probe_state(
             summary=state_probe_missing_message(route.backend_name, probe_label),
         )
 
+    if _is_rpm_ostree_surface(record):
+        observation = observe_rpm_ostree_status(environ=environ, runner=run)
+        if not observation.observed:
+            return ExecutionProbe(
+                status="probe_missing",
+                command=route.state_probe_command,
+                required_commands=route.state_probe_required_commands,
+                exit_code=observation.diagnostic_exit_code,
+                summary=observation.reason,
+            )
+        target = record.execution_route.command[-1]
+        package_present = rpm_ostree_target_present(target, observation)
+        summary = _probe_summary(record, package_present)
+        return ExecutionProbe(
+            status="completed",
+            command=route.state_probe_command,
+            required_commands=route.state_probe_required_commands,
+            exit_code=observation.diagnostic_exit_code,
+            package_present=package_present,
+            summary=summary,
+        )
+
     proc = run(route.state_probe_command)
     package_present = proc.returncode == 0
     summary = _probe_summary(record, package_present)
@@ -130,6 +159,10 @@ def _mediated_surface_name(record: DecisionRecord) -> str | None:
     return None
 
 
+def _is_rpm_ostree_surface(record: DecisionRecord) -> bool:
+    return record.request.execution_surface == "rpm_ostree"
+
+
 def _is_copr_source(record: DecisionRecord) -> bool:
     return record.request.domain_kind == "host_package" and record.request.requested_source == "copr"
 
@@ -146,6 +179,8 @@ def _target_label(record: DecisionRecord) -> str:
     mediated_surface = _mediated_surface_name(record)
     if mediated_surface is not None:
         return f"pacote da {mediated_surface}"
+    if _is_rpm_ostree_surface(record):
+        return "pacote rpm-ostree"
     if _is_copr_source(record):
         return "pacote do COPR"
     if _is_ppa_source(record):
@@ -164,6 +199,8 @@ def _location_label(record: DecisionRecord) -> str:
             else record.request.environment_target
         )
         return f"na {mediated_surface} '{environment_name or '-'}'"
+    if _is_rpm_ostree_surface(record):
+        return "no proximo deployment rpm-ostree deste host"
     if _is_copr_source(record):
         return "neste host via COPR"
     if _is_ppa_source(record):
@@ -174,6 +211,10 @@ def _location_label(record: DecisionRecord) -> str:
 
 
 def _probe_summary(record: DecisionRecord, package_present: bool) -> str:
+    if _is_rpm_ostree_surface(record):
+        if package_present:
+            return "pacote presente no deployment rpm-ostree efetivo (booted ou pending/default)."
+        return "pacote ausente no deployment rpm-ostree efetivo (booted ou pending/default)."
     if _mediated_surface_name(record) is not None:
         if package_present:
             return f"pacote presente {_location_label(record)}."
@@ -227,6 +268,8 @@ def _search_reports_no_results(
 
 def _mutation_reports_not_found(record: DecisionRecord, stdout: str, stderr: str) -> bool:
     route = record.execution_route
+    if route is not None and route.route_name.startswith("rpm_ostree."):
+        return rpm_ostree_mutation_reports_no_matching_package(stdout, stderr)
     if route is not None and route.route_name.startswith("aur."):
         return aur_mutation_reports_no_matching_package(stdout, stderr)
     if route is not None and route.backend_name == "flatpak":
@@ -399,12 +442,15 @@ def _execute_mutation(
         route.action_name == "remover" and pre_probe.package_present is False
     )
     if should_noop:
-        message = noop_message(
-            route.action_name,
-            record.request.target,
-            target_label=_target_label(record),
-            location_label=_location_label(record),
-        )
+        if _is_rpm_ostree_surface(record):
+            message = rpm_ostree_noop_message(route.action_name, record.request.target)
+        else:
+            message = noop_message(
+                route.action_name,
+                record.request.target,
+                target_label=_target_label(record),
+                location_label=_location_label(record),
+            )
         return _result(
             record,
             exit_code=0,
@@ -596,11 +642,14 @@ def _execute_mutation(
             ),
         )
 
-    message = mutation_success_message(
-        route.action_name,
-        record.request.target,
-        target_label=_target_label(record),
-    )
+    if _is_rpm_ostree_surface(record):
+        message = rpm_ostree_mutation_success_message(route.action_name, record.request.target)
+    else:
+        message = mutation_success_message(
+            route.action_name,
+            record.request.target,
+            target_label=_target_label(record),
+        )
     return _result(
         record,
         exit_code=0,

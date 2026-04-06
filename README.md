@@ -1,15 +1,15 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v0.5.1-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v0.6.0-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com política explícita, observabilidade própria e execução real sobre um contrato pequeno e auditável.
 
-A release pública atual é a `v0.5.1`. Ela abre `distrobox` como **segunda superfície operacional mediada explícita**, distinta do host, distinta de `toolbox` e distinta das fontes terceiras já abertas em `AUR`, `COPR`, `PPA` e `flatpak`.
+A release pública atual é a `v0.6.0`. Ela abre `rpm-ostree` como **superfície explícita de host imutável** e faz a primeira amarração operacional real entre `flatpak`, `toolbox`, `distrobox`, `rpm-ostree` e bloqueio em hosts Atomic/imutáveis.
 
-Na `v0.5.1`, a superfície pública continua pequena:
+Na `v0.6.0`, a superfície pública continua pequena:
 
 - `host_package` para pacotes do host no `execution_surface=host`;
 - `AUR` como fonte explícita de terceiro dentro de `host_package`;
@@ -18,8 +18,9 @@ Na `v0.5.1`, a superfície pública continua pequena:
 - `user_software` para software do usuário via `flatpak`;
 - `toolbox` como `execution_surface` explícita para operar pacote distro-managed dentro de um ambiente mediado nomeado;
 - `distrobox` como `execution_surface` explícita para operar pacote distro-managed dentro de um ambiente mediado nomeado.
+- `rpm-ostree` como `execution_surface` explícita para layering/uninstall no host imutável.
 
-Leitura correta da `v0.5.1`:
+Leitura correta da `v0.6.0`:
 
 - `toolbox` não é fonte de pacote;
 - `toolbox` não é `host_package` com outro nome;
@@ -33,7 +34,13 @@ Leitura correta da `v0.5.1`:
 - `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote nesta release;
 - `distrobox.procurar` existe justamente para descobrir esse nome;
 - `toolbox` e `distrobox` compartilham apenas o miolo de pacote distro-managed dentro do ambiente; observação, seleção, semântica e auditabilidade continuam explícitas por superfície;
-- `host`, `toolbox` e `distrobox` aparecem separados em request, policy, route, execution e `aurora dev`.
+- `rpm-ostree` não é backend mágico para qualquer mutação no host;
+- `rpm-ostree` usa `execution_surface=rpm_ostree`, `source_type=rpm_ostree_layering` e `trust_level=immutable_host_surface`;
+- `rpm_ostree.instalar` e `rpm_ostree.remover` exigem nome exato de pacote;
+- `rpm_ostree.procurar` ainda não foi aberta;
+- `rpm-ostree` observa `status --json`, bloqueia quando já existe `pending deployment` ou transação ativa e deixa explícito quando a mudança vai para o próximo deployment;
+- pedido nu em host imutável não sofre fallback mágico: a Aurora mostra as superfícies observadas e bloqueia quando a frase não escolhe uma delas;
+- `host`, `toolbox`, `distrobox` e `rpm_ostree` aparecem separados em request, policy, route, execution e `aurora dev`.
 
 ## O que a Aurora faz
 
@@ -42,12 +49,13 @@ A Aurora funciona como uma camada de decisão e execução sobre Linux. Em vez d
 - classifica a frase;
 - detecta o host Linux;
 - observa a superfície mediada quando o pedido explicita `toolbox` ou `distrobox`;
+- observa `rpm-ostree` quando o pedido explicita a superfície imutável do host;
 - aplica política;
 - escolhe a rota cabível no contrato atual;
 - executa com probe de estado quando a ação muda software;
-- expõe um `decision_record` auditável com `aurora dev <frase>`.
+- expõe um `decision_record` auditável com `aurora dev <frase>`, incluindo `immutable_observed_surfaces`, `immutable_selected_surface` e `rpm_ostree_status` quando cabível.
 
-## Contrato público da v0.5.1
+## Contrato público da v0.6.0
 
 Rotas reais abertas nesta release:
 
@@ -70,6 +78,8 @@ Rotas reais abertas nesta release:
 - `distrobox.procurar`
 - `distrobox.instalar`
 - `distrobox.remover`
+- `rpm_ostree.instalar`
+- `rpm_ostree.remover`
 
 Comportamento garantido:
 
@@ -87,9 +97,13 @@ Comportamento garantido:
 - `distrobox` observa qual backend distro-managed está disponível dentro da distrobox e deixa isso visível em `decision_record`;
 - `distrobox.instalar` e `distrobox.remover` aceitam apenas nome exato de pacote nesta release;
 - `distrobox.remover` exige `--confirm`;
-- `toolbox` e `distrobox` não se combinam entre si nem com `aur`, `copr`, `ppa` ou remotes `flatpak`;
-- `decision_record` e `aurora dev` deixam visíveis `execution_surface`, `environment_target`, `environment_resolution`, `toolbox_profile`, `distrobox_profile`, capacidades observadas, gaps e fronteira host vs ambiente mediado;
-- host Atomic/imutável continua bloqueado em `host_package`, e isso não muda o default do produto.
+- `rpm-ostree` entra apenas por frase marcada como `no rpm-ostree`;
+- `rpm_ostree.instalar` e `rpm_ostree.remover` aceitam apenas nome exato de pacote nesta release;
+- `rpm_ostree.remover` exige `--confirm`;
+- `rpm-ostree` observa `status --json` antes de liberar mutação e bloqueia se houver `pending deployment` ou transação ativa;
+- `toolbox`, `distrobox` e `rpm-ostree` não se combinam entre si nem com `aur`, `copr`, `ppa` ou remotes `flatpak`;
+- `decision_record` e `aurora dev` deixam visíveis `execution_surface`, `environment_target`, `environment_resolution`, `toolbox_profile`, `distrobox_profile`, `rpm_ostree_status`, `immutable_observed_surfaces`, `immutable_selected_surface`, capacidades observadas, gaps e fronteira host vs ambiente mediado ou host imutável;
+- host Atomic/imutável já não é apenas bloqueio genérico: `flatpak`, `toolbox`, `distrobox` e `rpm-ostree` podem ser escolhidos explicitamente, e pedido nu bloqueia com inventário das superfícies observadas.
 - `--confirm` e `--yes` funcionam como marcadores equivalentes de confirmação explícita quando a política exigir.
 
 ## Exemplos rápidos
@@ -154,6 +168,14 @@ aurora remover ripgrep na distrobox devbox --confirm
 aurora dev "instalar obs-studio na distrobox devbox"
 ```
 
+### Host imutável via `rpm-ostree`
+
+```bash
+aurora instalar htop no rpm-ostree
+aurora remover htop no rpm-ostree --confirm
+aurora dev "instalar htop no rpm-ostree"
+```
+
 ## Observabilidade
 
 ```bash
@@ -164,6 +186,7 @@ aurora dev "procurar obs-studio do copr atim/obs-studio"
 aurora dev "instalar obs-studio do ppa ppa:obsproject/obs-studio --confirm"
 aurora dev "procurar ripgrep na toolbox devbox"
 aurora dev "procurar ripgrep na distrobox devbox"
+aurora dev "instalar htop no rpm-ostree"
 ```
 
 ## Compatibilidade Linux
@@ -172,7 +195,7 @@ aurora dev "procurar ripgrep na distrobox devbox"
 
 - suportado agora: Arch/derivadas mutáveis, Debian/Ubuntu/derivadas mutáveis e Fedora mutável;
 - suportado contido: OpenSUSE mutável;
-- bloqueado por política: hosts Atomic/imutáveis.
+- em hosts Atomic/imutáveis, pedido nu bloqueia cedo e exige escolha explícita entre `flatpak`, `toolbox`, `distrobox`, `rpm-ostree` ou bloqueio.
 
 ### `AUR` explícito
 
@@ -203,6 +226,7 @@ aurora dev "procurar ripgrep na distrobox devbox"
 - depende do backend `flatpak` estar presente no host;
 - atua em escopo de usuário, sem mutação do pacote do host;
 - vale também em hosts Atomic/imutáveis quando o pedido explicita `flatpak`;
+- em host imutável, `decision_record` marca `immutable_selected_surface=flatpak`;
 - preserva `flathub` como default para `flatpak.procurar` e `flatpak.instalar`;
 - aceita remote explícito apenas quando ele já é observável via `flatpak remotes`.
 - `flatpak.procurar` usa `flatpak remote-ls` no remote selecionado.
@@ -216,7 +240,7 @@ aurora dev "procurar ripgrep na distrobox devbox"
 - cobre `procurar`, `instalar` e `remover`;
 - `toolbox.instalar` e `toolbox.remover` exigem nome exato de pacote nesta release;
 - `toolbox.remover` exige confirmação explícita;
-- pode funcionar mesmo quando o host é Atomic/imutável, mas isso não equivale a suporte operacional real a imutáveis;
+- pode funcionar mesmo quando o host é Atomic/imutável, e nesse caso o `decision_record` marca `immutable_selected_surface=toolbox`;
 - não cria toolbox, não administra lifecycle amplo e não vira fallback automático do host.
 
 ### `distrobox` explícita
@@ -228,9 +252,21 @@ aurora dev "procurar ripgrep na distrobox devbox"
 - cobre `procurar`, `instalar` e `remover`;
 - `distrobox.instalar` e `distrobox.remover` exigem nome exato de pacote nesta release;
 - `distrobox.remover` exige confirmação explícita;
-- pode funcionar mesmo quando o host é Atomic/imutável, mas isso não equivale a suporte operacional real a imutáveis;
+- pode funcionar mesmo quando o host é Atomic/imutável, e nesse caso o `decision_record` marca `immutable_selected_surface=distrobox`;
 - não cria distrobox, não administra lifecycle amplo e não vira fallback automático do host;
 - não apaga a diferença para `toolbox`: a Aurora observa e roteia `distrobox` como superfície própria.
+
+### `rpm-ostree` explícito
+
+- depende do comando `rpm-ostree` estar presente no host;
+- só abre como superfície explícita de host imutável;
+- cobre `rpm_ostree.instalar` e `rpm_ostree.remover`;
+- `rpm_ostree.procurar` continua fora do corte;
+- exige nome exato de pacote;
+- observa `rpm-ostree status --json` antes da mutação;
+- bloqueia quando já existe `pending deployment` ou transação ativa;
+- `rpm_ostree.remover` exige confirmação explícita;
+- uma execução bem-sucedida pode exigir reboot para aplicar o deployment resultante.
 
 Ferramenta observada no host não vira promessa de suporte automaticamente. A Aurora só abre rota onde já existe policy, execução real e auditoria.
 
@@ -281,22 +317,24 @@ A identidade pública da ferramenta é:
 No help público, a versão aparece como:
 
 ```text
-🌌 Aurora v0.5.1
+🌌 Aurora v0.6.0
 ```
 
-## O que a v0.5.1 não promete
+## O que a v0.6.0 não promete
 
 A Aurora ainda não abre:
 
 - fallback automático de pedido nu para AUR;
 - fallback automático do host para `toolbox`;
 - fallback automático do host para `distrobox`;
+- fallback automático do host para `rpm-ostree`;
 - default implícito de toolbox;
 - default implícito de distrobox;
 - criação automática de toolbox, criação automática de distrobox e administração geral de ambientes;
-- mistura de `toolbox` ou `distrobox` com AUR, COPR, PPA ou remotes `flatpak`;
+- mistura de `toolbox`, `distrobox` ou `rpm-ostree` com AUR, COPR, PPA ou remotes `flatpak`;
 - canonicalização ampla de alvo para `toolbox.instalar` e `toolbox.remover`;
 - canonicalização ampla de alvo para `distrobox.instalar` e `distrobox.remover`;
+- `rpm_ostree.procurar`, `apply-live`, `override remove`, reboot automático e chaining amplo de transações;
 - descoberta automática de repositório COPR;
 - descoberta automática de PPA ou inferência de PPA a partir do nome do pacote;
 - `ppa.procurar`, `ppa.remover` real, cleanup automático, `remove-apt-repository` e lifecycle amplo de PPA;
@@ -304,8 +342,8 @@ A Aurora ainda não abre:
 - add automático de remote arbitrário;
 - administração geral de remotes `flatpak`;
 - AppImage e GitHub Releases;
-- `rpm-ostree` e `ujust`;
-- suporte operacional real a hosts imutáveis;
+- `ujust`;
+- suporte genérico a hosts imutáveis fora do recorte `flatpak`/`toolbox`/`distrobox`/`rpm-ostree`;
 - manutenção ampla do host;
 - backlog amplo de arquivos e rede.
 
