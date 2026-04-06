@@ -420,6 +420,35 @@ exit 1
             self.assertTrue(payload["execution"]["interactive_passthrough"])
             self.assertIn("google-chrome", aur_state_file.read_text(encoding="utf-8"))
 
+    def test_aur_install_confirms_host_presence_even_when_package_does_not_appear_as_foreign(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, aur_state_file, native_state_file = setup_aur_testbed(
+                root,
+                repo_packages=("upd72020x-fw|upd72020x Firmware",),
+            )
+
+            def fake_interactive_runner(args: tuple[str, ...]) -> subprocess.CompletedProcess[str]:
+                with native_state_file.open("a", encoding="utf-8") as handle:
+                    handle.write("upd72020x-fw\n")
+                return subprocess.CompletedProcess(args, 0, "", "")
+
+            exit_code, record, message = perform_execution(
+                plan_text("instalar upd72020x-fw no aur", environ=env, confirmed=True),
+                interactive_runner=fake_interactive_runner,
+                environ=env,
+            )
+            payload = decision_record_to_dict(record)
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(payload["execution"]["status"], "executed")
+            self.assertEqual(payload["execution_route"]["state_probe_command"], ["pacman", "-Q", "--", "upd72020x-fw"])
+            self.assertEqual(payload["execution"]["pre_probe"]["package_present"], False)
+            self.assertEqual(payload["execution"]["post_probe"]["package_present"], True)
+            self.assertEqual(aur_state_file.read_text(encoding="utf-8"), "")
+            self.assertIn("upd72020x-fw", native_state_file.read_text(encoding="utf-8"))
+            self.assertNotIn("não consegui confirmar", message)
+            self.assertIn("solicitado via AUR", message)
+
     def test_aur_install_executes_with_yay_when_it_is_the_only_supported_helper(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -460,11 +489,12 @@ exit 1
             )
             proc = run_module("instalar", "google", "chrome", "no", "aur", "--confirm", env=env)
             self.assertEqual(proc.returncode, 0)
-            self.assertIn("entregando o terminal ao helper interativo 'paru'", proc.stdout)
-            self.assertIn("Quando ele terminar, vou validar o estado final", proc.stdout)
+            self.assertIn("vou entregar o terminal ao helper interativo 'paru'", proc.stdout)
+            self.assertIn("ele pode pedir Enter, seleção, revisão de build ou senha", proc.stdout)
             self.assertIn("installed google-chrome", proc.stdout)
-            self.assertIn("o helper interativo 'paru' terminou. Validando o estado final.", proc.stdout)
-            self.assertIn("pronto, o pacote AUR 'google chrome' está instalado", proc.stdout)
+            self.assertIn("o helper interativo 'paru' devolveu o terminal", proc.stdout)
+            self.assertIn("Agora vou validar se o estado final realmente fechou.", proc.stdout)
+            self.assertIn("pronto, o pacote solicitado via AUR 'google chrome' está instalado", proc.stdout)
             self.assertIn("google-chrome", aur_state_file.read_text(encoding="utf-8"))
 
     def test_aur_mutation_strips_source_and_control_markers_before_resolution(self) -> None:
@@ -508,7 +538,7 @@ exit 1
             self.assertEqual(payload["execution"]["status"], "noop")
             self.assertEqual(payload["execution"]["pre_probe"]["package_present"], True)
             self.assertIsNone(payload["execution"]["post_probe"])
-            self.assertIn("já está instalado como pacote AUR neste host", message)
+            self.assertIn("já está instalado no host pela rota AUR", message)
             self.assertIn("google-chrome", aur_state_file.read_text(encoding="utf-8"))
 
     def test_aur_install_blocks_on_native_source_mismatch(self) -> None:
@@ -606,7 +636,7 @@ exit 1
             self.assertEqual(payload["execution"]["status"], "noop")
             self.assertEqual(payload["execution"]["pre_probe"]["package_present"], False)
             self.assertIsNone(payload["execution"]["post_probe"])
-            self.assertIn("já não está instalado como pacote AUR neste host", message)
+            self.assertIn("já não está instalado no host pela rota AUR", message)
             self.assertEqual(aur_state_file.read_text(encoding="utf-8"), "")
 
     def test_aur_remove_requires_confirmation_when_foreign_package_is_present(self) -> None:
@@ -651,7 +681,7 @@ exit 1
             self.assertIn("requested_source:        aur", rendered)
             self.assertIn("source_type:             aur_repository", rendered)
             self.assertIn("route_name:              aur.procurar", rendered)
-            self.assertIn("scope_label:             pacote AUR no host", rendered)
+            self.assertIn("scope_label:             pacote do host pela rota AUR", rendered)
             self.assertIn("consulted_target:", rendered)
             self.assertIn("observed_aur_helpers:", rendered)
             self.assertIn("supported_aur_helpers:", rendered)

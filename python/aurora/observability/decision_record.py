@@ -369,6 +369,8 @@ def decision_record_to_dict(record: DecisionRecord) -> dict[str, object]:
             "command": list(record.execution.command),
             "exit_code": record.execution.exit_code,
             "interactive_passthrough": record.execution.interactive_passthrough,
+            "diagnostic_stdout": record.execution.diagnostic_stdout,
+            "diagnostic_stderr": record.execution.diagnostic_stderr,
             "summary": record.execution.summary,
             "pre_probe": (
                 {

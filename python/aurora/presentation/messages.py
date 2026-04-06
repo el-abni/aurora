@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from aurora.presentation.text_polish import polish_public_text
+
 
 def invalid_command_message() -> str:
     return "❌ comando inválido"
@@ -9,21 +11,33 @@ def backend_missing_message(name: str) -> str:
     return f"❌ backend '{name}' não está disponível"
 
 
-def backend_failed_message(name: str) -> str:
-    return f"❌ backend '{name}' retornou erro operacional"
+def backend_failed_message(name: str, *, exit_code: int | None = None, detail: str = "") -> str:
+    base = f"❌ backend '{name}' retornou erro operacional"
+    if exit_code is not None:
+        base += f" (exit code {exit_code})"
+    if detail:
+        return f"{base}. Motivo informado pelo backend: {detail}"
+    return base
 
 
 def interactive_handoff_start_message(name: str) -> str:
     return (
-        f"ℹ️ entregando o terminal ao helper interativo '{name}'. "
-        "Quando ele terminar, vou validar o estado final."
+        f"ℹ️ vou entregar o terminal ao helper interativo '{name}'. "
+        "A partir daqui, leia e responda aos prompts do helper; ele pode pedir Enter, seleção, revisão de build ou senha. "
+        "Quando ele devolver o terminal, a Aurora valida o estado final."
     )
 
 
 def interactive_handoff_return_message(name: str, exit_code: int) -> str:
     if exit_code == 0:
-        return f"ℹ️ o helper interativo '{name}' terminou. Validando o estado final."
-    return f"ℹ️ o helper interativo '{name}' terminou com exit code {exit_code}."
+        return (
+            f"ℹ️ o helper interativo '{name}' devolveu o terminal. "
+            "Agora vou validar se o estado final realmente fechou."
+        )
+    return (
+        f"ℹ️ o helper interativo '{name}' devolveu o terminal com exit code {exit_code}. "
+        "Vou encerrar a rota com o status reportado pelo backend."
+    )
 
 
 def no_results_message(target: str, backend_name: str) -> str:
@@ -102,18 +116,28 @@ def state_probe_missing_message(backend_name: str, probe_label: str) -> str:
     )
 
 
-def state_confirmation_failed_message(intent: str, target: str, backend_name: str) -> str:
+def state_confirmation_failed_message(
+    intent: str,
+    target: str,
+    backend_name: str,
+    *,
+    detail: str = "",
+) -> str:
     if intent == "instalar":
-        return f"❌ o backend '{backend_name}' terminou sem eu conseguir confirmar a instalação de '{target}'."
-    return f"❌ o backend '{backend_name}' terminou sem eu conseguir confirmar a remoção de '{target}'."
+        base = f"❌ o backend '{backend_name}' terminou sem eu conseguir confirmar a instalação de '{target}'."
+    else:
+        base = f"❌ o backend '{backend_name}' terminou sem eu conseguir confirmar a remoção de '{target}'."
+    if detail:
+        return f"{base} Estado observado depois da execução: {detail}"
+    return base
 
 
 def blocked_message(reason: str) -> str:
-    return f"❌ bloqueado por política: {reason}"
+    return f"❌ bloqueado por política: {polish_public_text(reason)}"
 
 
 def target_resolution_blocked_message(reason: str) -> str:
-    return f"❌ bloqueado por resolução de alvo: {reason}"
+    return f"❌ bloqueado por resolução de alvo: {polish_public_text(reason)}"
 
 
 def confirmation_required_message(
@@ -130,11 +154,11 @@ def confirmation_required_message(
 
 
 def out_of_scope_message(reason: str) -> str:
-    return f"❌ fora do recorte atual: {reason}"
+    return f"❌ fora do recorte atual: {polish_public_text(reason)}"
 
 
 def not_implemented_message(intent: str, domain_kind: str) -> str:
     return (
-        f"❌ '{intent}' em '{domain_kind}' ja foi classificado e planejado, "
-        "mas a execucao real ainda nao foi aberta nesta rodada."
+        f"❌ '{intent}' em '{domain_kind}' já foi classificado e planejado, "
+        "mas a execução real ainda não foi aberta nesta rodada."
     )

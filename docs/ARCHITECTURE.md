@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.6.0
+# Architecture - Aurora v0.6.1
 
 ## Tese curta
 
@@ -76,7 +76,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - mensagens de confirmação;
 - mensagens de resultado.
 
-## Rotas abertas na v0.6.0
+## Rotas abertas na v0.6.1
 
 ### `host_package`
 
@@ -99,7 +99,8 @@ Garantias:
 - `AUR` só entra por pedido explícito;
 - usa apenas `paru` e `yay`;
 - quando ambos estão observados, a ordem do contrato é `paru`, depois `yay`;
-- `aur.instalar` usa handoff interativo;
+- `aur.instalar` usa handoff interativo e avisa explicitamente quando o usuário precisa assumir o terminal;
+- a confirmação pós-instalação AUR valida a presença final no host sem depender só de `pacman -Qm`;
 - `aur.remover` continua não interativo;
 - helper observado fora do contrato continua visível, mas bloqueado como rota.
 
@@ -216,7 +217,7 @@ Garantias:
 
 ## Fronteiras deliberadas
 
-A `v0.6.0` continua pequena de propósito:
+A `v0.6.1` continua pequena de propósito:
 
 - pedido nu continua em `host_package` no host;
 - em host imutável, pedido nu bloqueia com `immutable_observed_surfaces` e `immutable_selected_surface=block`;

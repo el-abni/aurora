@@ -138,7 +138,7 @@ class DecisionRecordTests(unittest.TestCase):
             self.assertEqual(payload["policy"]["source_type"], "aur_repository")
             self.assertEqual(payload["policy"]["trust_level"], "third_party_build")
             self.assertEqual(payload["execution_route"]["route_name"], "aur.instalar")
-            self.assertEqual(payload["execution_route"]["state_probe_command"], ["pacman", "-Qm", "google-chrome"])
+            self.assertEqual(payload["execution_route"]["state_probe_command"], ["pacman", "-Q", "--", "google-chrome"])
             self.assertTrue(payload["execution_route"]["interactive_passthrough"])
             self.assertEqual(payload["execution"]["status"], "executed")
             self.assertTrue(payload["execution"]["interactive_passthrough"])
@@ -163,7 +163,7 @@ class DecisionRecordTests(unittest.TestCase):
             self.assertEqual(payload["policy"]["source_type"], "aur_repository")
             self.assertEqual(payload["policy"]["trust_level"], "third_party_build")
             self.assertEqual(payload["execution_route"]["route_name"], "aur.remover")
-            self.assertEqual(payload["execution_route"]["state_probe_command"], ["pacman", "-Qm", "google-chrome"])
+            self.assertEqual(payload["execution_route"]["state_probe_command"], ["pacman", "-Q", "--", "google-chrome"])
             self.assertFalse(payload["execution_route"]["interactive_passthrough"])
             self.assertEqual(payload["execution"]["status"], "executed")
             self.assertFalse(payload["execution"]["interactive_passthrough"])
@@ -240,7 +240,7 @@ class DecisionRecordTests(unittest.TestCase):
                 name="Ubuntu",
             )
             rendered = render_dev_report("procurar obs-studio no flatpak", environ=env)
-            self.assertIn("scope_label:             software do usuario", rendered)
+            self.assertIn("scope_label:             software do usuário", rendered)
 
     def test_dev_render_exposes_flatpak_target_resolution(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

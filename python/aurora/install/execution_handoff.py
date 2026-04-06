@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import os
+import re
 import shutil
 import subprocess
 from collections.abc import Callable, Sequence
@@ -69,6 +70,37 @@ def _run_interactive_command(
     return subprocess.CompletedProcess(args, proc.returncode, "", "")
 
 
+def _strip_ansi(text: str) -> str:
+    return re.sub(r"\x1b\[[0-9;?]*[ -/]*[@-~]", "", text)
+
+
+def _compact_backend_excerpt(text: str, *, limit: int = 280) -> str:
+    cleaned = _strip_ansi(text)
+    compact = " | ".join(line.strip() for line in cleaned.splitlines() if line.strip())
+    if len(compact) <= limit:
+        return compact
+    return compact[: limit - 3].rstrip() + "..."
+
+
+def _backend_failure_detail(proc: subprocess.CompletedProcess[str]) -> str:
+    for candidate in (proc.stderr, proc.stdout):
+        excerpt = _compact_backend_excerpt(candidate)
+        if excerpt:
+            return excerpt
+    return ""
+
+
+def _backend_failure_message(
+    route,
+    proc: subprocess.CompletedProcess[str],
+) -> str:
+    return backend_failed_message(
+        route.backend_name,
+        exit_code=proc.returncode,
+        detail=_backend_failure_detail(proc),
+    )
+
+
 def _required_backend_available(
     route: tuple[str, ...],
     required_commands: tuple[str, ...],
@@ -88,7 +120,7 @@ def _probe_state(
 ) -> ExecutionProbe:
     route = record.execution_route
     if route is None or not route.state_probe_command:
-        return ExecutionProbe(status="not_required", summary="esta rota nao exige state probe.")
+        return ExecutionProbe(status="not_required", summary="esta rota não exige confirmação de estado.")
 
     if not _required_backend_available(
         route.state_probe_command,
@@ -186,7 +218,7 @@ def _target_label(record: DecisionRecord) -> str:
     if _is_ppa_source(record):
         return "pacote do PPA"
     if _is_aur_source(record):
-        return "pacote AUR"
+        return "pacote solicitado via AUR"
     return "software" if _is_user_software(record) else "pacote"
 
 
@@ -198,7 +230,9 @@ def _location_label(record: DecisionRecord) -> str:
             if record.execution_route is not None and record.execution_route.environment_target
             else record.request.environment_target
         )
-        return f"na {mediated_surface} '{environment_name or '-'}'"
+        if environment_name:
+            return f"na {mediated_surface} '{environment_name}'"
+        return f"na {mediated_surface} selecionada"
     if _is_rpm_ostree_surface(record):
         return "no proximo deployment rpm-ostree deste host"
     if _is_copr_source(record):
@@ -206,7 +240,7 @@ def _location_label(record: DecisionRecord) -> str:
     if _is_ppa_source(record):
         return "neste host via PPA"
     if _is_aur_source(record):
-        return "como pacote AUR neste host"
+        return "no host pela rota AUR"
     return "na instalação do usuário" if _is_user_software(record) else "neste host"
 
 
@@ -233,8 +267,8 @@ def _probe_summary(record: DecisionRecord, package_present: bool) -> str:
         return "software ausente na instalação do usuário."
     if _is_aur_source(record):
         if package_present:
-            return "pacote AUR presente como foreign no host."
-        return "pacote AUR ausente como foreign no host."
+            return "pacote presente no host para a rota AUR."
+        return "pacote ausente no host para a rota AUR."
     if package_present:
         return "pacote presente no host."
     return "pacote ausente no host."
@@ -371,7 +405,7 @@ def _execute_search(
                     summary=message,
                 ),
             )
-        message = backend_failed_message(route.backend_name)
+        message = _backend_failure_message(route, proc)
         return _result(
             record,
             exit_code=1,
@@ -384,6 +418,8 @@ def _execute_search(
                 command=route.command,
                 exit_code=proc.returncode,
                 interactive_passthrough=route.interactive_passthrough,
+                diagnostic_stdout=proc.stdout,
+                diagnostic_stderr=proc.stderr,
                 summary=message,
             ),
         )
@@ -529,7 +565,7 @@ def _execute_mutation(
 
         proc = run(command)
         if proc.returncode != 0:
-            message = backend_failed_message(route.backend_name)
+            message = _backend_failure_message(route, proc)
             return _result(
                 record,
                 exit_code=1,
@@ -543,6 +579,8 @@ def _execute_mutation(
                     exit_code=proc.returncode,
                     pre_probe=pre_probe,
                     interactive_passthrough=False,
+                    diagnostic_stdout=proc.stdout,
+                    diagnostic_stderr=proc.stderr,
                     summary=message,
                 ),
             )
@@ -579,7 +617,7 @@ def _execute_mutation(
                 ),
             )
 
-        message = backend_failed_message(route.backend_name)
+        message = _backend_failure_message(route, proc)
         return _result(
             record,
             exit_code=1,
@@ -593,6 +631,8 @@ def _execute_mutation(
                 exit_code=proc.returncode,
                 pre_probe=pre_probe,
                 interactive_passthrough=route.interactive_passthrough,
+                diagnostic_stdout=proc.stdout,
+                diagnostic_stderr=proc.stderr,
                 summary=message,
             ),
         )
@@ -623,7 +663,12 @@ def _execute_mutation(
         route.action_name == "remover" and post_probe.package_present is False
     )
     if not confirmed_state:
-        message = state_confirmation_failed_message(route.action_name, record.request.target, route.backend_name)
+        message = state_confirmation_failed_message(
+            route.action_name,
+            record.request.target,
+            route.backend_name,
+            detail=post_probe.summary,
+        )
         return _result(
             record,
             exit_code=1,
@@ -638,6 +683,8 @@ def _execute_mutation(
                 pre_probe=pre_probe,
                 post_probe=post_probe,
                 interactive_passthrough=route.interactive_passthrough,
+                diagnostic_stdout=proc.stdout,
+                diagnostic_stderr=proc.stderr,
                 summary=message,
             ),
         )
@@ -664,6 +711,8 @@ def _execute_mutation(
             pre_probe=pre_probe,
             post_probe=post_probe,
             interactive_passthrough=route.interactive_passthrough,
+            diagnostic_stdout=proc.stdout,
+            diagnostic_stderr=proc.stderr,
             summary=message,
         ),
     )
@@ -761,7 +810,7 @@ def perform_execution(
         )
 
     if record.execution_route is None:
-        message = out_of_scope_message("nao encontrei rota executavel para este pedido.")
+        message = out_of_scope_message("não encontrei rota executável para este pedido.")
         return _result(
             record,
             exit_code=1,

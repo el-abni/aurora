@@ -388,7 +388,7 @@ class CoprExplicitTests(unittest.TestCase):
             self.assertIn("route_name:              copr.procurar", rendered)
             self.assertIn("consulted_target:        obs-studio", rendered)
             self.assertIn("copr_search_scope:explicit_repository_only", rendered)
-            self.assertIn("restrita ao repositorio explicitamente informado", rendered)
+            self.assertIn("restrita ao repositório explicitamente informado", rendered)
 
 
 if __name__ == "__main__":

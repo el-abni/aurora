@@ -622,7 +622,7 @@ def aur_target_resolution_blocks(request: SemanticRequest, resolution: TargetRes
 
 
 def _state_probe_for_mutation(target: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    return ("pacman", "-Qm", target), ("pacman",)
+    return ("pacman", "-Q", "--", target), ("pacman",)
 
 
 def _mutation_target(request: SemanticRequest, target: str | None) -> str:
@@ -639,13 +639,13 @@ def _route_notes(
 ) -> tuple[str, ...]:
     supported_helpers = ", ".join(_SUPPORTED_AUR_HELPERS)
     notes = [
-        "AUR entra como fonte explicita de terceiro nesta rodada.",
+        "AUR entra como fonte explícita de terceiro nesta rodada.",
         f"helpers aceitos nesta rodada: {supported_helpers}.",
         f"helper escolhido para esta rota: {helper} (primeiro helper suportado observado na ordem do contrato).",
-        "busca pode refinar a consulta para a forma package-like quando isso reduz ruido sem resolver o pacote automaticamente.",
-        "mutacao usa resolved_target apenas quando a correspondencia exata fecha de forma confiavel.",
-        "state probe via pacman -Qm para confirmar pacote foreign.",
-        "o pedido explicito de AUR nao sofre fallback para host_package oficial.",
+        "a busca pode refinar a consulta para a forma package-like quando isso reduz ruído sem resolver o pacote automaticamente.",
+        "a mutação usa resolved_target apenas quando a correspondência exata fecha de forma confiável.",
+        "a confirmação pós-mutação observa presença real no host com pacman -Q; o recorte AUR continua ancorado na resolução e no helper explícitos.",
+        "o pedido explícito de AUR não sofre fallback para host_package oficial.",
     ]
     if observed_helpers:
         notes.append(f"helpers AUR observados no host: {', '.join(observed_helpers)}.")
@@ -701,7 +701,7 @@ def build_aur_candidate(
             interactive_passthrough=True,
             notes=notes
             + (
-                "instalacao real via AUR entrega stdin/stdout/stderr ao helper para revisao e build interativos.",
+                "a instalação real via AUR entrega stdin/stdout/stderr ao helper para revisão, prompts e build interativos.",
             ),
         )
 

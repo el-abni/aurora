@@ -58,13 +58,14 @@ def git_ls_files() -> list[str]:
 
 
 def main() -> int:
-    ensure(VERSION == "v0.6.0", "VERSION precisa estar promovido para v0.6.0 no fechamento desta release")
+    ensure(VERSION == "v0.6.1", "VERSION precisa estar promovido para v0.6.1 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v0.6.0")
+    ok("VERSION promovido para v0.6.1")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
-    ensure("## 🌌 Aurora v0.6.0" in changelog, "CHANGELOG.md precisa abrir a release publica v0.6.0")
+    ensure("## 🌌 Aurora v0.6.1" in changelog, "CHANGELOG.md precisa abrir a release publica v0.6.1")
+    ensure("## 🌌 Aurora v0.6.0" in changelog, "CHANGELOG.md precisa preservar a release publica v0.6.0")
     ensure("## 🌌 Aurora v0.5.1" in changelog, "CHANGELOG.md precisa preservar a release publica v0.5.1")
     ensure("## 🌌 Aurora v0.5.0" in changelog, "CHANGELOG.md precisa preservar a release publica v0.5.0")
     for term in (

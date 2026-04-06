@@ -7,6 +7,7 @@ from aurora.install.sources.aur import (
     supported_aur_helpers,
 )
 from aurora.presentation.formatting import field
+from aurora.presentation.text_polish import polish_public_text
 
 
 def _signal_value(signals: tuple[str, ...], prefix: str) -> str | None:
@@ -14,6 +15,10 @@ def _signal_value(signals: tuple[str, ...], prefix: str) -> str | None:
         if signal.startswith(prefix):
             return signal.split(":", 1)[1]
     return None
+
+
+def _has_any_signal(signals: tuple[str, ...], *prefixes: str) -> bool:
+    return any(_signal_value(signals, prefix) is not None for prefix in prefixes)
 
 
 def _scope_label(record: DecisionRecord) -> str:
@@ -24,13 +29,13 @@ def _scope_label(record: DecisionRecord) -> str:
     if record.request.execution_surface == "toolbox" and record.request.domain_kind == "host_package":
         return "pacote do host dentro da toolbox"
     if record.request.domain_kind == "user_software":
-        return "software do usuario"
+        return "software do usuário"
     if record.request.domain_kind == "host_package" and record.request.requested_source == "ppa":
         return "pacote do host via PPA"
     if record.request.domain_kind == "host_package" and record.request.requested_source == "copr":
         return "pacote do host via COPR"
     if record.request.domain_kind == "host_package" and record.request.requested_source == "aur":
-        return "pacote AUR no host"
+        return "pacote do host pela rota AUR"
     if record.request.domain_kind == "host_package":
         return "pacote do host"
     return "indefinido"
@@ -161,7 +166,7 @@ def render_decision_record(record: DecisionRecord) -> str:
     lines = [
         "Aurora decision record",
         field("outcome", record.outcome),
-        field("summary", record.summary),
+        field("summary", polish_public_text(record.summary)),
         "",
         "Request",
         field("original_text", record.request.original_text),
@@ -175,7 +180,7 @@ def render_decision_record(record: DecisionRecord) -> str:
         field("scope_label", _scope_label(record)),
         field("target", record.request.target or "-"),
         field("status", record.request.status),
-        field("reason", record.request.reason),
+        field("reason", polish_public_text(record.request.reason)),
         field("observations", ", ".join(record.request.observations) or "-"),
         field("action_count", str(record.request.action_count)),
     ]
@@ -232,7 +237,7 @@ def render_decision_record(record: DecisionRecord) -> str:
                 field("reversal_level", record.policy.reversal_level),
                 field("trust_signals", ", ".join(record.policy.trust_signals) or "-"),
                 field("trust_gaps", ", ".join(record.policy.trust_gaps) or "-"),
-                field("policy_reason", record.policy.reason),
+                field("policy_reason", polish_public_text(record.policy.reason)),
             ]
         )
         if record.request.requested_source == "aur":
@@ -316,30 +321,38 @@ def render_decision_record(record: DecisionRecord) -> str:
                     ),
                 ]
             )
-        lines.extend(
-            [
-                field(
-                    "immutable_host",
-                    _signal_value(record.policy.trust_signals, "immutable_host:") or "-",
-                ),
-                field(
-                    "immutable_observed_surfaces",
-                    _signal_value(record.policy.trust_signals, "immutable_observed_surfaces:") or "-",
-                ),
-                field(
-                    "immutable_selected_surface",
-                    _signal_value(record.policy.trust_signals, "immutable_selected_surface:") or "-",
-                ),
-                field(
-                    "immutable_toolbox_environments",
-                    _signal_value(record.policy.trust_signals, "immutable_toolbox_environments:") or "-",
-                ),
-                field(
-                    "immutable_distrobox_environments",
-                    _signal_value(record.policy.trust_signals, "immutable_distrobox_environments:") or "-",
-                ),
-            ]
-        )
+        if _has_any_signal(
+            record.policy.trust_signals,
+            "immutable_host:",
+            "immutable_observed_surfaces:",
+            "immutable_selected_surface:",
+            "immutable_toolbox_environments:",
+            "immutable_distrobox_environments:",
+        ):
+            lines.extend(
+                [
+                    field(
+                        "immutable_host",
+                        _signal_value(record.policy.trust_signals, "immutable_host:") or "-",
+                    ),
+                    field(
+                        "immutable_observed_surfaces",
+                        _signal_value(record.policy.trust_signals, "immutable_observed_surfaces:") or "-",
+                    ),
+                    field(
+                        "immutable_selected_surface",
+                        _signal_value(record.policy.trust_signals, "immutable_selected_surface:") or "-",
+                    ),
+                    field(
+                        "immutable_toolbox_environments",
+                        _signal_value(record.policy.trust_signals, "immutable_toolbox_environments:") or "-",
+                    ),
+                    field(
+                        "immutable_distrobox_environments",
+                        _signal_value(record.policy.trust_signals, "immutable_distrobox_environments:") or "-",
+                    ),
+                ]
+            )
         if record.request.execution_surface in {"toolbox", "distrobox"}:
             _append_surface_policy_lines(lines, record, record.request.execution_surface)
         if record.request.execution_surface == "rpm_ostree":
@@ -393,7 +406,7 @@ def render_decision_record(record: DecisionRecord) -> str:
                 ),
                 field("status", record.environment_resolution.status),
                 field("source", record.environment_resolution.source or "-"),
-                field("reason", record.environment_resolution.reason),
+                field("reason", polish_public_text(record.environment_resolution.reason)),
             ]
         )
         if (
@@ -434,7 +447,7 @@ def render_decision_record(record: DecisionRecord) -> str:
                 field("source", record.target_resolution.source or "-"),
                 field("canonicalized", str(record.target_resolution.canonicalized).lower()),
                 field("candidates", ", ".join(record.target_resolution.candidates) or "-"),
-                field("resolution_reason", record.target_resolution.reason),
+                field("resolution_reason", polish_public_text(record.target_resolution.reason)),
             ]
         )
         if (
@@ -488,7 +501,7 @@ def render_decision_record(record: DecisionRecord) -> str:
                 ),
                 field("command", " ".join(record.execution_route.command) or "-"),
                 field("state_probe", " ".join(record.execution_route.state_probe_command) or "-"),
-                field("notes", "; ".join(record.execution_route.notes) or "-"),
+                field("notes", polish_public_text("; ".join(record.execution_route.notes) or "-")),
             ]
         )
         if record.execution_route.route_name.startswith("aur."):
@@ -678,7 +691,7 @@ def render_decision_record(record: DecisionRecord) -> str:
                 field("observed", str(record.rpm_ostree_status.observed).lower()),
                 field("status", record.rpm_ostree_status.status),
                 field("source", record.rpm_ostree_status.source or "-"),
-                field("reason", record.rpm_ostree_status.reason),
+                field("reason", polish_public_text(record.rpm_ostree_status.reason)),
                 field("transaction_active", str(record.rpm_ostree_status.transaction_active).lower()),
                 field(
                     "booted_requested_packages",
@@ -723,16 +736,31 @@ def render_decision_record(record: DecisionRecord) -> str:
                 field("confirmation_supplied", str(record.execution.confirmation_supplied).lower()),
                 field("interactive_passthrough", str(record.execution.interactive_passthrough).lower()),
                 field("exit_code", str(record.execution.exit_code) if record.execution.exit_code is not None else "-"),
-                field("summary", record.execution.summary),
+                field("summary", polish_public_text(record.execution.summary)),
                 field(
                     "pre_probe",
-                    record.execution.pre_probe.summary if record.execution.pre_probe is not None else "-",
+                    (
+                        polish_public_text(record.execution.pre_probe.summary)
+                        if record.execution.pre_probe is not None
+                        else "-"
+                    ),
                 ),
                 field(
                     "post_probe",
-                    record.execution.post_probe.summary if record.execution.post_probe is not None else "-",
+                    (
+                        polish_public_text(record.execution.post_probe.summary)
+                        if record.execution.post_probe is not None
+                        else "-"
+                    ),
                 ),
             ]
         )
+        if record.execution.diagnostic_stdout or record.execution.diagnostic_stderr:
+            lines.extend(
+                [
+                    field("diagnostic_stdout", _compact_diagnostic(record.execution.diagnostic_stdout)),
+                    field("diagnostic_stderr", _compact_diagnostic(record.execution.diagnostic_stderr)),
+                ]
+            )
 
     return "\n".join(lines)

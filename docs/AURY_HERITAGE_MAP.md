@@ -1,8 +1,8 @@
-# Aury Heritage Map - Aurora v0.6.0
+# Aury Heritage Map - Aurora v0.6.1
 
 ## Objetivo
 
-Este mapa registra o que a Aurora herdou da Aury, o que foi refatorado e o que não migrou para o contrato público atual da `v0.6.0`.
+Este mapa registra o que a Aurora herdou da Aury, o que foi refatorado e o que não migrou para o contrato público atual da `v0.6.1`.
 
 ## Mapa por área
 
@@ -29,7 +29,7 @@ Não entrou no contrato atual:
 - linguagem pública da Aury por inércia;
 - qualquer dependência de runtime no checkout da Aury.
 
-## O que continua fora da v0.6.0
+## O que continua fora da v0.6.1
 
 - fallback automático de pedido nu para AUR;
 - helpers AUR além de `paru` e `yay`;

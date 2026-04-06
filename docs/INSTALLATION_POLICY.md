@@ -1,8 +1,8 @@
-# Installation Policy - Aurora v0.6.0
+# Installation Policy - Aurora v0.6.1
 
 ## Escopo real da política
 
-Na `v0.6.0`, a política operacional da Aurora governa dois domínios, três superfícies explícitas fora do host mutável comum e oito leituras reais de rota:
+Na `v0.6.1`, a política operacional da Aurora governa dois domínios, três superfícies explícitas fora do host mutável comum e oito leituras reais de rota:
 
 - `host_package` com `execution_surface=host` e `source_type=host_package_manager`;
 - `host_package` explicitamente marcado com `source_type=aur_repository`;
@@ -49,7 +49,8 @@ Os campos ativos desta release são:
 - `trust_level=third_party_build`;
 - usa apenas `paru` e `yay`;
 - `aur.instalar` e `aur.remover` exigem confirmação explícita;
-- `aur.instalar` pode entregar o terminal ao helper para revisão/build interativos;
+- `aur.instalar` pode entregar o terminal ao helper para revisão/build interativos e avisa explicitamente que o helper pode pedir Enter, seleção, revisão ou senha;
+- a confirmação pós-instalação AUR valida a presença final no host e não trata `pacman -Qm` como único critério de sucesso;
 - `aur.remover` permanece no caminho não interativo desta release;
 - continua bloqueado fora de Arch mutável, sem `pacman` observado, sem helper aceito ou com helper fora do contrato como único helper disponível.
 
@@ -152,7 +153,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v0.6.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v0.6.1`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -214,7 +215,7 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 
 ## O que ainda não está aberto
 
-Continuam fora da `v0.6.0`:
+Continuam fora da `v0.6.1`:
 
 - fallback automático do host para `toolbox`;
 - fallback automático do host para `distrobox`;

@@ -46,4 +46,6 @@ class ExecutionResult:
     pre_probe: ExecutionProbe | None = None
     post_probe: ExecutionProbe | None = None
     interactive_passthrough: bool = False
+    diagnostic_stdout: str = ""
+    diagnostic_stderr: str = ""
     summary: str = ""

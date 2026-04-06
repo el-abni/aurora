@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -305,6 +306,47 @@ class HostPackageMutationTests(unittest.TestCase):
             self.assertEqual(record.outcome, "operational_error")
             self.assertEqual(record.execution.status, "probe_missing")
             self.assertIn("confirmação de estado", message)
+
+    def test_backend_failure_exposes_useful_operational_reason(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("jq",),
+                installed_packages=("jq",),
+            )
+
+            def fake_runner(args: tuple[str, ...]) -> subprocess.CompletedProcess[str]:
+                command = tuple(args)
+                if command == ("pacman", "-Q", "--", "jq"):
+                    return subprocess.CompletedProcess(args, 0, "jq 1.0-1\n", "")
+                if command == ("sudo", "pacman", "-Rns", "--", "jq"):
+                    return subprocess.CompletedProcess(
+                        args,
+                        1,
+                        "",
+                        (
+                            "error: failed to prepare transaction (could not satisfy dependencies)\n"
+                            ":: removing jq breaks dependency 'jq' required by 'scx-scheds'\n"
+                        ),
+                    )
+                self.fail(f"comando inesperado: {command!r}")
+
+            exit_code, record, message = perform_execution(
+                plan_text("remover jq --confirm", environ=env),
+                runner=fake_runner,
+                environ=env,
+            )
+            payload = decision_record_to_dict(record)
+            self.assertEqual(exit_code, 1)
+            self.assertEqual(record.outcome, "operational_error")
+            self.assertEqual(record.execution.status, "operational_error")
+            self.assertIn("exit code 1", message)
+            self.assertIn("scx-scheds", message)
+            self.assertIn("scx-scheds", payload["execution"]["diagnostic_stderr"])
 
 
 if __name__ == "__main__":

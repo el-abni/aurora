@@ -1,4 +1,4 @@
-# Compatibilidade Linux - Aurora v0.6.0
+# Compatibilidade Linux - Aurora v0.6.1
 
 ## Matriz atual de `host_package`
 
@@ -19,6 +19,12 @@
 | Arch mutável só com helper AUR fora do contrato observado | bloqueado por política | sem rota executável |
 | Demais famílias Linux | fora do recorte | sem rota executável |
 | Atomic / imutáveis | bloqueado por política | sem mutação via AUR |
+
+Leitura correta desta frente na `v0.6.1`:
+
+- `aur.instalar` continua interativo quando o helper precisa assumir o terminal;
+- a Aurora avisa o handoff e deixa explícito que o helper pode pedir Enter, seleção, revisão de build ou senha;
+- a confirmação pós-instalação fecha pela presença final do pacote no host, enquanto a honestidade da rota AUR continua ancorada na resolução e no helper explícitos.
 
 ## Frente `COPR` explícito
 
@@ -41,7 +47,7 @@
 
 ## `user_software` via `flatpak`
 
-Na `v0.6.0`, `flatpak` continua sendo a frente explícita de software do usuário.
+Na `v0.6.1`, `flatpak` continua sendo a frente explícita de software do usuário.
 
 Leitura correta desta frente:
 
@@ -57,7 +63,7 @@ Leitura correta desta frente:
 
 ## Frente `toolbox` explícita
 
-Na `v0.6.0`, `toolbox` entra como superfície operacional mediada, não como fonte.
+Na `v0.6.1`, `toolbox` entra como superfície operacional mediada, não como fonte.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
@@ -80,7 +86,7 @@ Leitura correta desta frente:
 
 ## Frente `distrobox` explícita
 
-Na `v0.6.0`, `distrobox` entra como segunda superfície operacional mediada, não como fonte.
+Na `v0.6.1`, `distrobox` entra como segunda superfície operacional mediada, não como fonte.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
@@ -103,7 +109,7 @@ Leitura correta desta frente:
 
 ## Frente `rpm-ostree` explícito
 
-Na `v0.6.0`, `rpm-ostree` entra como superfície explícita de host imutável.
+Na `v0.6.1`, `rpm-ostree` entra como superfície explícita de host imutável.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |

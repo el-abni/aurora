@@ -52,11 +52,16 @@ from aurora.semantics.pipeline import has_confirmation_marker
 
 def _summary_for_request(request: SemanticRequest) -> str:
     if not request.target:
-        return "Sem acao aberta."
+        return "Sem ação aberta."
+
+    def source_coordinate_label(fallback: str) -> str:
+        if request.source_coordinate:
+            return request.source_coordinate
+        return fallback
 
     if request.execution_surface == "rpm_ostree" and request.domain_kind == "host_package":
         if request.intent == "procurar":
-            return f"Inspecionar o pacote '{request.target}' na superficie rpm-ostree do host imutavel."
+            return f"Inspecionar o pacote '{request.target}' na superfície rpm-ostree do host imutável."
         if request.intent == "instalar":
             return f"Adicionar o pacote '{request.target}' ao proximo deployment rpm-ostree."
         if request.intent == "remover":
@@ -85,36 +90,36 @@ def _summary_for_request(request: SemanticRequest) -> str:
             if request.intent == "instalar":
                 return (
                     f"Instalar o pacote do host '{request.target}' via PPA "
-                    f"'{request.source_coordinate or '-'}'."
+                    f"'{source_coordinate_label('explicitamente pedido')}'."
                 )
             if request.intent == "remover":
                 return (
                     f"Remover o pacote do host '{request.target}' via PPA "
-                    f"'{request.source_coordinate or '-'}'."
+                    f"'{source_coordinate_label('explicitamente pedido')}'."
                 )
         if request.requested_source == "copr":
             if request.intent == "procurar":
                 return (
                     f"Inspecionar o pacote do host '{request.target}' no COPR "
-                    f"'{request.source_coordinate or '-'}'."
+                    f"'{source_coordinate_label('explicitamente pedido')}'."
                 )
             if request.intent == "instalar":
                 return (
                     f"Instalar o pacote do host '{request.target}' via COPR "
-                    f"'{request.source_coordinate or '-'}'."
+                    f"'{source_coordinate_label('explicitamente pedido')}'."
                 )
             if request.intent == "remover":
                 return (
                     f"Remover o pacote do host '{request.target}' via COPR "
-                    f"'{request.source_coordinate or '-'}'."
+                    f"'{source_coordinate_label('explicitamente pedido')}'."
                 )
         if request.requested_source == "aur":
             if request.intent == "procurar":
-                return f"Procurar o pacote AUR '{request.target}'."
+                return f"Procurar o pacote do host '{request.target}' pela rota AUR."
             if request.intent == "instalar":
-                return f"Instalar o pacote AUR '{request.target}'."
+                return f"Instalar o pacote do host '{request.target}' pela rota AUR."
             if request.intent == "remover":
-                return f"Remover o pacote AUR '{request.target}'."
+                return f"Remover o pacote do host '{request.target}' pela rota AUR."
         if request.intent == "procurar":
             return f"Procurar o pacote do host '{request.target}'."
         if request.intent == "instalar":
@@ -129,35 +134,35 @@ def _summary_for_request(request: SemanticRequest) -> str:
             if effective_remote:
                 if remote_origin == "default":
                     return (
-                        f"Procurar o software do usuario '{request.target}' via flatpak "
+                        f"Procurar o software do usuário '{request.target}' via flatpak "
                         f"no remote default '{effective_remote}'."
                     )
                 return (
-                    f"Procurar o software do usuario '{request.target}' via flatpak "
-                    f"no remote explicito '{effective_remote}'."
+                    f"Procurar o software do usuário '{request.target}' via flatpak "
+                    f"no remote explícito '{effective_remote}'."
                 )
-            return f"Procurar o software do usuario '{request.target}' via flatpak."
+            return f"Procurar o software do usuário '{request.target}' via flatpak."
         if request.intent == "instalar":
             if effective_remote:
                 if remote_origin == "default":
                     return (
-                        f"Instalar o software do usuario '{request.target}' via flatpak "
+                        f"Instalar o software do usuário '{request.target}' via flatpak "
                         f"no remote default '{effective_remote}'."
                     )
                 return (
-                    f"Instalar o software do usuario '{request.target}' via flatpak "
-                    f"no remote explicito '{effective_remote}'."
+                    f"Instalar o software do usuário '{request.target}' via flatpak "
+                    f"no remote explícito '{effective_remote}'."
                 )
-            return f"Instalar o software do usuario '{request.target}' via flatpak."
+            return f"Instalar o software do usuário '{request.target}' via flatpak."
         if request.intent == "remover":
             if effective_remote:
                 return (
-                    f"Remover o software do usuario '{request.target}' via flatpak "
-                    f"com restricao de remote '{effective_remote}'."
+                    f"Remover o software do usuário '{request.target}' via flatpak "
+                    f"com restrição de remote '{effective_remote}'."
                 )
-            return f"Remover o software do usuario '{request.target}' via flatpak."
+            return f"Remover o software do usuário '{request.target}' via flatpak."
 
-    return "Sem acao aberta."
+    return "Sem ação aberta."
 
 
 def _outcome_for_request(
