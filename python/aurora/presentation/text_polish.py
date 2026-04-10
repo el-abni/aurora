@@ -87,6 +87,8 @@ _WORD_REPLACEMENTS = (
     ("rapido", "rápido"),
 )
 
+_STATUS_PREFIXES = ("❌ ", "✅ ", "ℹ ")
+
 
 def polish_public_text(text: str) -> str:
     if not text:
@@ -108,3 +110,24 @@ def polish_public_text(text: str) -> str:
         elif not char.isspace() and char not in "\"'([{":
             capitalize_next = False
     return "".join(chars)
+
+
+def apply_speech_indicator(text: str, marker: str = "🌌") -> str:
+    if not text:
+        return text
+
+    first_line, separator, remainder = text.partition("\n")
+    if f"{marker} " in first_line:
+        return text
+
+    decorated = first_line
+    for prefix in _STATUS_PREFIXES:
+        if first_line.startswith(prefix):
+            decorated = f"{prefix}{marker} {first_line[len(prefix):]}"
+            break
+    else:
+        decorated = f"{marker} {first_line}"
+
+    if not separator:
+        return decorated
+    return f"{decorated}{separator}{remainder}"

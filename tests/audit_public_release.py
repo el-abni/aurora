@@ -12,6 +12,7 @@ PUBLIC_FILES = (
     "README.md",
     "CHANGELOG.md",
     "docs/ARCHITECTURE.md",
+    "docs/WORKFLOW_DE_TESTES_E_RELEASE.md",
     "docs/COMPATIBILITY_LINUX.md",
     "docs/INSTALLATION_POLICY.md",
     "docs/AURY_HERITAGE_MAP.md",
@@ -74,30 +75,29 @@ def assert_terms(path: str, *terms: str) -> None:
 
 
 def main() -> int:
-    ensure(VERSION == "v0.6.3", "VERSION precisa estar promovido para v0.6.3 no fechamento desta release")
+    ensure(VERSION == "v0.6.4", "VERSION precisa estar promovido para v0.6.4 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v0.6.3")
+    ok("VERSION promovido para v0.6.4")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
     ensure(f"## 🌌 Aurora {VERSION}" in changelog, f"CHANGELOG.md precisa abrir a release publica {VERSION}")
-    for preserved in ("v0.6.2", "v0.6.1", "v0.6.0", "v0.5.1", "v0.5.0"):
+    for preserved in ("v0.6.3", "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.1", "v0.5.0"):
         ensure(f"## 🌌 Aurora {preserved}" in changelog, f"CHANGELOG.md precisa preservar a release publica {preserved}")
     for term in (
         "release_gate_canonic_line.sh",
-        "tests/README.md",
-        "AURORA_INVARIANTS.md",
-        "DECISION_RECORD_SCHEMA.md",
-        "FACTS_VS_RENDERING.md",
-        "AURY_TO_AURORA_DOSSIER.md",
-        "audit_decision_record_contract.py",
+        "WORKFLOW_DE_TESTES_E_RELEASE.md",
+        "REVIEW_CHECKLIST.md",
+        "release_gate_iteracao.sh",
+        "release_gate_pre_push.sh",
+        "release_gate_pre_release.sh",
+        "audit_workflow_release.py",
         "stable_ids",
         "presentation",
-        "host_package.procurar",
-        "v0.6.2",
+        "v0.6.3",
     ):
         ensure(term in changelog or term.lower() in changelog_normalized, f"CHANGELOG.md precisa citar {term}")
-    ensure_any(changelog_normalized, ("canonizacao da linha", "canonizacao de linha", "canoniza a linha"), "CHANGELOG.md precisa tratar a v0.6.3 como canonizacao de linha")
+    ensure_any(changelog_normalized, ("workflow", "disciplina operacional", "disciplina de subida"), "CHANGELOG.md precisa tratar a v0.6.4 como release de workflow e disciplina")
     assert_no_auroboros("CHANGELOG.md", changelog)
     ok("CHANGELOG.md alinhado")
 
@@ -117,6 +117,11 @@ def main() -> int:
         "--confirm",
         "--yes",
         "release_gate_canonic_line.sh",
+        "WORKFLOW_DE_TESTES_E_RELEASE.md",
+        "REVIEW_CHECKLIST.md",
+        "release_gate_iteracao.sh",
+        "release_gate_pre_push.sh",
+        "release_gate_pre_release.sh",
         "tests/README.md",
         "AURORA_INVARIANTS.md",
         "DECISION_RECORD_SCHEMA.md",
@@ -130,7 +135,7 @@ def main() -> int:
         "host_package.search",
     ):
         ensure(term in readme or term in readme_normalized, f"README.md precisa citar {term}")
-    ensure_any(readme_normalized, ("canonizacao da linha", "canonizacao de linha", "canoniza a linha"), "README.md precisa tratar a v0.6.3 como canonizacao de linha")
+    ensure_any(readme_normalized, ("workflow operacional", "disciplina operacional", "terminal local"), "README.md precisa tratar a v0.6.4 como workflow operacional")
     assert_no_auroboros("README.md", readme)
     ok("README.md alinhado")
 
@@ -140,12 +145,17 @@ def main() -> int:
         "100% python",
         "fish",
         "tests/release_gate_canonic_line.sh",
+        "docs/WORKFLOW_DE_TESTES_E_RELEASE.md",
+        "tests/REVIEW_CHECKLIST.md",
+        "tests/release_gate_iteracao.sh",
+        "tests/release_gate_pre_push.sh",
+        "tests/release_gate_pre_release.sh",
         "tests/README.md",
         "AURORA_INVARIANTS.md",
         "DECISION_RECORD_SCHEMA.md",
         "FACTS_VS_RENDERING.md",
         "AURY_TO_AURORA_DOSSIER.md",
-        "audit_decision_record_contract.py",
+        "tests/audit_decision_record_contract.py",
         "aurora.decision_record.v1",
         "stable_ids",
         "facts",
@@ -158,9 +168,30 @@ def main() -> int:
         "rpm_ostree.remover",
     ):
         ensure(term in architecture or term in architecture_normalized, f"docs/ARCHITECTURE.md precisa citar {term}")
-    ensure_any(architecture_normalized, ("canonizacao da linha", "canonizacao de linha", "canoniza a linha"), "ARCHITECTURE precisa tratar a v0.6.3 como canonizacao de linha")
+    ensure_any(architecture_normalized, ("workflow", "disciplina operacional", "terminal real"), "ARCHITECTURE precisa tratar a v0.6.4 como disciplina operacional")
     assert_no_auroboros("docs/ARCHITECTURE.md", architecture)
     ok("docs/ARCHITECTURE.md alinhado")
+
+    assert_terms(
+        "docs/WORKFLOW_DE_TESTES_E_RELEASE.md",
+        VERSION,
+        "teste automatico",
+        "revisao",
+        "terminal local",
+        "release_gate_canonic_line.sh",
+        "release_gate_v0_6_2.sh",
+        "release_gate_iteracao.sh",
+        "release_gate_pre_push.sh",
+        "release_gate_pre_release.sh",
+        "REVIEW_CHECKLIST.md",
+        "aurora --version",
+        "aurora --help",
+        "aurora dev",
+        "push",
+        "tag",
+        "release",
+    )
+    ok("docs/WORKFLOW_DE_TESTES_E_RELEASE.md alinhado")
 
     assert_terms(
         "docs/COMPATIBILITY_LINUX.md",
@@ -211,6 +242,8 @@ def main() -> int:
         "auditavel",
         "superficie explicita",
         "ferramenta observada",
+        "revisao humana",
+        "terminal real",
         "100% python",
         "fish",
         "stage publica",
@@ -247,6 +280,7 @@ def main() -> int:
         "confirmacao",
         "resultado",
         "refactor ornamental",
+        "terminal real",
     ):
         ensure(term in facts_doc or term in facts_normalized, f"docs/FACTS_VS_RENDERING.md precisa citar {term}")
     ok("docs/FACTS_VS_RENDERING.md alinhado")
@@ -271,11 +305,16 @@ def main() -> int:
     help_normalized = normalize(help_text)
     ensure(help_text.startswith("🌌 Aurora {version}"), "resources/help.txt precisa abrir com o cabecalho final da release")
     for term in (
-        "Contrato público da v0.6.3",
+        "Contrato público da v0.6.4",
         "host_package.procurar",
         "aurora.decision_record.v1",
         "stable_ids.action_id/route_id/event_id",
         "facts e presentation",
+        "WORKFLOW_DE_TESTES_E_RELEASE.md",
+        "REVIEW_CHECKLIST.md",
+        "release_gate_iteracao.sh",
+        "release_gate_pre_push.sh",
+        "release_gate_pre_release.sh",
         "ppa:owner/name",
         "remote-ls",
         "flathub",

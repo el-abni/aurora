@@ -1,15 +1,15 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v0.6.3-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v0.6.4-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com política explícita, observabilidade própria e execução real sobre um contrato pequeno e auditável.
 
-A release pública atual é a `v0.6.3`. Ela não abre frente nova de produto: fecha a canonização da linha com gate canônico, invariantes curtas, schema versionado do `decision_record`, IDs mínimos estáveis, fronteira explícita entre fato e renderização e um dossiê canônico `Aury -> Aurora`.
+A release pública atual é a `v0.6.4`. Ela não abre frente nova de produto nem domínio novo. Reaproveita a espinha canônica fechada na `v0.6.3` e formaliza a disciplina operacional da linha com workflow explícito de testes, revisão humana, validação real no terminal local e gates por etapa.
 
-Na `v0.6.3`, a superfície pública continua a mesma da `v0.6.2`:
+Na `v0.6.4`, a superfície pública continua a mesma da `v0.6.3`:
 
 - `host_package` para pacotes do host no `execution_surface=host`;
 - `AUR` como fonte explícita de terceiro dentro de `host_package`;
@@ -22,9 +22,7 @@ Na `v0.6.3`, a superfície pública continua a mesma da `v0.6.2`:
 
 ## Espinha canônica da linha
 
-A `v0.6.3` reaproveita uma lição já aprendida pela Aurora: endurecimento de linha pede regra executável e docs canônicas curtas, não feature nova.
-
-Por isso, esta release amarra:
+A `v0.6.4` reaproveita uma lição já aprendida pela Aurora: endurecimento de linha pede regra executável e docs canônicas curtas, não feature nova. Por isso, a espinha fechada na `v0.6.3` continua amarrada por:
 
 - `tests/release_gate_canonic_line.sh` como régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` como gate histórico da release `v0.6.2`;
@@ -34,7 +32,7 @@ Por isso, esta release amarra:
 - `docs/FACTS_VS_RENDERING.md` como fronteira explícita entre fato operacional e voz;
 - `docs/AURY_TO_AURORA_DOSSIER.md` como dossiê canônico de herança e limite entre Aury e Aurora.
 
-Leitura correta da `v0.6.3`:
+Leitura correta da `v0.6.4`:
 
 - `toolbox` não é fonte de pacote;
 - `toolbox` não é `host_package` com outro nome;
@@ -56,14 +54,26 @@ Leitura correta da `v0.6.3`:
 - pedido nu em host imutável não sofre fallback mágico: a Aurora mostra as superfícies observadas e bloqueia quando a frase não escolhe uma delas;
 - `host`, `toolbox`, `distrobox` e `rpm_ostree` aparecem separados em request, policy, route, execution e `aurora dev`.
 
-O foco da `v0.6.3` é canonização de linha:
+## Workflow operacional da v0.6.4
 
-- o gate canônico da linha passa a ser `tests/release_gate_canonic_line.sh`;
-- `tests/README.md` passa a declarar o papel e o antipapel da base de testes;
-- `docs/AURORA_INVARIANTS.md` passa a registrar o que a Aurora já aprendeu a não reabrir;
-- o `decision_record` ganha `schema=aurora.decision_record.v1`, `stable_ids` mínimos e seção canônica `facts`;
-- a voz pública fica separada em `presentation`, sem esconder policy, suporte, bloqueio, confirmação ou resultado;
-- `docs/AURY_TO_AURORA_DOSSIER.md` fixa a leitura estrutural de que `Aury` é raiz operacional e `Aurora` é decisão/mediação;
+A `v0.6.4` fecha uma lição que o repositório já vinha ensinando: gate automatizado sozinho não segura release honesta quando a superfície pública ainda depende de docs, help, renderização, launchers e terminal real.
+
+Por isso, esta release amarra:
+
+- `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` como workflow canônico curto;
+- `tests/REVIEW_CHECKLIST.md` como checklist humano de revisão;
+- `tests/release_gate_iteracao.sh` como gate de coding comum;
+- `tests/release_gate_pre_push.sh` como gate antes de push;
+- `tests/release_gate_pre_release.sh` como gate automatizado antes de tag e release;
+- separação explícita entre teste automático, revisão manual e teste real no terminal local;
+- `tests/release_gate_v0_6_2.sh` preservado como gate histórico exercitado no fechamento mais duro, sem virar régua corrente da linha.
+
+O foco da `v0.6.4` é disciplina operacional sobre a espinha já canonizada:
+
+- `tests/release_gate_canonic_line.sh` continua como régua corrente da linha;
+- `tests/README.md` passa a explicar o papel dos gates por etapa;
+- `docs/AURORA_INVARIANTS.md` passa a registrar que gate automatizado não substitui revisão humana nem terminal real;
+- o `decision_record` continua em `schema=aurora.decision_record.v1`, com `stable_ids`, `facts` e `presentation` sem abertura de contrato novo;
 - a espinha da linha continua 100% Python, sem puxar Fish ou stage pública para o centro da Aurora.
 
 ## O que a Aurora faz
@@ -81,7 +91,7 @@ A Aurora funciona como uma camada de decisão e execução sobre Linux. Em vez d
 
 ## Decision Record Canônico
 
-Na `v0.6.3`, a leitura parseável do `decision_record` passa a ser:
+Na `v0.6.4`, a leitura parseável do `decision_record` continua sendo:
 
 - `schema.schema_id=aurora.decision_record.v1`;
 - `stable_ids.action_id`, `stable_ids.route_id` e `stable_ids.event_id` como IDs mínimos estáveis;
@@ -93,7 +103,7 @@ Compatibilidade desta linha:
 - o payload antigo continua espelhado no topo por compatibilidade com a base já aberta;
 - `host_package.search` continua existindo apenas como `route_name` legado; o ID canônico da rota é `host_package.procurar`.
 
-## Contrato público da v0.6.3
+## Contrato público da v0.6.4
 
 Rotas reais abertas nesta release:
 
@@ -359,10 +369,10 @@ A identidade pública da ferramenta é:
 No help público, a versão aparece como:
 
 ```text
-🌌 Aurora v0.6.3
+🌌 Aurora v0.6.4
 ```
 
-## O que a v0.6.3 não promete
+## O que a v0.6.4 não promete
 
 A Aurora ainda não abre:
 
@@ -401,7 +411,9 @@ A documentação complementar desta release fica em:
 - [Schema do Decision Record](docs/DECISION_RECORD_SCHEMA.md)
 - [Facts vs Rendering](docs/FACTS_VS_RENDERING.md)
 - [Dossiê Aury -> Aurora](docs/AURY_TO_AURORA_DOSSIER.md)
+- [Workflow de Testes e Release](docs/WORKFLOW_DE_TESTES_E_RELEASE.md)
 - [Papel Canônico de tests/](tests/README.md)
+- [Checklist de Revisão](tests/REVIEW_CHECKLIST.md)
 
 ## Licença
 

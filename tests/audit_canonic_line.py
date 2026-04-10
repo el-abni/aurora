@@ -51,6 +51,7 @@ def assert_invariants_state() -> None:
     ensure("contrato pequeno" in normalized and "auditavel" in normalized, f"{path} precisa registrar contrato pequeno e auditavel")
     ensure("superficie explicita" in normalized and "fallback magico" in normalized, f"{path} precisa registrar superficie explicita contra fallback magico")
     ensure("ferramenta observada" in normalized and "nao vira suporte" in normalized, f"{path} precisa registrar que ferramenta observada nao vira suporte")
+    ensure("revisao humana" in normalized and "terminal real" in normalized, f"{path} precisa registrar revisao humana e terminal real")
     ensure("100% python" in normalized and "fish" in normalized and "stage publica" in normalized, f"{path} precisa preservar o centro 100% Python da Aurora")
     ok(f"{path} alinhado")
 
@@ -62,13 +63,19 @@ def assert_tests_readme_state() -> None:
     for term in (
         "tests/release_gate_canonic_line.sh",
         "tests/release_gate_v0_6_2.sh",
+        "tests/release_gate_iteracao.sh",
+        "tests/release_gate_pre_push.sh",
+        "tests/release_gate_pre_release.sh",
         "tests/audit_public_release.py",
         "tests/audit_canonic_line.py",
         "tests/audit_decision_record_contract.py",
+        "tests/audit_workflow_release.py",
+        "tests/REVIEW_CHECKLIST.md",
         "schema",
         "stable_ids",
         "facts",
         "presentation",
+        "terminal real",
     ):
         ensure(term in text or term in normalized, f"{path} precisa citar {term}")
     ensure("gate canonico da linha" in normalized, f"{path} precisa explicitar o gate canonico da linha")
@@ -85,6 +92,7 @@ def assert_gate_state() -> None:
         "tests/audit_public_release.py",
         "tests/audit_canonic_line.py",
         "tests/audit_decision_record_contract.py",
+        "tests/audit_workflow_release.py",
         "release_gate_canonic_line: ok",
     ):
         ensure(term in text, f"{path} precisa citar {term}")
@@ -99,6 +107,11 @@ def assert_readme_spine() -> None:
     normalized = normalize(text)
     for term in (
         "tests/release_gate_canonic_line.sh",
+        "docs/WORKFLOW_DE_TESTES_E_RELEASE.md",
+        "tests/REVIEW_CHECKLIST.md",
+        "tests/release_gate_iteracao.sh",
+        "tests/release_gate_pre_push.sh",
+        "tests/release_gate_pre_release.sh",
         "tests/README.md",
         "docs/AURORA_INVARIANTS.md",
         "docs/DECISION_RECORD_SCHEMA.md",
@@ -110,7 +123,7 @@ def assert_readme_spine() -> None:
         "presentation",
     ):
         ensure(term in text or term in normalized, f"{path} precisa citar {term}")
-    ensure_any(normalized, ("espinha da linha", "canonizacao da linha", "chao da linha"), f"{path} precisa registrar {VERSION} como canonizacao de linha")
+    ensure_any(normalized, ("espinha canonica", "workflow operacional", "disciplina operacional"), f"{path} precisa registrar a espinha e o workflow da linha")
     ok(f"{path} alinhado")
 
 
@@ -120,6 +133,11 @@ def assert_architecture_spine() -> None:
     normalized = normalize(text)
     for term in (
         "tests/release_gate_canonic_line.sh",
+        "docs/WORKFLOW_DE_TESTES_E_RELEASE.md",
+        "tests/REVIEW_CHECKLIST.md",
+        "tests/release_gate_iteracao.sh",
+        "tests/release_gate_pre_push.sh",
+        "tests/release_gate_pre_release.sh",
         "tests/README.md",
         "docs/AURORA_INVARIANTS.md",
         "docs/DECISION_RECORD_SCHEMA.md",
@@ -132,7 +150,7 @@ def assert_architecture_spine() -> None:
         "presentation",
     ):
         ensure(term in text or term in normalized, f"{path} precisa citar {term}")
-    ensure_any(normalized, ("espinha da linha", "regua corrente da linha", "canonizacao da linha"), f"{path} precisa registrar a espinha da linha na {VERSION}")
+    ensure_any(normalized, ("espinha canonica", "regua corrente da linha", "disciplina operacional"), f"{path} precisa registrar a espinha da linha na {VERSION}")
     ok(f"{path} alinhado")
 
 
@@ -140,17 +158,17 @@ def assert_changelog_spine() -> None:
     section = normalize(current_changelog_section(read("CHANGELOG.md")))
     for term in (
         "release_gate_canonic_line.sh",
-        "tests/readme.md",
-        "aurora_invariants.md",
-        "decision_record_schema.md",
-        "facts_vs_rendering.md",
-        "aury_to_aurora_dossier.md",
-        "audit_decision_record_contract.py",
+        "workflow_de_testes_e_release.md",
+        "review_checklist.md",
+        "release_gate_iteracao.sh",
+        "release_gate_pre_push.sh",
+        "release_gate_pre_release.sh",
+        "audit_workflow_release.py",
         "stable_ids",
         "presentation",
     ):
         ensure(term in section, f"CHANGELOG.md precisa citar {term} na release atual")
-    ensure_any(section, ("canonizacao da linha", "canonizacao de linha", "espinha da linha"), f"CHANGELOG.md precisa tratar a {VERSION} como canonizacao de linha")
+    ensure_any(section, ("workflow", "disciplina operacional", "disciplina de subida"), f"CHANGELOG.md precisa tratar a {VERSION} como workflow disciplinado")
     ok("CHANGELOG.md alinhado a espinha da linha")
 
 

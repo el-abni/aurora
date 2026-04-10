@@ -1,5 +1,35 @@
 # Changelog
 
+## 🌌 Aurora v0.6.4
+
+Faixa curta de workflow, revisão, testes e disciplina de subida. Esta rodada não abre domínio novo: reaproveita a espinha canônica fechada na `v0.6.3` e formaliza o fluxo operacional para coding comum, push, tag e release.
+
+### Adicionado
+
+- `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` como workflow canônico curto da `v0.6.4`;
+- `tests/REVIEW_CHECKLIST.md` como checklist humano de revisão antes de subir;
+- `tests/release_gate_iteracao.sh` como gate de feedback rápido durante coding;
+- `tests/release_gate_pre_push.sh` como gate antes de push;
+- `tests/release_gate_pre_release.sh` como gate automatizado antes de tag e release;
+- `tests/audit_workflow_release.py` como auditor curto da nova disciplina operacional.
+
+### Alterado
+
+- `tests/release_gate_canonic_line.sh` continua como régua corrente da linha, mas agora também protege o workflow da `v0.6.4`;
+- `README.md`, `docs/ARCHITECTURE.md`, `tests/README.md`, `resources/help.txt` e auditorias públicas passam a refletir a `v0.6.4` como release pública atual;
+- `docs/AURORA_INVARIANTS.md` passa a registrar explicitamente que gate automatizado não substitui revisão humana nem terminal real;
+- o contrato público, o schema do `decision_record`, `stable_ids`, `facts`, `presentation` e as rotas abertas continuam os mesmos da `v0.6.3`; a mudança desta release é disciplina operacional, não expansão de superfície.
+
+### Continua fora da v0.6.4
+
+- qualquer nova fonte, nova superfície, nova família ou nova frente de produto;
+- modelo local;
+- `host_maintenance`, rede e arquivos;
+- qualquer boundary lateral tratado como implementação antes da hora;
+- refactor estrutural grande;
+- expansão de parser;
+- qualquer tentativa de tratar checklist humano ou terminal real como problema resolvido apenas por gate automático.
+
 ## 🌌 Aurora v0.6.3
 
 Faixa curta de canonização da linha. Esta rodada não abre fonte, superfície, parser ou frente nova de produto. Ela fecha o chão contínuo da Aurora com gate canônico, docs curtas, schema versionado do `decision_record`, IDs mínimos estáveis, fronteira explícita entre fato e renderização e dossiê canônico `Aury -> Aurora`.

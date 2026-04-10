@@ -1,4 +1,4 @@
-# Aury to Aurora Dossier - Aurora v0.6.3
+# Aury to Aurora Dossier - Aurora v0.6.4
 
 ## Leitura canônica
 

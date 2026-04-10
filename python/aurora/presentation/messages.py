@@ -1,14 +1,22 @@
 from __future__ import annotations
 
-from aurora.presentation.text_polish import polish_public_text
+from aurora.presentation.text_polish import apply_speech_indicator, polish_public_text
+
+
+def _voice(text: str) -> str:
+    return apply_speech_indicator(text)
 
 
 def invalid_command_message() -> str:
-    return "❌ Comando inválido."
+    return _voice("❌ Comando inválido.")
+
+
+def missing_dev_phrase_message() -> str:
+    return _voice("❌ Informe uma frase para inspeção.")
 
 
 def backend_missing_message(name: str) -> str:
-    return f"❌ Backend '{name}' não está disponível."
+    return _voice(f"❌ Backend '{name}' não está disponível.")
 
 
 def backend_failed_message(name: str, *, exit_code: int | None = None, detail: str = "") -> str:
@@ -16,8 +24,8 @@ def backend_failed_message(name: str, *, exit_code: int | None = None, detail: s
     if exit_code is not None:
         base += f" (exit code {exit_code})"
     if detail:
-        return f"{base}. Motivo informado pelo backend: {detail}"
-    return f"{base}."
+        return _voice(f"{base}. Motivo informado pelo backend: {detail}")
+    return _voice(f"{base}.")
 
 
 def interactive_handoff_start_message(name: str) -> str:
@@ -80,13 +88,13 @@ def mediated_execution_return_message(
 
 
 def no_results_message(target: str, backend_name: str) -> str:
-    return f"ℹ Não encontrei resultados para '{target}' no backend '{backend_name}'."
+    return _voice(f"ℹ Não encontrei resultados para '{target}' no backend '{backend_name}'.")
 
 
 def search_results_message(target: str, backend_name: str, details: str) -> str:
     if not details.strip():
-        return f"✅ Encontrei resultados para '{target}' no backend '{backend_name}'."
-    return f"✅ Encontrei resultados para '{target}' no backend '{backend_name}':\n{details.rstrip()}"
+        return _voice(f"✅ Encontrei resultados para '{target}' no backend '{backend_name}'.")
+    return _voice(f"✅ Encontrei resultados para '{target}' no backend '{backend_name}':\n{details.rstrip()}")
 
 
 def package_not_found_message(
@@ -97,8 +105,8 @@ def package_not_found_message(
     target_label: str = "pacote",
 ) -> str:
     if intent == "instalar":
-        return f"❌ Não encontrei o {target_label} '{target}' no backend '{backend_name}'."
-    return f"❌ Não consegui localizar o {target_label} '{target}' no backend '{backend_name}' para remover."
+        return _voice(f"❌ Não encontrei o {target_label} '{target}' no backend '{backend_name}'.")
+    return _voice(f"❌ Não consegui localizar o {target_label} '{target}' no backend '{backend_name}' para remover.")
 
 
 def noop_message(
@@ -109,8 +117,8 @@ def noop_message(
     location_label: str = "neste host",
 ) -> str:
     if intent == "instalar":
-        return f"ℹ O {target_label} '{target}' já está instalado {location_label}. Nenhuma ação foi necessária."
-    return f"ℹ O {target_label} '{target}' já não está instalado {location_label}. Nenhuma ação foi necessária."
+        return _voice(f"ℹ O {target_label} '{target}' já está instalado {location_label}. Nenhuma ação foi necessária.")
+    return _voice(f"ℹ O {target_label} '{target}' já não está instalado {location_label}. Nenhuma ação foi necessária.")
 
 
 def mutation_success_message(
@@ -120,17 +128,17 @@ def mutation_success_message(
     target_label: str = "pacote",
 ) -> str:
     if intent == "instalar":
-        return f"✅ Pronto, eu confirmei que o {target_label} '{target}' está instalado."
-    return f"✅ Pronto, eu confirmei que o {target_label} '{target}' foi removido."
+        return _voice(f"✅ Pronto, eu confirmei que o {target_label} '{target}' está instalado.")
+    return _voice(f"✅ Pronto, eu confirmei que o {target_label} '{target}' foi removido.")
 
 
 def rpm_ostree_noop_message(intent: str, target: str) -> str:
     if intent == "instalar":
-        return (
+        return _voice(
             f"ℹ O pacote '{target}' já aparece no deployment atual ou no próximo deployment rpm-ostree. "
             "Nenhuma ação foi necessária."
         )
-    return (
+    return _voice(
         f"ℹ O pacote '{target}' já não aparece como camada solicitada no deployment efetivo rpm-ostree. "
         "Nenhuma ação foi necessária."
     )
@@ -138,18 +146,18 @@ def rpm_ostree_noop_message(intent: str, target: str) -> str:
 
 def rpm_ostree_mutation_success_message(intent: str, target: str) -> str:
     if intent == "instalar":
-        return (
+        return _voice(
             f"✅ Pronto, eu confirmei que o pacote '{target}' foi adicionado ao próximo deployment rpm-ostree. "
             "Reinicie para aplicar."
         )
-    return (
+    return _voice(
         f"✅ Pronto, eu confirmei que o pacote '{target}' foi removido do próximo deployment rpm-ostree. "
         "Reinicie para aplicar."
     )
 
 
 def state_probe_missing_message(backend_name: str, probe_label: str) -> str:
-    return (
+    return _voice(
         f"❌ A confirmação de estado para o backend '{backend_name}' depende da ferramenta "
         f"auxiliar '{probe_label}', que não está disponível."
     )
@@ -167,16 +175,16 @@ def state_confirmation_failed_message(
     else:
         base = f"❌ O backend '{backend_name}' terminou, mas eu não consegui confirmar a remoção de '{target}'."
     if detail:
-        return f"{base} Estado observado depois da execução: {detail}"
-    return base
+        return _voice(f"{base} Estado observado depois da execução: {detail}")
+    return _voice(base)
 
 
 def blocked_message(reason: str) -> str:
-    return f"❌ Bloqueado por política: {polish_public_text(reason)}"
+    return _voice(f"❌ Bloqueado por política: {polish_public_text(reason)}")
 
 
 def target_resolution_blocked_message(reason: str) -> str:
-    return f"❌ Bloqueado por resolução de alvo: {polish_public_text(reason)}"
+    return _voice(f"❌ Bloqueado por resolução de alvo: {polish_public_text(reason)}")
 
 
 def confirmation_required_message(
@@ -186,18 +194,18 @@ def confirmation_required_message(
     *,
     target_label: str = "pacote",
 ) -> str:
-    return (
+    return _voice(
         f"❌ Confirmação obrigatória: a mutação do {target_label} '{target}' exige confirmação explícita nesta rodada "
         f"(criticidade {software_criticality}; reversão {reversal_level}). Use --confirm para prosseguir."
     )
 
 
 def out_of_scope_message(reason: str) -> str:
-    return f"❌ Fora do recorte atual: {polish_public_text(reason)}"
+    return _voice(f"❌ Fora do recorte atual: {polish_public_text(reason)}")
 
 
 def not_implemented_message(intent: str, domain_kind: str) -> str:
-    return (
+    return _voice(
         f"❌ '{intent}' em '{domain_kind}' já foi classificado e planejado, "
         "mas a execução real ainda não foi aberta nesta rodada."
     )

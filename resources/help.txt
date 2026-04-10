@@ -1,5 +1,7 @@
 🌌 Aurora {version}
 
+Mediação lúcida para Linux, com contrato pequeno e observável.
+
 Comandos públicos:
 - aurora procurar <pacote>
 - aurora instalar <pacote>
@@ -36,7 +38,7 @@ Comandos públicos:
 - aurora --help
 - aurora --version
 
-Contrato público da v0.6.3:
+Contrato público da v0.6.4:
 - produto 100% Python;
 - launchers oficiais: aurora e auro;
 - domínios ativos: host_package e user_software;
@@ -44,6 +46,7 @@ Contrato público da v0.6.3:
 - fontes reais: host_package_manager, aur_repository, copr_repository, ppa_repository, flatpak_remote, toolbox_host_package_manager, distrobox_host_package_manager e rpm_ostree_layering;
 - rotas estáveis: host_package.procurar/instalar/remover, aur.procurar/instalar/remover, copr.procurar/instalar/remover, ppa.instalar, flatpak.procurar/instalar/remover, toolbox.procurar/instalar/remover, distrobox.procurar/instalar/remover e rpm_ostree.instalar/remover;
 - decision_record versionado: schema aurora.decision_record.v1, stable_ids.action_id/route_id/event_id, facts e presentation;
+- workflow oficial da release: docs/WORKFLOW_DE_TESTES_E_RELEASE.md, tests/REVIEW_CHECKLIST.md, tests/release_gate_iteracao.sh, tests/release_gate_pre_push.sh e tests/release_gate_pre_release.sh;
 - pedidos nus continuam em host_package no host;
 - AUR só entra por frase marcada com aur;
 - COPR só entra por frase marcada com copr e owner/project explícito;
@@ -91,7 +94,7 @@ Compatibilidade:
 - rpm-ostree: depende do comando rpm-ostree no host imutável, exige pedido explícito, bloqueia pending deployment/transação ativa e pode exigir reboot para aplicar;
 - host_package em Atomic/imutáveis: exige seleção explícita entre flatpak, toolbox, distrobox, rpm-ostree ou bloqueio.
 
-Fora da v0.6.3:
+Fora da v0.6.4:
 - fallback automático de pedido nu para AUR;
 - fallback automático do host para toolbox;
 - fallback automático do host para distrobox;

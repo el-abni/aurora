@@ -7,7 +7,7 @@ from typing import Sequence
 from aurora.app import execute_text
 from aurora.observability.dev_command import render_dev_report
 from aurora.presentation.help_text import render_help
-from aurora.presentation.messages import invalid_command_message
+from aurora.presentation.messages import invalid_command_message, missing_dev_phrase_message
 from aurora.version import read_version
 
 HELP_TOKENS = {"ajuda", "help", "--help", "-h"}
@@ -45,7 +45,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if first == "dev":
         phrase = " ".join(args[1:]).strip()
         if not phrase:
-            print("❌ informe uma frase para inspecao")
+            print(missing_dev_phrase_message())
             return 1
         print(render_dev_report(phrase, confirmed=confirmed))
         return 0

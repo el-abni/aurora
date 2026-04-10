@@ -1,4 +1,4 @@
-# Decision Record Schema - Aurora v0.6.3
+# Decision Record Schema - Aurora v0.6.4
 
 ## Papel
 
@@ -61,6 +61,7 @@ Detalhe importante desta release:
 
 - o payload antigo continua espelhado no topo por compatibilidade;
 - o contrato novo a ser consumido daqui em diante é `schema + stable_ids + facts + presentation`.
+- a `v0.6.4` não muda esse schema; ela endurece o workflow que protege esse contrato.
 
 ## Fica para depois
 

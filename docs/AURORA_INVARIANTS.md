@@ -1,4 +1,4 @@
-# Aurora Invariants - v0.6.3
+# Aurora Invariants - v0.6.4
 
 ## Papel
 
@@ -27,6 +27,10 @@ Helper, backend ou comando observado fora do contrato continua sendo apenas obse
 ### Documentação pública alinhada ao código é patrimônio do produto
 
 `README.md`, `resources/help.txt`, `docs/ARCHITECTURE.md`, `docs/COMPATIBILITY_LINUX.md`, `docs/INSTALLATION_POLICY.md` e `docs/AURY_HERITAGE_MAP.md` já fazem parte da superfície auditável da Aurora.
+
+### Gate automatizado não substitui revisão humana nem terminal real
+
+Gate curto, checklist humano e terminal real têm papéis diferentes. A Aurora não deve tratar `push`, `tag` ou `release` como seguros só porque o harness passou.
 
 ### O centro operacional da Aurora é 100% Python
 
