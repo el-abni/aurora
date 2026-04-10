@@ -1,0 +1,63 @@
+# tests/
+
+Esta pasta guarda o chão mínimo de regressão auditável que sustenta a espinha canônica da linha da Aurora.
+
+Ela existe para:
+
+- proteger o contrato público já aberto;
+- manter alinhados código, docs públicas e gate;
+- endurecer a linha sem inflar infraestrutura.
+
+Ela não existe para:
+
+- virar framework de testes;
+- prometer cobertura total do projeto;
+- justificar abertura de feature nova;
+- substituir leitura humana quando a fronteira ainda é conceitual.
+
+## Gate canônico da linha
+
+O gate canônico da linha é:
+
+```bash
+bash tests/release_gate_canonic_line.sh
+```
+
+Ele reúne:
+
+- a suíte `unittest` atual;
+- `tests/audit_public_release.py`;
+- `tests/audit_canonic_line.py`;
+- `tests/audit_decision_record_contract.py`.
+
+Esse gate é a régua corrente da linha porque protege:
+
+- o chão público já aberto;
+- a espinha canônica da v0.6.3;
+- o schema curto do `decision_record`;
+- a distinção entre canonização de linha e abertura de feature.
+
+## Gate histórico de release
+
+O gate histórico da release pública `v0.6.2` continua existindo em:
+
+```bash
+bash tests/release_gate_v0_6_2.sh
+```
+
+Ele permanece como patrimônio de fechamento da `v0.6.2`. A régua corrente da linha, porém, passa a ser `tests/release_gate_canonic_line.sh`.
+
+## Leitura correta desta pasta
+
+- `test_*.py` protege o contrato executável já aberto;
+- `audit_public_release.py` protege a coerência pública da release atual;
+- `audit_canonic_line.py` protege a espinha canônica da linha;
+- `audit_decision_record_contract.py` protege `schema`, `stable_ids`, `facts` e `presentation`;
+- esta base protege auditabilidade e estabilidade de linha, não expansão de produto.
+
+## Limites deliberados
+
+- nada aqui puxa Fish para o centro da Aurora;
+- nada aqui depende de stage pública;
+- nada aqui abre frente nova de domínio;
+- se esta pasta crescer rápido demais, ela provavelmente está tentando resolver arquitetura com volume de teste.

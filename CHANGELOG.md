@@ -1,5 +1,37 @@
 # Changelog
 
+## 🌌 Aurora v0.6.3
+
+Faixa curta de canonização da linha. Esta rodada não abre fonte, superfície, parser ou frente nova de produto. Ela fecha o chão contínuo da Aurora com gate canônico, docs curtas, schema versionado do `decision_record`, IDs mínimos estáveis, fronteira explícita entre fato e renderização e dossiê canônico `Aury -> Aurora`.
+
+### Adicionado
+
+- `docs/AURORA_INVARIANTS.md` como registro curto das lições já provadas pelo repositório e já consideradas patrimônio operacional da Aurora;
+- `tests/README.md` como papel canônico explícito da pasta `tests/`;
+- `tests/audit_canonic_line.py` como auditor pequeno da nova espinha da linha;
+- `tests/release_gate_canonic_line.sh` como régua corrente da linha;
+- `docs/DECISION_RECORD_SCHEMA.md` como contrato curto e operacional do `decision_record`;
+- `docs/FACTS_VS_RENDERING.md` como fronteira explícita entre fato operacional e voz;
+- `docs/AURY_TO_AURORA_DOSSIER.md` como dossiê canônico da fronteira `Aury -> Aurora`;
+- `python/aurora/contracts/decision_record_schema.py` e `python/aurora/contracts/stable_ids.py` como contrato mínimo executável da nova espinha;
+- `tests/audit_decision_record_contract.py` como auditor curto do schema, dos IDs estáveis e da separação `facts` vs `presentation`.
+
+### Alterado
+
+- `README.md`, `docs/ARCHITECTURE.md`, `docs/AURY_HERITAGE_MAP.md`, `resources/help.txt` e auditorias públicas passam a refletir a `v0.6.3` como versão pública única desta entrega;
+- `tests/release_gate_v0_6_2.sh` permanece como gate histórico da release `v0.6.2`, mas deixa explícito que a régua corrente da linha agora é `tests/release_gate_canonic_line.sh`;
+- o `decision_record` passa a publicar `schema`, `stable_ids`, `facts` e `presentation` sem quebrar os espelhos legados já usados pela base atual;
+- `host_package.search` deixa de ser a referência pública da rota de busca do host: o ID canônico passa a ser `host_package.procurar`, preservando o nome antigo apenas como espelho legado de compatibilidade.
+
+### Continua fora da v0.6.3
+
+- qualquer nova fonte, nova superfície, nova família ou nova frente de produto;
+- fallback automático, descoberta mágica ou parser amplo;
+- manutenção ampla do host, arquivos e rede;
+- modelo local;
+- qualquer tentativa de empurrar boundaries laterais como implementação antes do fechamento da linha;
+- qualquer expansão disfarçada enquanto a linha ainda está sendo canonizada.
+
 ## 🌌 Aurora v0.6.2
 
 Release pequena de polimento operacional, UX pública e endurecimento final sobre a base já revisada na `v0.6.1`. O corte desta rodada não abre frente nova: ele melhora o fluxo percebido pelo usuário, fecha mensagens públicas ainda secas e deixa AUR, toolbox e distrobox mais claros no momento de execução.

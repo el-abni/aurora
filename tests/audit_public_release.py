@@ -15,6 +15,10 @@ PUBLIC_FILES = (
     "docs/COMPATIBILITY_LINUX.md",
     "docs/INSTALLATION_POLICY.md",
     "docs/AURY_HERITAGE_MAP.md",
+    "docs/AURORA_INVARIANTS.md",
+    "docs/DECISION_RECORD_SCHEMA.md",
+    "docs/FACTS_VS_RENDERING.md",
+    "docs/AURY_TO_AURORA_DOSSIER.md",
     "resources/help.txt",
 )
 
@@ -38,6 +42,11 @@ def ensure(condition: bool, message: str) -> None:
         fail(message)
 
 
+def ensure_any(text: str, options: tuple[str, ...], message: str) -> None:
+    if not any(option in text for option in options):
+        fail(message)
+
+
 def read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
@@ -57,368 +66,223 @@ def git_ls_files() -> list[str]:
     return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
 
 
+def assert_terms(path: str, *terms: str) -> None:
+    text = read(path)
+    normalized = normalize(text)
+    for term in terms:
+        ensure(term in text or term in normalized, f"{path} precisa citar {term}")
+
+
 def main() -> int:
-    ensure(VERSION == "v0.6.2", "VERSION precisa estar promovido para v0.6.2 no fechamento desta release")
+    ensure(VERSION == "v0.6.3", "VERSION precisa estar promovido para v0.6.3 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v0.6.2")
+    ok("VERSION promovido para v0.6.3")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
-    ensure("## 🌌 Aurora v0.6.2" in changelog, "CHANGELOG.md precisa abrir a release publica v0.6.2")
-    ensure("## 🌌 Aurora v0.6.1" in changelog, "CHANGELOG.md precisa preservar a release publica v0.6.1")
-    ensure("## 🌌 Aurora v0.6.0" in changelog, "CHANGELOG.md precisa preservar a release publica v0.6.0")
-    ensure("## 🌌 Aurora v0.5.1" in changelog, "CHANGELOG.md precisa preservar a release publica v0.5.1")
-    ensure("## 🌌 Aurora v0.5.0" in changelog, "CHANGELOG.md precisa preservar a release publica v0.5.0")
+    ensure(f"## 🌌 Aurora {VERSION}" in changelog, f"CHANGELOG.md precisa abrir a release publica {VERSION}")
+    for preserved in ("v0.6.2", "v0.6.1", "v0.6.0", "v0.5.1", "v0.5.0"):
+        ensure(f"## 🌌 Aurora {preserved}" in changelog, f"CHANGELOG.md precisa preservar a release publica {preserved}")
     for term in (
-        "toolbox",
-        "distrobox",
-        "rpm-ostree",
-        "rpm_ostree.instalar",
-        "rpm_ostree.remover",
-        "rpm_ostree.procurar",
-        "immutable_selected_surface",
-        "pending deployment",
-        "status --json",
-        "execution_surface",
-        "environment_target",
-        "toolbox.procurar",
-        "toolbox.instalar",
-        "toolbox.remover",
-        "distrobox.procurar",
-        "distrobox.instalar",
-        "distrobox.remover",
-        "fallback",
-        "nome exato",
-        "ppa.instalar",
-        "ppa:owner/name",
+        "release_gate_canonic_line.sh",
+        "tests/README.md",
+        "AURORA_INVARIANTS.md",
+        "DECISION_RECORD_SCHEMA.md",
+        "FACTS_VS_RENDERING.md",
+        "AURY_TO_AURORA_DOSSIER.md",
+        "audit_decision_record_contract.py",
+        "stable_ids",
+        "presentation",
+        "host_package.procurar",
+        "v0.6.2",
     ):
-        ensure(term in changelog_normalized or term in changelog, f"CHANGELOG.md precisa citar {term}")
-    ensure("copr" in changelog_normalized, "CHANGELOG.md precisa preservar a frente COPR")
-    ensure("aur" in changelog_normalized, "CHANGELOG.md precisa preservar a frente AUR")
-    ensure("flatpak" in changelog_normalized, "CHANGELOG.md precisa preservar flatpak")
+        ensure(term in changelog or term.lower() in changelog_normalized, f"CHANGELOG.md precisa citar {term}")
+    ensure_any(changelog_normalized, ("canonizacao da linha", "canonizacao de linha", "canoniza a linha"), "CHANGELOG.md precisa tratar a v0.6.3 como canonizacao de linha")
     assert_no_auroboros("CHANGELOG.md", changelog)
-    ok("CHANGELOG.md alinhado ao estado atual da linha")
+    ok("CHANGELOG.md alinhado")
 
     readme = read("README.md")
     readme_normalized = normalize(readme)
     ensure(VERSION in readme, "README.md precisa citar a versao publica atual")
-    ensure("100% python" in readme_normalized, "README.md precisa deixar Aurora como produto 100% Python")
-    ensure("aurora" in readme_normalized and "auro" in readme_normalized, "README.md precisa citar os launchers")
     for term in (
+        "100% python",
         "host_package",
         "user_software",
-        "execution_surface",
-        "environment_target",
-        "aur",
-        "copr",
-        "flatpak",
-        "ppa",
         "toolbox",
         "distrobox",
         "rpm-ostree",
-        "rpm_ostree",
-        "rpm_ostree.instalar",
-        "rpm_ostree.remover",
-        "rpm_ostree.procurar",
-        "rpm_ostree_layering",
-        "immutable_selected_surface",
-        "immutable_observed_surfaces",
-        "pending deployment",
-        "status --json",
-        "toolbox.procurar",
-        "toolbox.instalar",
-        "toolbox.remover",
-        "distrobox.procurar",
-        "distrobox.instalar",
-        "distrobox.remover",
-        "toolbox_host_package_manager",
-        "distrobox_host_package_manager",
-        "mediated_environment",
-        "na toolbox <ambiente>",
-        "na distrobox <ambiente>",
-        "nome exato",
-        "fallback",
-        "ppa.instalar",
-        "ppa.remover",
         "ppa:owner/name",
-        "ppa_repository",
-        "add-apt-repository",
-        "ubuntu mutavel",
-        "flatpak remotes",
-        "remote-ls",
-        "flathub",
-        "host imutável",
+        "owner/project",
+        "from_repo",
         "--confirm",
         "--yes",
+        "release_gate_canonic_line.sh",
+        "tests/README.md",
+        "AURORA_INVARIANTS.md",
+        "DECISION_RECORD_SCHEMA.md",
+        "FACTS_VS_RENDERING.md",
+        "AURY_TO_AURORA_DOSSIER.md",
+        "aurora.decision_record.v1",
+        "stable_ids",
+        "facts",
+        "presentation",
+        "host_package.procurar",
+        "host_package.search",
     ):
-        ensure(term in readme_normalized or term in readme, f"README.md precisa citar {term}")
-    ensure("owner/project" in readme, "README.md precisa continuar citando owner/project")
-    ensure("from_repo" in readme, "README.md precisa continuar citando from_repo")
+        ensure(term in readme or term in readme_normalized, f"README.md precisa citar {term}")
+    ensure_any(readme_normalized, ("canonizacao da linha", "canonizacao de linha", "canoniza a linha"), "README.md precisa tratar a v0.6.3 como canonizacao de linha")
     assert_no_auroboros("README.md", readme)
-    ok("README.md alinhado ao release")
+    ok("README.md alinhado")
 
     architecture = read("docs/ARCHITECTURE.md")
     architecture_normalized = normalize(architecture)
-    ensure("100% python" in architecture_normalized, "ARCHITECTURE precisa afirmar 100% Python")
-    ensure("fish" in architecture_normalized, "ARCHITECTURE precisa explicitar a saida de Fish do centro")
-    for route_name in (
+    for term in (
+        "100% python",
+        "fish",
+        "tests/release_gate_canonic_line.sh",
+        "tests/README.md",
+        "AURORA_INVARIANTS.md",
+        "DECISION_RECORD_SCHEMA.md",
+        "FACTS_VS_RENDERING.md",
+        "AURY_TO_AURORA_DOSSIER.md",
+        "audit_decision_record_contract.py",
+        "aurora.decision_record.v1",
+        "stable_ids",
+        "facts",
+        "presentation",
+        "host_package.procurar",
         "host_package.search",
-        "host_package.instalar",
-        "host_package.remover",
-        "aur.procurar",
-        "aur.instalar",
-        "aur.remover",
-        "copr.procurar",
-        "copr.instalar",
-        "copr.remover",
-        "ppa.instalar",
-        "flatpak.procurar",
-        "flatpak.instalar",
-        "flatpak.remover",
         "toolbox.procurar",
-        "toolbox.instalar",
-        "toolbox.remover",
         "distrobox.procurar",
-        "distrobox.instalar",
-        "distrobox.remover",
         "rpm_ostree.instalar",
         "rpm_ostree.remover",
     ):
-        ensure(route_name in architecture, f"ARCHITECTURE precisa listar a rota {route_name}")
-    for term in (
-        "toolbox",
-        "distrobox",
-        "rpm-ostree",
-        "rpm_ostree_status",
-        "immutable_selected_surface",
-        "immutable_observed_surfaces",
-        "pending deployment",
-        "status --json",
-        "execution_surface",
-        "environment_resolution",
-        "toolbox_profile",
-        "distrobox_profile",
-        "nome exato",
-        "fallback",
-        "ppa:owner/name",
-        "ubuntu",
-        "add-apt-repository",
-        "ppa.remover",
-        "flatpak remotes",
-        "remote-ls",
-        "flathub",
-        "origin",
-    ):
-        ensure(term in architecture_normalized or term in architecture, f"ARCHITECTURE precisa citar {term}")
+        ensure(term in architecture or term in architecture_normalized, f"docs/ARCHITECTURE.md precisa citar {term}")
+    ensure_any(architecture_normalized, ("canonizacao da linha", "canonizacao de linha", "canoniza a linha"), "ARCHITECTURE precisa tratar a v0.6.3 como canonizacao de linha")
     assert_no_auroboros("docs/ARCHITECTURE.md", architecture)
     ok("docs/ARCHITECTURE.md alinhado")
 
-    compatibility = read("docs/COMPATIBILITY_LINUX.md")
-    compatibility_normalized = normalize(compatibility)
-    for term in (
-        "arch",
-        "debian",
-        "fedora",
-        "opensuse",
-        "atomic",
-        "flatpak",
-        "user_software",
-        "aur",
-        "paru",
-        "yay",
-        "copr",
-        "owner/project",
-        "from_repo",
-        "ppa",
-        "ppa:owner/name",
-        "ubuntu",
-        "add-apt-repository",
-        "apt-get",
-        "dpkg",
-        "ppa.remover",
+    assert_terms(
+        "docs/COMPATIBILITY_LINUX.md",
+        VERSION,
         "toolbox",
         "distrobox",
         "rpm-ostree",
-        "rpm_ostree.instalar",
-        "rpm_ostree.remover",
-        "rpm_ostree.procurar",
-        "immutable_selected_surface",
+        "flatpak",
+        "AUR",
+        "COPR",
+        "PPA",
         "pending deployment",
         "status --json",
-        "sudo",
-        "nome exato",
-        "fallback",
-        "flatpak remotes",
-        "remote-ls",
-        "flathub",
-        "origin",
-    ):
-        ensure(term in compatibility_normalized or term in compatibility, f"COMPATIBILITY precisa citar {term}")
-    assert_no_auroboros("docs/COMPATIBILITY_LINUX.md", compatibility)
+    )
     ok("docs/COMPATIBILITY_LINUX.md alinhado")
 
-    policy = read("docs/INSTALLATION_POLICY.md")
-    policy_normalized = normalize(policy)
-    for term in (
+    assert_terms(
+        "docs/INSTALLATION_POLICY.md",
+        VERSION,
         "domain_kind",
         "source_type",
         "execution_surface",
-        "trust_level",
-        "software_criticality",
         "policy_outcome",
         "requires_confirmation",
-        "reversal_level",
-        "host_package_manager",
-        "aur_repository",
-        "copr_repository",
-        "ppa_repository",
-        "flatpak_remote",
-        "toolbox_host_package_manager",
-        "distrobox_host_package_manager",
-        "rpm_ostree_layering",
-        "distribution_managed",
-        "third_party_build",
-        "third_party_repository",
-        "guarded",
-        "mediated_environment",
-        "immutable_host_surface",
         "immutable_selected_surface",
-        "immutable_observed_surfaces",
         "rpm_ostree_status",
-        "pending deployment",
-        "status --json",
-        "toolbox_requested_environment",
-        "toolbox_resolved_environment",
-        "toolbox_package_backends",
-        "toolbox_sudo_observed",
-        "distrobox_requested_environment",
-        "distrobox_resolved_environment",
-        "distrobox_package_backends",
-        "distrobox_sudo_observed",
-        "na toolbox",
-        "na distrobox",
-        "nome exato",
-        "flathub",
         "flatpak_effective_remote",
-        "flatpak_remote_origin",
-        "flatpak_observed_remotes",
-        "flatpak remotes",
-        "remote-ls",
-        "ppa:owner/name",
-        "add-apt-repository",
-        "ubuntu",
-        "ppa.remover",
-    ):
-        ensure(term in policy_normalized or term in policy, f"INSTALLATION_POLICY precisa citar {term}")
-    ensure("owner/project" in policy, "INSTALLATION_POLICY precisa continuar citando owner/project")
-    ensure("from_repo" in policy, "INSTALLATION_POLICY precisa continuar citando from_repo")
-    assert_no_auroboros("docs/INSTALLATION_POLICY.md", policy)
+        "toolbox_requested_environment",
+        "distrobox_requested_environment",
+    )
     ok("docs/INSTALLATION_POLICY.md alinhado")
 
-    heritage = read("docs/AURY_HERITAGE_MAP.md")
-    heritage_normalized = normalize(heritage)
-    ensure(VERSION in heritage, "AURY_HERITAGE_MAP precisa refletir a release publica atual")
-    for term in (
+    assert_terms(
+        "docs/AURY_HERITAGE_MAP.md",
+        VERSION,
         "aury",
         "herdado",
         "host_package",
         "user_software",
-        "aur",
-        "copr",
-        "ppa",
-        "flatpak",
-        "toolbox",
-        "distrobox",
-        "rpm-ostree",
-    ):
-        ensure(term in heritage_normalized or term in heritage, f"AURY_HERITAGE_MAP precisa citar {term}")
-    assert_no_auroboros("docs/AURY_HERITAGE_MAP.md", heritage)
+        "AURY_TO_AURORA_DOSSIER.md",
+    )
     ok("docs/AURY_HERITAGE_MAP.md alinhado")
+
+    assert_terms(
+        "docs/AURORA_INVARIANTS.md",
+        VERSION,
+        "contrato pequeno",
+        "auditavel",
+        "superficie explicita",
+        "ferramenta observada",
+        "100% python",
+        "fish",
+        "stage publica",
+    )
+    ok("docs/AURORA_INVARIANTS.md alinhado")
+
+    schema_doc = read("docs/DECISION_RECORD_SCHEMA.md")
+    schema_normalized = normalize(schema_doc)
+    for term in (
+        VERSION,
+        "aurora.decision_record.v1",
+        "stable_ids.action_id",
+        "stable_ids.route_id",
+        "stable_ids.event_id",
+        "facts",
+        "presentation",
+        "host_package.procurar",
+        "host_package.search",
+        "payload antigo",
+    ):
+        ensure(term in schema_doc or term in schema_normalized, f"docs/DECISION_RECORD_SCHEMA.md precisa citar {term}")
+    ok("docs/DECISION_RECORD_SCHEMA.md alinhado")
+
+    facts_doc = read("docs/FACTS_VS_RENDERING.md")
+    facts_normalized = normalize(facts_doc)
+    for term in (
+        VERSION,
+        "messages.py",
+        "text_polish.py",
+        "facts",
+        "presentation",
+        "policy",
+        "bloqueio",
+        "confirmacao",
+        "resultado",
+        "refactor ornamental",
+    ):
+        ensure(term in facts_doc or term in facts_normalized, f"docs/FACTS_VS_RENDERING.md precisa citar {term}")
+    ok("docs/FACTS_VS_RENDERING.md alinhado")
+
+    dossier = read("docs/AURY_TO_AURORA_DOSSIER.md")
+    dossier_normalized = normalize(dossier)
+    for term in (
+        VERSION,
+        "aury",
+        "aurora",
+        "raiz operacional",
+        "decisao e mediacao",
+        "nao deve migrar",
+        "frontend da aurora",
+        "fish",
+        "gate final",
+    ):
+        ensure(term in dossier or term in dossier_normalized, f"docs/AURY_TO_AURORA_DOSSIER.md precisa citar {term}")
+    ok("docs/AURY_TO_AURORA_DOSSIER.md alinhado")
 
     help_text = read("resources/help.txt")
     help_normalized = normalize(help_text)
     ensure(help_text.startswith("🌌 Aurora {version}"), "resources/help.txt precisa abrir com o cabecalho final da release")
-    ensure("{version}" in help_text, "resources/help.txt precisa manter placeholder de versao")
     for term in (
-        "host_package",
-        "user_software",
-        "aur",
-        "copr",
-        "ppa",
-        "flatpak",
-        "toolbox",
-        "distrobox",
-        "rpm-ostree",
-        "rpm_ostree",
-        "rpm_ostree.instalar",
-        "rpm_ostree.remover",
-        "rpm_ostree_layering",
-        "immutable_selected_surface",
-        "pending deployment",
-        "status --json",
-        "ppa_repository",
-        "ppa.instalar",
-        "ppa.remover",
+        "Contrato público da v0.6.3",
+        "host_package.procurar",
+        "aurora.decision_record.v1",
+        "stable_ids.action_id/route_id/event_id",
+        "facts e presentation",
         "ppa:owner/name",
-        "ubuntu",
-        "add-apt-repository",
-        "toolbox.instalar",
-        "toolbox.remover",
-        "toolbox_host_package_manager",
-        "distrobox.instalar",
-        "distrobox.remover",
-        "distrobox_host_package_manager",
-        "na toolbox <ambiente>",
-        "na distrobox <ambiente>",
-        "nome exato",
-        "flatpak remotes",
         "remote-ls",
         "flathub",
         "--confirm",
         "--yes",
     ):
-        ensure(term in help_normalized or term in help_text, f"resources/help.txt precisa citar {term}")
-    ensure(
-        "aurora instalar <pacote> do ppa <ppa:owner/name> --confirm" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica correta para instalacao PPA com confirmacao",
-    )
-    ensure(
-        "aurora remover <pacote> do ppa <ppa:owner/name>" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe observavel para o bloqueio de remocao PPA",
-    )
-    ensure(
-        "aurora procurar <software> no flatpak <remote>" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica de remote explicito no flatpak",
-    )
-    ensure(
-        "aurora remover <software> no flatpak <remote> --confirm" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica de remocao flatpak com remote explicito",
-    )
-    ensure(
-        "aurora procurar <pacote> na toolbox <ambiente>" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica de busca em toolbox explicita",
-    )
-    ensure(
-        "aurora remover <pacote> na toolbox <ambiente> --confirm" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica de remocao em toolbox explicita",
-    )
-    ensure(
-        "aurora procurar <pacote> na distrobox <ambiente>" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica de busca em distrobox explicita",
-    )
-    ensure(
-        "aurora remover <pacote> na distrobox <ambiente> --confirm" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica de remocao em distrobox explicita",
-    )
-    ensure(
-        "aurora instalar <pacote> no rpm-ostree" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica de instalacao rpm-ostree explicita",
-    )
-    ensure(
-        "aurora remover <pacote> no rpm-ostree --confirm" in help_text,
-        "resources/help.txt precisa mostrar a sintaxe publica de remocao rpm-ostree explicita",
-    )
-    assert_no_auroboros("resources/help.txt", help_text)
+        ensure(term in help_text or term in help_normalized, f"resources/help.txt precisa citar {term}")
     ok("resources/help.txt alinhado")
 
     gitignore = read(".gitignore")

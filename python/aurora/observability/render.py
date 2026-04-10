@@ -6,6 +6,7 @@ from aurora.install.sources.aur import (
     supported_aur_helper,
     supported_aur_helpers,
 )
+from aurora.observability.decision_record import decision_record_to_dict
 from aurora.presentation.formatting import field
 from aurora.presentation.text_polish import polish_public_text
 
@@ -163,10 +164,17 @@ def _append_environment_profile_lines(lines: list[str], profile, title: str) -> 
 
 
 def render_decision_record(record: DecisionRecord) -> str:
+    payload = decision_record_to_dict(record)
+    stable_ids = payload["stable_ids"]
+    presentation = payload["presentation"]
     lines = [
         "Aurora decision record",
-        field("outcome", record.outcome),
-        field("summary", polish_public_text(record.summary)),
+        field("schema_version", payload["schema"]["schema_version"]),
+        field("action_id", stable_ids["action_id"] or "-"),
+        field("route_id", stable_ids["route_id"] or "-"),
+        field("event_id", stable_ids["event_id"]),
+        field("outcome", payload["facts"]["outcome"]),
+        field("summary", polish_public_text(presentation["summary"])),
         "",
         "Request",
         field("original_text", record.request.original_text),

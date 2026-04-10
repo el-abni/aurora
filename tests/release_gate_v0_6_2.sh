@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_*.py'
-PYTHONPATH=python:tests python3 tests/audit_public_release.py
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-printf "release_gate_v0_6_2: ok\n"
+cd "$ROOT"
+
+bash "$ROOT/tests/release_gate_canonic_line.sh"
+
+printf "release_gate_v0_6_2: ok (gate historico da release v0.6.2; a regua corrente da linha e tests/release_gate_canonic_line.sh)\n"

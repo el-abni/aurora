@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.6.2
+# Architecture - Aurora v0.6.3
 
 ## Tese curta
 
@@ -15,6 +15,21 @@ Aurora continua sendo um produto **100% Python** com contratos pequenos e observ
 
 Ela não depende de Fish como centro do runtime, não trata ferramenta observada como promessa de suporte e não colapsa host e ambiente mediado numa rota opaca.
 
+## Espinha canônica da linha
+
+A `v0.6.3` não abre rota nova. Ela canoniza a linha com oito peças pequenas e explícitas:
+
+- `tests/release_gate_canonic_line.sh` como régua corrente da linha;
+- `tests/release_gate_v0_6_2.sh` preservado como gate histórico da release `v0.6.2`;
+- `tests/README.md` como papel canônico da pasta `tests/`;
+- `docs/AURORA_INVARIANTS.md` como registro curto das lições já provadas pelo repositório;
+- `docs/DECISION_RECORD_SCHEMA.md` como contrato curto do `decision_record`;
+- `docs/FACTS_VS_RENDERING.md` como fronteira entre fato operacional e renderização;
+- `docs/AURY_TO_AURORA_DOSSIER.md` como dossiê canônico da fronteira `Aury -> Aurora`;
+- `tests/audit_decision_record_contract.py` como auditor curto do novo chão contratual.
+
+Essa espinha reaproveita uma lição já aprendida pela Aurora: a linha endurece melhor com contrato pequeno, docs auditáveis e gate curto do que com feature nova. Ela também evita um choque já conhecido com o patrimônio do repo: Fish e stage pública não entram como centro do gate da Aurora.
+
 ## Fluxo principal
 
 1. `cli.py` recebe o comando público.
@@ -26,7 +41,8 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 7. `install/policy_engine.py` produz o juízo de política.
 8. `install/candidates.py` e `install/route_selector.py` escolhem a rota executável.
 9. `install/execution_handoff.py` executa, faz probes e mantém visível se a ação ocorre no host mutável, no host imutável via `rpm-ostree`, dentro da toolbox ou dentro da distrobox.
-10. `observability/` registra e renderiza o `decision_record`.
+10. `contracts/decision_record_schema.py` e `contracts/stable_ids.py` fixam o schema versionado e os IDs mínimos estáveis do `decision_record`.
+11. `observability/` registra `facts`, preserva compatibilidade por espelhos legados e renderiza a camada pública.
 
 ## Módulos principais
 
@@ -61,6 +77,10 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 ### `observability/`
 
 - `decision_record`;
+- `schema=aurora.decision_record.v1`;
+- `stable_ids`;
+- `facts`;
+- `presentation`;
 - `environment_resolution`;
 - `toolbox_profile`;
 - `distrobox_profile`;
@@ -74,15 +94,31 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 - help;
 - mensagens de bloqueio;
 - mensagens de confirmação;
-- mensagens de resultado.
+- mensagens de resultado;
+- polimento de texto e voz pública sem decidir policy, suporte, bloqueio, confirmação ou resultado.
 
-## Rotas abertas na v0.6.2
+## Decision Record Canônico
+
+Na `v0.6.3`, o `decision_record` passa a ter uma leitura canônica curta:
+
+- `schema.schema_id=aurora.decision_record.v1`;
+- `stable_ids.action_id`, `stable_ids.route_id` e `stable_ids.event_id` como IDs mínimos estáveis;
+- `facts` como camada factual de request, policy, route, execution e observações;
+- `presentation` como camada de voz.
+
+Compatibilidade:
+
+- o payload antigo continua espelhado no topo nesta linha;
+- `host_package.search` continua apenas como `route_name` legado;
+- o ID canônico da rota de busca do host passa a ser `host_package.procurar`.
+
+## Rotas abertas na v0.6.3
 
 ### `host_package`
 
 Rotas reais:
 
-- `host_package.search`
+- `host_package.procurar`
 - `host_package.instalar`
 - `host_package.remover`
 
@@ -220,7 +256,7 @@ Garantias:
 
 ## Fronteiras deliberadas
 
-A `v0.6.2` continua pequena de propósito:
+A `v0.6.3` continua pequena de propósito:
 
 - pedido nu continua em `host_package` no host;
 - em host imutável, pedido nu bloqueia com `immutable_observed_surfaces` e `immutable_selected_surface=block`;

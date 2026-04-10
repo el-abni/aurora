@@ -1,15 +1,15 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v0.6.2-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v0.6.3-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com política explícita, observabilidade própria e execução real sobre um contrato pequeno e auditável.
 
-A release pública atual é a `v0.6.2`. Ela preserva o corte da `v0.6.1`, mas fecha o polimento operacional final: endurece a UX pública, melhora o fluxo percebido em AUR/toolbox/distrobox e limpa mensagens que ainda soavam como log cru.
+A release pública atual é a `v0.6.3`. Ela não abre frente nova de produto: fecha a canonização da linha com gate canônico, invariantes curtas, schema versionado do `decision_record`, IDs mínimos estáveis, fronteira explícita entre fato e renderização e um dossiê canônico `Aury -> Aurora`.
 
-Na `v0.6.2`, a superfície pública continua pequena:
+Na `v0.6.3`, a superfície pública continua a mesma da `v0.6.2`:
 
 - `host_package` para pacotes do host no `execution_surface=host`;
 - `AUR` como fonte explícita de terceiro dentro de `host_package`;
@@ -20,7 +20,21 @@ Na `v0.6.2`, a superfície pública continua pequena:
 - `distrobox` como `execution_surface` explícita para operar pacote distro-managed dentro de um ambiente mediado nomeado.
 - `rpm-ostree` como `execution_surface` explícita para layering/uninstall no host imutável.
 
-Leitura correta da `v0.6.2`:
+## Espinha canônica da linha
+
+A `v0.6.3` reaproveita uma lição já aprendida pela Aurora: endurecimento de linha pede regra executável e docs canônicas curtas, não feature nova.
+
+Por isso, esta release amarra:
+
+- `tests/release_gate_canonic_line.sh` como régua corrente da linha;
+- `tests/release_gate_v0_6_2.sh` como gate histórico da release `v0.6.2`;
+- `tests/README.md` como papel canônico da pasta `tests/`;
+- `docs/AURORA_INVARIANTS.md` como registro curto das lições já provadas pela Aurora;
+- `docs/DECISION_RECORD_SCHEMA.md` como contrato curto do `decision_record`;
+- `docs/FACTS_VS_RENDERING.md` como fronteira explícita entre fato operacional e voz;
+- `docs/AURY_TO_AURORA_DOSSIER.md` como dossiê canônico de herança e limite entre Aury e Aurora.
+
+Leitura correta da `v0.6.3`:
 
 - `toolbox` não é fonte de pacote;
 - `toolbox` não é `host_package` com outro nome;
@@ -42,13 +56,15 @@ Leitura correta da `v0.6.2`:
 - pedido nu em host imutável não sofre fallback mágico: a Aurora mostra as superfícies observadas e bloqueia quando a frase não escolhe uma delas;
 - `host`, `toolbox`, `distrobox` e `rpm_ostree` aparecem separados em request, policy, route, execution e `aurora dev`.
 
-O foco da `v0.6.2` é hardening:
+O foco da `v0.6.3` é canonização de linha:
 
-- erro operacional agora tenta carregar o motivo útil devolvido pelo backend, sem despejar log bruto;
-- `aur.instalar` confirma a presença final no host sem depender só de `pacman -Qm`;
-- o handoff interativo para helpers AUR prepara melhor o usuário para prompts, Enter, pausa silenciosa e retorno do terminal;
-- `toolbox` e `distrobox` anunciam melhor início, espera, retorno do controle e validação final nas mutações mediadas;
-- help, mensagens, summaries e `decision_record` receberam nova revisão de texto, caixa, pontuação e placeholders públicos.
+- o gate canônico da linha passa a ser `tests/release_gate_canonic_line.sh`;
+- `tests/README.md` passa a declarar o papel e o antipapel da base de testes;
+- `docs/AURORA_INVARIANTS.md` passa a registrar o que a Aurora já aprendeu a não reabrir;
+- o `decision_record` ganha `schema=aurora.decision_record.v1`, `stable_ids` mínimos e seção canônica `facts`;
+- a voz pública fica separada em `presentation`, sem esconder policy, suporte, bloqueio, confirmação ou resultado;
+- `docs/AURY_TO_AURORA_DOSSIER.md` fixa a leitura estrutural de que `Aury` é raiz operacional e `Aurora` é decisão/mediação;
+- a espinha da linha continua 100% Python, sem puxar Fish ou stage pública para o centro da Aurora.
 
 ## O que a Aurora faz
 
@@ -63,11 +79,25 @@ A Aurora funciona como uma camada de decisão e execução sobre Linux. Em vez d
 - executa com probe de estado quando a ação muda software;
 - expõe um `decision_record` auditável com `aurora dev <frase>`, incluindo `immutable_observed_surfaces`, `immutable_selected_surface` e `rpm_ostree_status` quando cabível.
 
-## Contrato público da v0.6.2
+## Decision Record Canônico
+
+Na `v0.6.3`, a leitura parseável do `decision_record` passa a ser:
+
+- `schema.schema_id=aurora.decision_record.v1`;
+- `stable_ids.action_id`, `stable_ids.route_id` e `stable_ids.event_id` como IDs mínimos estáveis;
+- `facts` como seção canônica do estado operacional;
+- `presentation` como seção de voz e renderização.
+
+Compatibilidade desta linha:
+
+- o payload antigo continua espelhado no topo por compatibilidade com a base já aberta;
+- `host_package.search` continua existindo apenas como `route_name` legado; o ID canônico da rota é `host_package.procurar`.
+
+## Contrato público da v0.6.3
 
 Rotas reais abertas nesta release:
 
-- `host_package.search`
+- `host_package.procurar`
 - `host_package.instalar`
 - `host_package.remover`
 - `aur.procurar`
@@ -329,10 +359,10 @@ A identidade pública da ferramenta é:
 No help público, a versão aparece como:
 
 ```text
-🌌 Aurora v0.6.2
+🌌 Aurora v0.6.3
 ```
 
-## O que a v0.6.2 não promete
+## O que a v0.6.3 não promete
 
 A Aurora ainda não abre:
 
@@ -367,6 +397,11 @@ A documentação complementar desta release fica em:
 - [Compatibilidade Linux](docs/COMPATIBILITY_LINUX.md)
 - [Política de Instalação](docs/INSTALLATION_POLICY.md)
 - [Mapa de Herança da Aury](docs/AURY_HERITAGE_MAP.md)
+- [Invariantes da Aurora](docs/AURORA_INVARIANTS.md)
+- [Schema do Decision Record](docs/DECISION_RECORD_SCHEMA.md)
+- [Facts vs Rendering](docs/FACTS_VS_RENDERING.md)
+- [Dossiê Aury -> Aurora](docs/AURY_TO_AURORA_DOSSIER.md)
+- [Papel Canônico de tests/](tests/README.md)
 
 ## Licença
 
