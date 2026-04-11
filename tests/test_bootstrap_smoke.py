@@ -14,7 +14,10 @@ class BootstrapSmokeTests(unittest.TestCase):
         proc = run_module("--help")
         self.assertEqual(proc.returncode, 0)
         self.assertIn(f"🌌 Aurora {CURRENT_VERSION}", proc.stdout)
-        self.assertIn("host_package", proc.stdout)
+        self.assertIn("Uso rápido:", proc.stdout)
+        self.assertIn("Mais detalhes:", proc.stdout)
+        self.assertNotIn("Compatibilidade:", proc.stdout)
+        self.assertNotIn("Contrato público da", proc.stdout)
 
     def test_version_via_launchers(self) -> None:
         for script_name in ("aurora", "auro"):

@@ -1,8 +1,8 @@
-# Workflow de Testes e Release - Aurora v0.6.4
+# Workflow de Testes e Release - Aurora v0.6.5
 
 ## Papel
 
-Este documento formaliza a disciplina operacional da `v0.6.4`.
+Este documento formaliza a disciplina operacional preservada pela `v0.6.5`.
 
 Ele não abre domínio novo, não cria framework de CI e não substitui leitura do código. Ele existe para separar claramente:
 
@@ -121,11 +121,11 @@ Nunca devem subir por gate automático sozinho:
 - mudanças em handoff interativo, prompts, senha, `toolbox`, `distrobox`, `rpm-ostree` ou AUR;
 - qualquer alteração cuja honestidade só apareça no terminal real.
 
-## Leitura correta da v0.6.4
+## Leitura correta da v0.6.5
 
 - `tests/release_gate_canonic_line.sh` continua sendo a régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` continua como gate histórico;
 - `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh` e `tests/release_gate_pre_release.sh` organizam a rotina operacional por etapa;
 - gate automatizado não substitui checklist humano;
 - checklist humano não substitui terminal real;
-- a `v0.6.4` endurece disciplina de subida sem abrir frente nova de domínio.
+- a `v0.6.5` preserva disciplina de subida sem abrir frente nova de domínio.

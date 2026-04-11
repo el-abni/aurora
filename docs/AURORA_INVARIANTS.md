@@ -1,4 +1,4 @@
-# Aurora Invariants - v0.6.4
+# Aurora Invariants - v0.6.5
 
 ## Papel
 

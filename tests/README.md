@@ -15,9 +15,9 @@ Ela não existe para:
 - justificar abertura de feature nova;
 - substituir leitura humana quando a fronteira ainda é conceitual.
 
-## Três camadas da v0.6.4
+## Três camadas da v0.6.5
 
-A `v0.6.4` formaliza três camadas distintas:
+A `v0.6.5` preserva três camadas distintas:
 
 - teste automático para regressão executável;
 - revisão manual para diffs, docs, help, versão e coerência pública;
@@ -51,7 +51,7 @@ Esse gate é a régua corrente da linha porque protege:
 - a espinha canônica da v0.6.3;
 - o schema curto do `decision_record`;
 - a distinção entre canonização de linha e abertura de feature;
-- a disciplina operacional nova da `v0.6.4`.
+- a disciplina operacional preservada na `v0.6.5`.
 
 ## Gates operacionais por etapa
 
@@ -124,7 +124,7 @@ Ele cobre:
 - `audit_public_release.py` protege a coerência pública da release atual;
 - `audit_canonic_line.py` protege a espinha canônica da linha;
 - `audit_decision_record_contract.py` protege `schema`, `stable_ids`, `facts` e `presentation`;
-- `audit_workflow_release.py` protege o workflow disciplinado da `v0.6.4`;
+- `audit_workflow_release.py` protege o workflow disciplinado da `v0.6.5`;
 - esta base protege auditabilidade e estabilidade de linha, não expansão de produto.
 
 ## Limites deliberados

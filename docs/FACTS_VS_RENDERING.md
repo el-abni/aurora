@@ -1,4 +1,4 @@
-# Facts vs Rendering - Aurora v0.6.4
+# Facts vs Rendering - Aurora v0.6.5
 
 ## Papel
 
@@ -45,11 +45,12 @@ Sem essa fronteira, o `decision_record` voltaria a misturar contrato com voz e r
 
 ## Recorte desta linha
 
-Na `v0.6.4`, o corte continua propositalmente pequeno:
+Na `v0.6.5`, o corte continua propositalmente pequeno:
 
 - `facts` concentra o estado operacional;
 - `presentation` concentra a voz;
 - o payload legado continua espelhado no topo por compatibilidade;
 - a revisão humana ainda lê a renderização no terminal real sem transformar voz em truth layer;
 - a presença pública pode ganhar marcador discreto e voz mais composta sem contaminar o `decision_record` técnico;
+- o help público continua na camada de renderização e volta a ser curto, enquanto compatibilidade, política e workflow detalhados ficam no README/docs;
 - não há refactor ornamental amplo do renderer.

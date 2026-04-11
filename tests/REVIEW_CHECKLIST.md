@@ -1,4 +1,4 @@
-# Review Checklist - Aurora v0.6.4
+# Review Checklist - Aurora v0.6.5
 
 Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplica, a dispensa precisa ser consciente.
 

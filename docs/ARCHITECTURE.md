@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.6.4
+# Architecture - Aurora v0.6.5
 
 ## Tese curta
 
@@ -17,7 +17,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 
 ## Espinha canônica da linha
 
-A `v0.6.4` não abre rota nova. Ela preserva a espinha canônica fechada na `v0.6.3` com oito peças pequenas e explícitas:
+A `v0.6.5` não abre rota nova. Ela preserva a espinha canônica fechada na `v0.6.3` com oito peças pequenas e explícitas:
 
 - `tests/release_gate_canonic_line.sh` como régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` preservado como gate histórico da release `v0.6.2`;
@@ -30,9 +30,9 @@ A `v0.6.4` não abre rota nova. Ela preserva a espinha canônica fechada na `v0.
 
 Essa espinha reaproveita uma lição já aprendida pela Aurora: a linha endurece melhor com contrato pequeno, docs auditáveis e gate curto do que com feature nova. Ela também evita um choque já conhecido com o patrimônio do repo: Fish e stage pública não entram como centro do gate da Aurora.
 
-## Disciplina operacional da v0.6.4
+## Disciplina operacional da v0.6.5
 
-A `v0.6.4` formaliza o workflow que faltava em volta dessa espinha:
+A `v0.6.5` preserva o workflow formalizado em volta dessa espinha:
 
 - `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` define as três camadas de validação;
 - `tests/REVIEW_CHECKLIST.md` fixa a revisão humana curta;
@@ -104,6 +104,7 @@ A `v0.6.4` formaliza o workflow que faltava em volta dessa espinha:
 ### `presentation/`
 
 - help;
+- help curto de uso, com detalhes longos deslocados para README/docs quando o assunto pede compatibilidade, política ou workflow;
 - mensagens de bloqueio;
 - mensagens de confirmação;
 - mensagens de resultado;
@@ -112,7 +113,7 @@ A `v0.6.4` formaliza o workflow que faltava em volta dessa espinha:
 
 ## Decision Record Canônico
 
-Na `v0.6.4`, o `decision_record` continua com uma leitura canônica curta:
+Na `v0.6.5`, o `decision_record` continua com uma leitura canônica curta:
 
 - `schema.schema_id=aurora.decision_record.v1`;
 - `stable_ids.action_id`, `stable_ids.route_id` e `stable_ids.event_id` como IDs mínimos estáveis;
@@ -125,7 +126,7 @@ Compatibilidade:
 - `host_package.search` continua apenas como `route_name` legado;
 - o ID canônico da rota de busca do host passa a ser `host_package.procurar`.
 
-## Rotas abertas na v0.6.4
+## Rotas abertas na v0.6.5
 
 ### `host_package`
 

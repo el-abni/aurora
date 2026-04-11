@@ -1,5 +1,26 @@
 # Changelog
 
+## 🌌 Aurora v0.6.5
+
+Faixa curta de superfície pública/UX. Esta rodada não abre domínio novo: preserva a espinha canônica fechada na `v0.6.3`, preserva a disciplina operacional consolidada na `v0.6.4` e reorganiza o help para voltar a ser help de uso, não mini documentação embutida.
+
+### Alterado
+
+- `resources/help.txt` foi reorganizado por categoria/superfície, com foco em uso real, exemplos curtos, observabilidade e confirmação;
+- o help deixa de repetir blocos longos de contrato, compatibilidade e “fora da release”, e passa a apontar esses detalhes para `README.md`, `docs/COMPATIBILITY_LINUX.md`, `docs/INSTALLATION_POLICY.md` e `docs/WORKFLOW_DE_TESTES_E_RELEASE.md`;
+- `README.md`, `docs/ARCHITECTURE.md`, `resources/help.txt` e auditorias públicas passam a refletir a `v0.6.5` como release pública atual;
+- `tests/release_gate_canonic_line.sh`, `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh`, `tests/release_gate_pre_release.sh`, `tests/REVIEW_CHECKLIST.md` e `tests/audit_workflow_release.py` continuam sendo a base disciplinada da linha;
+- o contrato público, `stable_ids`, `facts`, `presentation`, workflow, gates e checklist continuam os mesmos da `v0.6.4`; a mudança desta release é utilidade real do help, não expansão de superfície.
+
+### Continua fora da v0.6.5
+
+- qualquer nova fonte, nova superfície, nova família ou nova frente de produto;
+- modelo local;
+- `host_maintenance`, rede e arquivos;
+- refactor estrutural grande;
+- expansão de parser;
+- qualquer tentativa de empurrar detalhes longos de compatibilidade, limite ou workflow de volta para dentro do help.
+
 ## 🌌 Aurora v0.6.4
 
 Faixa curta de workflow, revisão, testes e disciplina de subida. Esta rodada não abre domínio novo: reaproveita a espinha canônica fechada na `v0.6.3` e formaliza o fluxo operacional para coding comum, push, tag e release.
