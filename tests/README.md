@@ -15,9 +15,9 @@ Ela não existe para:
 - justificar abertura de feature nova;
 - substituir leitura humana quando a fronteira ainda é conceitual.
 
-## Três camadas da v0.6.5
+## Três camadas da v0.7.0
 
-A `v0.6.5` preserva três camadas distintas:
+A `v0.7.0` preserva três camadas distintas:
 
 - teste automático para regressão executável;
 - revisão manual para diffs, docs, help, versão e coerência pública;
@@ -43,6 +43,10 @@ Ele reúne:
 - `tests/audit_public_release.py`;
 - `tests/audit_canonic_line.py`;
 - `tests/audit_decision_record_contract.py`.
+- `tests/audit_factual_hotspots.py`;
+- `tests/audit_factual_baseline.py`;
+- `tests/audit_observability_canonical_facts.py`;
+- `tests/audit_local_model_eval_baseline.py`;
 - `tests/audit_workflow_release.py`.
 
 Esse gate é a régua corrente da linha porque protege:
@@ -51,7 +55,7 @@ Esse gate é a régua corrente da linha porque protege:
 - a espinha canônica da v0.6.3;
 - o schema curto do `decision_record`;
 - a distinção entre canonização de linha e abertura de feature;
-- a disciplina operacional preservada na `v0.6.5`.
+- a disciplina operacional preservada na `v0.7.0`.
 
 ## Gates operacionais por etapa
 
@@ -124,7 +128,11 @@ Ele cobre:
 - `audit_public_release.py` protege a coerência pública da release atual;
 - `audit_canonic_line.py` protege a espinha canônica da linha;
 - `audit_decision_record_contract.py` protege `schema`, `stable_ids`, `facts` e `presentation`;
-- `audit_workflow_release.py` protege o workflow disciplinado da `v0.6.5`;
+- `audit_factual_hotspots.py` congela que serializer e renderer saíram do reparse factual principal no corte 3;
+- `audit_factual_baseline.py` congela um baseline factual curto de `aurora dev` e `decision_record`;
+- `audit_observability_canonical_facts.py` prova que `render` e `decision_record` continuam expondo fatos promovidos mesmo com `trust_signals` esvaziado;
+- `audit_local_model_eval_baseline.py` congela um corpus curto para comparar `model_off` e `model_on` sem deixar o modelo tocar policy, route, execution ou verdade operacional;
+- `audit_workflow_release.py` protege o workflow disciplinado da `v0.7.0`;
 - esta base protege auditabilidade e estabilidade de linha, não expansão de produto.
 
 ## Limites deliberados

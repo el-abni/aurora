@@ -1,4 +1,4 @@
-# Facts vs Rendering - Aurora v0.6.5
+# Facts vs Rendering - Aurora v0.7.0
 
 ## Papel
 
@@ -29,6 +29,8 @@ Essas decisões vivem em `facts`.
 
 Esses detalhes vivem em `presentation` ou na camada `presentation/`.
 
+Quando existir `facts.local_model`, ele continua sendo camada assistiva e auditavel acima do kernel: pode consumir o payload canonico para sugerir clarificacao, resumo, explicacao ou desambiguacao limitada, mas nao vira fonte de verdade operacional.
+
 ## O que renderização nunca decide
 
 - policy;
@@ -38,6 +40,7 @@ Esses detalhes vivem em `presentation` ou na camada `presentation/`.
 - resultado;
 - rota;
 - verdade observada pelo probe.
+- policy, suporte, bloqueio, confirmação, rota, execução ou verdade operacional em nome de um modelo local.
 
 ## Choque evitado
 
@@ -45,7 +48,7 @@ Sem essa fronteira, o `decision_record` voltaria a misturar contrato com voz e r
 
 ## Recorte desta linha
 
-Na `v0.6.5`, o corte continua propositalmente pequeno:
+Na `v0.7.0`, o corte continua propositalmente pequeno:
 
 - `facts` concentra o estado operacional;
 - `presentation` concentra a voz;
@@ -54,3 +57,19 @@ Na `v0.6.5`, o corte continua propositalmente pequeno:
 - a presença pública pode ganhar marcador discreto e voz mais composta sem contaminar o `decision_record` técnico;
 - o help público continua na camada de renderização e volta a ser curto, enquanto compatibilidade, política e workflow detalhados ficam no README/docs;
 - não há refactor ornamental amplo do renderer.
+
+## Hotspots explícitos do ponto de partida factual
+
+O estado atual já evita que voz vire verdade e os cortes 2 e 3 fecharam a costura factual principal:
+
+- o corte 2 fez `decision_record_schema.py` passar a consumir fatos explícitos promovidos no produtor de policy, em vez de reconstituir a verdade principal via `trust_signals`;
+- o corte 3 fez `render.py` passar a consumir o payload factual canônico e manter `trust_signals` apenas como trilha evidencial exibida;
+- o corte 4 passou a cercar o seam do modelo local em `facts.local_model`, com `model_off` por default e `model_on` restrito a ajuda assistiva sobre o payload canonico;
+- a observabilidade canônica agora prefere fatos estruturados e deixa explícitas apenas as bridges legadas ainda necessárias.
+
+Por isso, a linha passou a congelar duas coisas pequenas e explícitas:
+
+- `tests/audit_factual_hotspots.py` com `tests/fixtures/factual_hotspots_v0_7_0_cut3.json` para mapear que serializer e renderer saíram do reparse factual principal;
+- `tests/audit_factual_baseline.py` com `tests/fixtures/factual_baseline_v0_7_0_cut3.json` para congelar um baseline curto de `decision_record` e `aurora dev` já sobre a observabilidade limpa;
+- `tests/audit_observability_canonical_facts.py` para provar que `render` e `decision_record` continuam expondo fatos promovidos mesmo com `trust_signals` esvaziado.
+- `tests/audit_local_model_eval_baseline.py` para congelar um corpus curto de comparacao `model_off` vs `model_on`, sem deixar o modelo invadir policy, route, execution ou resultado.

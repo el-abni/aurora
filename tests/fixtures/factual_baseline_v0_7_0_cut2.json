@@ -1,0 +1,135 @@
+{
+  "phase": "v0.7.0-cut2",
+  "scenarios": [
+    {
+      "id": "host_package_search_debian",
+      "builder": "host_package_search_debian",
+      "phrase": "procurar firefox",
+      "payload_expect": {
+        "stable_ids.route_id": "host_package.procurar",
+        "facts.request.domain_kind": "host_package",
+        "facts.request.execution_surface": "host",
+        "facts.policy.source_type": "host_package_manager",
+        "facts.policy.trust_level": "distribution_managed",
+        "facts.policy.policy_outcome": "allow",
+        "facts.execution_route.legacy_route_name": "host_package.search",
+        "facts.execution_route.backend_name": "apt-cache"
+      },
+      "render_expect": [
+        "route_id:                host_package.procurar",
+        "source_type:             host_package_manager",
+        "backend_name:            apt-cache"
+      ]
+    },
+    {
+      "id": "flatpak_install_ubuntu",
+      "builder": "flatpak_install_ubuntu",
+      "phrase": "instalar obs studio no flatpak",
+      "payload_expect": {
+        "stable_ids.route_id": "flatpak.instalar",
+        "facts.request.domain_kind": "user_software",
+        "facts.policy.source_type": "flatpak_remote",
+        "facts.policy.flatpak.effective_remote": "flathub",
+        "facts.policy.flatpak.remote_origin": "default",
+        "facts.policy.flatpak.observed_remotes.0": "flathub",
+        "facts.policy.flatpak_effective_remote": "flathub",
+        "facts.target_resolution.resolved_target": "com.obsproject.Studio",
+        "facts.target_resolution.canonicalized": true,
+        "facts.execution_route.flatpak_effective_remote": "flathub"
+      },
+      "render_expect": [
+        "route_id:                flatpak.instalar",
+        "flatpak_effective_remote: flathub",
+        "resolved_target:         com.obsproject.Studio"
+      ]
+    },
+    {
+      "id": "toolbox_search_atomic",
+      "builder": "toolbox_search_atomic",
+      "phrase": "procurar ripgrep na toolbox devbox",
+      "payload_expect": {
+        "stable_ids.route_id": "toolbox.procurar",
+        "facts.request.execution_surface": "toolbox",
+        "facts.environment_resolution.status": "resolved",
+        "facts.environment_resolution.resolved_environment": "devbox",
+        "facts.policy.execution_surface": "toolbox",
+        "facts.policy.immutable_host_context.selected_surface": "toolbox",
+        "facts.policy.toolbox.requested_environment": "devbox",
+        "facts.policy.toolbox.resolved_environment": "devbox",
+        "facts.policy.toolbox.observed_environment_tools.0": "toolbox",
+        "facts.toolbox_profile.linux_family": "fedora",
+        "facts.execution_route.environment_target": "devbox"
+      },
+      "render_expect": [
+        "route_id:                toolbox.procurar",
+        "execution_surface:       toolbox",
+        "resolved_environment:    devbox"
+      ]
+    },
+    {
+      "id": "rpm_ostree_install_atomic",
+      "builder": "rpm_ostree_install_atomic",
+      "phrase": "instalar htop no rpm-ostree",
+      "payload_expect": {
+        "stable_ids.route_id": "rpm_ostree.instalar",
+        "facts.request.execution_surface": "rpm_ostree",
+        "facts.policy.source_type": "rpm_ostree_layering",
+        "facts.policy.immutable_host_context.selected_surface": "rpm_ostree",
+        "facts.policy.rpm_ostree.status": "observed",
+        "facts.policy.rpm_ostree.pending_deployment": false,
+        "facts.rpm_ostree_status.status": "observed",
+        "facts.rpm_ostree_status.pending_deployment": false,
+        "facts.execution_route.rpm_ostree_status": "observed"
+      },
+      "render_expect": [
+        "route_id:                rpm_ostree.instalar",
+        "immutable_selected_surface: rpm_ostree",
+        "rpm_ostree_status:       observed"
+      ]
+    },
+    {
+      "id": "copr_install_fedora",
+      "builder": "copr_install_fedora",
+      "phrase": "instalar obs-studio do copr atim/obs-studio",
+      "payload_expect": {
+        "stable_ids.route_id": "copr.instalar",
+        "facts.request.source_coordinate": "atim/obs-studio",
+        "facts.policy.source_type": "copr_repository",
+        "facts.policy.trust_level": "third_party_repository",
+        "facts.policy.policy_outcome": "require_confirmation",
+        "facts.policy.copr.repository_state": "disabled",
+        "facts.policy.copr.repository_enable_action": "explicit_enable",
+        "facts.execution_route.route_name": "copr.instalar",
+        "facts.execution_route.copr_enable_planned": true,
+        "facts.execution_route.copr_repository_state": "disabled"
+      },
+      "render_expect": [
+        "route_id:                copr.instalar",
+        "source_coordinate:       atim/obs-studio",
+        "copr_repository_state:   disabled"
+      ]
+    },
+    {
+      "id": "ppa_install_ubuntu",
+      "builder": "ppa_install_ubuntu",
+      "phrase": "instalar obs-studio do ppa ppa:obsproject/obs-studio",
+      "payload_expect": {
+        "stable_ids.route_id": "ppa.instalar",
+        "facts.request.source_coordinate": "ppa:obsproject/obs-studio",
+        "facts.policy.source_type": "ppa_repository",
+        "facts.policy.policy_outcome": "require_confirmation",
+        "facts.policy.ppa.supported_distros.0": "ubuntu",
+        "facts.policy.ppa.capability": "add_apt_repository_observed",
+        "facts.policy.ppa.install_preparation.0": "add_repository",
+        "facts.policy.ppa_supported_distros": "ubuntu",
+        "facts.execution_route.ppa_preparation_planned": true,
+        "facts.execution_route.ppa_install_preparation": "add_repository,apt_get_update"
+      },
+      "render_expect": [
+        "route_id:                ppa.instalar",
+        "source_coordinate:       ppa:obsproject/obs-studio",
+        "ppa_install_preparation: add_repository,apt_get_update"
+      ]
+    }
+  ]
+}

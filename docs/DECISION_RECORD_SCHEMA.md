@@ -1,4 +1,4 @@
-# Decision Record Schema - Aurora v0.6.5
+# Decision Record Schema - Aurora v0.7.0
 
 ## Papel
 
@@ -26,6 +26,7 @@ Em `facts` ficam os dados que descrevem estado operacional:
 - `target_resolution`
 - `execution_route`
 - `execution`
+- `local_model`
 - `host_profile`, `toolbox_profile`, `distrobox_profile`, `rpm_ostree_status`
 - `outcome`
 
@@ -61,7 +62,37 @@ Detalhe importante desta release:
 
 - o payload antigo continua espelhado no topo por compatibilidade;
 - o contrato novo a ser consumido daqui em diante é `schema + stable_ids + facts + presentation`.
-- a `v0.6.5` não muda esse schema; ela preserva o workflow que protege esse contrato.
+- a `v0.7.0` não entrega schema novo nem motor novo; ela promove publicamente a seam limitada em `facts.local_model` sem relaxar o contrato central.
+
+## Seam local do modelo
+
+Quando `facts.local_model` estiver presente, a leitura correta e minima e:
+
+- `mode`: `model_off` ou `model_on`;
+- `status`: desligado, concluido ou em fallback deterministico;
+- `requested_capability`: `clarify`, `summarize`, `explain` ou `disambiguate_limited`;
+- `authority_profile=aurora.local_model.limited_assist.v1`;
+- `advisory_only=true`;
+- `input_schema_id=aurora.local_model.input.v1`.
+
+Esse bloco existe para registrar a seam do futuro modelo local sem transformar o modelo em motor de policy ou execucao.
+
+Limites do bloco:
+
+- pode resumir, explicar, clarificar e desambiguar entre candidatos ja estruturados;
+- nao pode decidir policy, suporte, bloqueio, confirmacao, rota, execucao ou verdade operacional;
+- se o provider faltar, falhar ou sair do contrato, a linha cai para fallback deterministico e o kernel permanece suficiente sozinho.
+
+## Ponto de partida factual da fase seguinte
+
+O schema atual já separa `facts` e `presentation`, e os cortes 2 e 3 fecharam a maior parte da dívida factual imediata:
+
+- `decision_record_schema.py` deixou de depender primariamente de parsing reverso de `trust_signals` para contexto de `COPR`, `PPA`, `flatpak`, `toolbox`, `distrobox`, host imutável e `rpm-ostree`;
+- esses fatos agora nascem no produtor de policy como estruturas explícitas pequenas e continuam espelhados em campos legados por compatibilidade da linha;
+- `trust_signals` permanece como trilha evidencial e explicativa, não mais como canal semântico central do serializer nem do render canônico;
+- `decision_record` e `aurora dev` agora preferem os fatos promovidos, mantendo bridges legadas explícitas só onde a linha ainda precisa sobreviver;
+- o estado real do corte 3 fica congelado em `tests/audit_factual_hotspots.py` com `tests/fixtures/factual_hotspots_v0_7_0_cut3.json`, em `tests/audit_factual_baseline.py` com `tests/fixtures/factual_baseline_v0_7_0_cut3.json` e em `tests/audit_observability_canonical_facts.py`.
+- o estado real do corte 4 fica cercado em `facts.local_model` e em `tests/audit_local_model_eval_baseline.py` com `tests/fixtures/local_model_eval_baseline_v0_7_0_cut4.json`.
 
 ## Fica para depois
 

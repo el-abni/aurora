@@ -1,8 +1,8 @@
-# Installation Policy - Aurora v0.6.5
+# Installation Policy - Aurora v0.7.0
 
 ## Escopo real da política
 
-Na `v0.6.5`, a política operacional da Aurora governa dois domínios, três superfícies explícitas fora do host mutável comum e oito leituras reais de rota:
+Na `v0.7.0`, a política operacional da Aurora governa dois domínios, três superfícies explícitas fora do host mutável comum e oito leituras reais de rota:
 
 - `host_package` com `execution_surface=host` e `source_type=host_package_manager`;
 - `host_package` explicitamente marcado com `source_type=aur_repository`;
@@ -156,7 +156,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v0.6.5`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v0.7.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -218,7 +218,7 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 
 ## O que ainda não está aberto
 
-Continuam fora da `v0.6.5`:
+Continuam fora da `v0.7.0`:
 
 - fallback automático do host para `toolbox`;
 - fallback automático do host para `distrobox`;

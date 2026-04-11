@@ -5,7 +5,15 @@ import shutil
 
 from aurora.contracts.decisions import EnvironmentResolution, RpmOstreeStatusObservation
 from aurora.contracts.host import HostProfile
-from aurora.contracts.policy import PolicyAssessment
+from aurora.contracts.policy import (
+    CoprPolicyFacts,
+    FlatpakPolicyFacts,
+    ImmutableHostFacts,
+    MediatedEnvironmentFacts,
+    PolicyAssessment,
+    PpaPolicyFacts,
+    RpmOstreePolicyFacts,
+)
 from aurora.contracts.requests import SemanticRequest
 from aurora.install.sources.aur import (
     observed_out_of_contract_aur_helpers,
@@ -74,6 +82,121 @@ def _append_immutable_surface_context(
     trust_signals.append(f"immutable_selected_surface:{selected_surface}")
 
 
+def _immutable_host_facts(
+    profile: HostProfile | None,
+    *,
+    selected_surface: str,
+) -> ImmutableHostFacts | None:
+    if profile is None or profile.mutability != "atomic":
+        return None
+    return ImmutableHostFacts(
+        host_is_immutable=True,
+        observed_surfaces=tuple(profile.observed_immutable_surfaces),
+        selected_surface=selected_surface,
+        toolbox_environments=tuple(profile.observed_toolbox_environments),
+        distrobox_environments=tuple(profile.observed_distrobox_environments),
+    )
+
+
+def _mediated_environment_facts(
+    execution_surface: str,
+    request: SemanticRequest,
+    profile: HostProfile | None,
+    *,
+    environment_resolution: EnvironmentResolution | None = None,
+    environment_profile: HostProfile | None = None,
+    environment_profile_probe: ToolboxProfileProbe | DistroboxProfileProbe | None = None,
+) -> MediatedEnvironmentFacts:
+    observed_environments = ()
+    observed_environment_tools = ()
+    if profile is not None:
+        observed_environments = tuple(getattr(profile, f"observed_{execution_surface}_environments"))
+        observed_environment_tools = tuple(profile.observed_environment_tools)
+
+    return MediatedEnvironmentFacts(
+        requested_environment=request.environment_target.strip(),
+        environment_status=environment_resolution.status if environment_resolution is not None else "",
+        resolved_environment=(
+            environment_resolution.resolved_environment if environment_resolution is not None else ""
+        ),
+        observed_environment_tools=observed_environment_tools,
+        observed_environments=observed_environments,
+        linux_family=environment_profile.linux_family if environment_profile is not None else "",
+        support_tier=environment_profile.support_tier if environment_profile is not None else "",
+        package_backends=(
+            tuple(environment_profile.package_backends) if environment_profile is not None else ()
+        ),
+        observed_commands=(
+            tuple(environment_profile_probe.observed_commands)
+            if environment_profile_probe is not None
+            else ()
+        ),
+        sudo_observed=(
+            environment_profile_probe.sudo_observed if environment_profile_probe is not None else None
+        ),
+    )
+
+
+def _flatpak_policy_facts(
+    request: SemanticRequest,
+    observed_remotes: tuple[str, ...],
+) -> FlatpakPolicyFacts:
+    return FlatpakPolicyFacts(
+        requested_remote=flatpak_requested_remote(request),
+        effective_remote=flatpak_effective_remote(request),
+        remote_origin=flatpak_remote_origin(request),
+        observed_remotes=observed_remotes,
+        remove_origin_constraint=request.intent == "remover" and bool(flatpak_requested_remote(request)),
+    )
+
+
+def _ppa_policy_facts(
+    *,
+    supported_distros: tuple[str, ...],
+    capability_observed: bool,
+    state_probe_observed: bool,
+    install_preparation: tuple[str, ...],
+) -> PpaPolicyFacts:
+    return PpaPolicyFacts(
+        supported_distros=supported_distros,
+        capability="add_apt_repository_observed" if capability_observed else "",
+        state_probe="dpkg_observed" if state_probe_observed else "",
+        install_preparation=install_preparation,
+    )
+
+
+def _copr_policy_facts(
+    *,
+    repository_state,
+    provenance,
+    repository_enable_action: str,
+) -> CoprPolicyFacts:
+    return CoprPolicyFacts(
+        repository_state=(
+            repository_state.status if repository_state is not None and repository_state.observed else ""
+        ),
+        repository_enable_action=repository_enable_action,
+        package_origin=provenance.status if provenance is not None else "",
+        package_from_repo=provenance.from_repo if provenance is not None else "",
+    )
+
+
+def _rpm_ostree_policy_facts(
+    observation: RpmOstreeStatusObservation | None,
+) -> RpmOstreePolicyFacts | None:
+    if observation is None:
+        return None
+    return RpmOstreePolicyFacts(
+        status=observation.status,
+        booted_requested_packages=tuple(observation.booted_requested_packages),
+        booted_packages=tuple(observation.booted_packages),
+        pending_deployment=observation.pending_deployment,
+        pending_requested_packages=tuple(observation.pending_requested_packages),
+        pending_packages=tuple(observation.pending_packages),
+        transaction_active=observation.transaction_active,
+    )
+
+
 def _host_package_software_criticality(request: SemanticRequest) -> str:
     if request.intent == "procurar":
         return "low"
@@ -110,6 +233,7 @@ def _assess_host_package_policy(
     requires_confirmation = (
         request.intent in {"instalar", "remover"} and software_criticality in {"high", "sensitive"}
     )
+    immutable_host_facts = _immutable_host_facts(profile, selected_surface="block")
 
     if profile is None:
         return PolicyAssessment(
@@ -124,6 +248,7 @@ def _assess_host_package_policy(
             confirmation_supplied=confirmation_supplied,
             reversal_level=reversal_level,
             reason="o host profile nao esta disponivel.",
+            immutable_host_facts=immutable_host_facts,
         )
 
     trust_signals = [
@@ -200,6 +325,7 @@ def _assess_host_package_policy(
         confirmation_supplied=confirmation_supplied,
         reversal_level=reversal_level,
         reason=reason,
+        immutable_host_facts=immutable_host_facts,
     )
 
 
@@ -240,6 +366,15 @@ def _assess_mediated_environment_policy(
     software_criticality = _mediated_environment_software_criticality(request)
     reversal_level = _mediated_environment_reversal_level(request.intent)
     requires_confirmation = request.intent == "remover"
+    immutable_host_facts = _immutable_host_facts(profile, selected_surface=execution_surface)
+    mediated_facts = _mediated_environment_facts(
+        execution_surface,
+        request,
+        profile,
+        environment_resolution=environment_resolution,
+        environment_profile=environment_profile,
+        environment_profile_probe=environment_profile_probe,
+    )
 
     if profile is None:
         return PolicyAssessment(
@@ -255,6 +390,9 @@ def _assess_mediated_environment_policy(
             reversal_level=reversal_level,
             reason=f"o host profile nao esta disponivel para abrir a superficie {execution_surface}.",
             execution_surface=execution_surface,
+            immutable_host_facts=immutable_host_facts,
+            toolbox_facts=mediated_facts if execution_surface == "toolbox" else None,
+            distrobox_facts=mediated_facts if execution_surface == "distrobox" else None,
         )
 
     trust_signals = [
@@ -415,6 +553,9 @@ def _assess_mediated_environment_policy(
         reversal_level=reversal_level,
         reason=reason,
         execution_surface=execution_surface,
+        immutable_host_facts=immutable_host_facts,
+        toolbox_facts=mediated_facts if execution_surface == "toolbox" else None,
+        distrobox_facts=mediated_facts if execution_surface == "distrobox" else None,
     )
 
 
@@ -476,6 +617,8 @@ def _assess_rpm_ostree_policy(
     software_criticality = _host_package_software_criticality(request)
     reversal_level = _rpm_ostree_reversal_level(request.intent, software_criticality)
     requires_confirmation = request.intent == "remover"
+    immutable_host_facts = _immutable_host_facts(profile, selected_surface="rpm_ostree")
+    rpm_ostree_facts = _rpm_ostree_policy_facts(rpm_ostree_status)
 
     if profile is None:
         return PolicyAssessment(
@@ -491,6 +634,8 @@ def _assess_rpm_ostree_policy(
             reversal_level=reversal_level,
             reason="o host profile nao esta disponivel para abrir a superficie rpm-ostree.",
             execution_surface="rpm_ostree",
+            immutable_host_facts=immutable_host_facts,
+            rpm_ostree_facts=rpm_ostree_facts,
         )
 
     trust_signals = [
@@ -621,6 +766,8 @@ def _assess_rpm_ostree_policy(
         reversal_level=reversal_level,
         reason=reason,
         execution_surface="rpm_ostree",
+        immutable_host_facts=immutable_host_facts,
+        rpm_ostree_facts=rpm_ostree_facts,
     )
 
 
@@ -648,6 +795,12 @@ def _assess_user_software_policy(
     software_criticality = _user_software_software_criticality(request)
     reversal_level = _user_software_reversal_level(request.intent)
     requires_confirmation = request.intent == "remover"
+    requested_remote = flatpak_requested_remote(request)
+    effective_remote = flatpak_effective_remote(request)
+    remote_origin = flatpak_remote_origin(request)
+    observed_remotes = observe_flatpak_remotes(profile, environ=environ)
+    flatpak_facts = _flatpak_policy_facts(request, observed_remotes)
+    immutable_host_facts = _immutable_host_facts(profile, selected_surface="flatpak")
 
     if profile is None:
         return PolicyAssessment(
@@ -662,16 +815,14 @@ def _assess_user_software_policy(
             confirmation_supplied=confirmation_supplied,
             reversal_level=reversal_level,
             reason="o host profile nao esta disponivel.",
+            flatpak_facts=flatpak_facts,
+            immutable_host_facts=immutable_host_facts,
         )
 
     source_hint = next(
         (item.split(":", 1)[1] for item in request.observations if item.startswith("source_hint:")),
         "flatpak",
     )
-    requested_remote = flatpak_requested_remote(request)
-    effective_remote = flatpak_effective_remote(request)
-    remote_origin = flatpak_remote_origin(request)
-    observed_remotes = observe_flatpak_remotes(profile, environ=environ)
     trust_signals = [
         "domain:user_software",
         "source_type:flatpak_remote",
@@ -781,6 +932,8 @@ def _assess_user_software_policy(
         confirmation_supplied=confirmation_supplied,
         reversal_level=reversal_level,
         reason=reason,
+        flatpak_facts=flatpak_facts,
+        immutable_host_facts=immutable_host_facts,
     )
 
 
@@ -962,6 +1115,13 @@ def _assess_ppa_policy(
     repository = request.source_coordinate.strip()
     supported_distros = supported_ppa_distro_ids()
     supported_distros_label = ",".join(supported_distros)
+    install_preparation = ("add_repository", "apt_get_update") if request.intent == "instalar" else ()
+    ppa_facts = _ppa_policy_facts(
+        supported_distros=supported_distros,
+        capability_observed=False,
+        state_probe_observed=False,
+        install_preparation=install_preparation,
+    )
 
     if profile is None:
         return PolicyAssessment(
@@ -984,6 +1144,7 @@ def _assess_ppa_policy(
             confirmation_supplied=confirmation_supplied,
             reversal_level=reversal_level,
             reason="o host profile nao esta disponivel para validar a rota PPA.",
+            ppa_facts=ppa_facts,
         )
 
     source_hint = next(
@@ -993,6 +1154,12 @@ def _assess_ppa_policy(
     capability = observe_ppa_capability(profile, environ=environ)
     path = None if environ is None else environ.get("PATH", os.environ.get("PATH"))
     dpkg_observed = shutil.which("dpkg", path=path) is not None
+    ppa_facts = _ppa_policy_facts(
+        supported_distros=supported_distros,
+        capability_observed=capability.observed,
+        state_probe_observed=dpkg_observed,
+        install_preparation=install_preparation,
+    )
 
     trust_signals = [
         "domain:host_package",
@@ -1092,6 +1259,7 @@ def _assess_ppa_policy(
         confirmation_supplied=confirmation_supplied,
         reversal_level=reversal_level,
         reason=reason,
+        ppa_facts=ppa_facts,
     )
 
 
@@ -1106,6 +1274,12 @@ def _assess_copr_policy(
     reversal_level = _copr_reversal_level(request.intent)
     requires_confirmation = request.intent in {"instalar", "remover"}
     repository = request.source_coordinate.strip()
+    repository_enable_action = "explicit_enable" if request.intent == "instalar" else ""
+    copr_facts = _copr_policy_facts(
+        repository_state=None,
+        provenance=None,
+        repository_enable_action=repository_enable_action,
+    )
 
     if profile is None:
         return PolicyAssessment(
@@ -1127,6 +1301,7 @@ def _assess_copr_policy(
             confirmation_supplied=confirmation_supplied,
             reversal_level=reversal_level,
             reason="o host profile nao esta disponivel para validar a rota COPR.",
+            copr_facts=copr_facts,
         )
 
     source_hint = next(
@@ -1143,6 +1318,13 @@ def _assess_copr_policy(
         observe_copr_package_origin(profile, repository, request.target.strip(), environ=environ)
         if request.intent == "remover" and request.target.strip()
         else None
+    )
+    if request.intent == "instalar" and repository_state is not None and repository_state.observed:
+        repository_enable_action = "not_needed" if repository_state.enabled is True else "explicit_enable"
+    copr_facts = _copr_policy_facts(
+        repository_state=repository_state,
+        provenance=provenance,
+        repository_enable_action=repository_enable_action,
     )
     trust_signals = [
         "domain:host_package",
@@ -1273,6 +1455,7 @@ def _assess_copr_policy(
         confirmation_supplied=confirmation_supplied,
         reversal_level=reversal_level,
         reason=reason,
+        copr_facts=copr_facts,
     )
 
 

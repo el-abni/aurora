@@ -1,5 +1,29 @@
 # Changelog
 
+## 🌌 Aurora v0.7.0
+
+Release pública pequena em superfície e grande em papel estrutural. Esta rodada não abre a `v1.0.0`: ela promove publicamente a linha já fechada em quatro cortes internos, mantém a superfície pública curta e deixa a Aurora pronta para receber o modelo local depois sobre um kernel determinístico já adulto.
+
+### Alterado
+
+- `VERSION`, `README.md`, `resources/help.txt`, banners públicos, docs centrais e auditorias públicas passam a refletir a `v0.7.0` como release pública atual;
+- `tests/release_gate_canonic_line.sh`, `docs/WORKFLOW_DE_TESTES_E_RELEASE.md`, `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh`, `tests/release_gate_pre_release.sh`, `tests/REVIEW_CHECKLIST.md` e `tests/audit_workflow_release.py` continuam sendo a base do workflow disciplinado da linha também no fechamento público da `v0.7.0`;
+- o fechamento dos cortes 1 a 4 passa a ficar explícito na leitura pública da release: baseline factual, observabilidade canônica, seam do modelo local, fallback determinístico e autoridade limitada;
+- o `decision_record` público continua em `schema + stable_ids + facts + presentation`, com a seam do modelo local cercada em `facts.local_model` e sem abertura de autoridade operacional nova;
+- a seam em `python/aurora/local_model/` continua pequena e auditável, com `model_off` íntegro por default e `model_on` apenas como camada assistiva opcional;
+- `aurora dev`, `decision_record`, docs de contrato e auditorias passam a sustentar publicamente a leitura correta da linha: o modelo pode clarificar, resumir, explicar e desambiguar candidatos já estruturados, mas não decide `policy`, suporte, bloqueio, confirmação, rota, execução ou verdade operacional;
+- a superfície instalada e o checkout local foram realinhados antes desta promoção pública, para evitar a bridge operacional já detectada no fechamento da candidata final.
+
+### Continua fora da v0.7.0
+
+- provider real de modelo local;
+- qualquer abertura pública da `v1.0.0`;
+- qualquer nova fonte, nova superfície, nova família ou nova frente de produto;
+- `host_maintenance`, rede e arquivos;
+- refactor estrutural grande;
+- parser amplo;
+- qualquer tentativa de usar modelo local para remendar contrato frouxo ou para mandar no kernel.
+
 ## 🌌 Aurora v0.6.5
 
 Faixa curta de superfície pública/UX. Esta rodada não abre domínio novo: preserva a espinha canônica fechada na `v0.6.3`, preserva a disciplina operacional consolidada na `v0.6.4` e reorganiza o help para voltar a ser help de uso, não mini documentação embutida.

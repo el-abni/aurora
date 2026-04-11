@@ -1,0 +1,53 @@
+{
+  "phase": "v0.7.0-cut4",
+  "scenarios": [
+    {
+      "id": "summarize_host_search",
+      "builder": "host_package_search_debian",
+      "phrase": "procurar firefox",
+      "requested_capability": "summarize",
+      "kernel_expect": {
+        "facts.outcome": "planned",
+        "facts.policy.policy_outcome": "allow",
+        "facts.execution_route.route_id": "host_package.procurar"
+      },
+      "model_on_contains": "Resumo curto: a Aurora vai procurar o pacote do host 'firefox' pela rota canonica."
+    },
+    {
+      "id": "explain_sensitive_remove",
+      "builder": "sensitive_remove_arch",
+      "phrase": "remover sudo",
+      "requested_capability": "explain",
+      "kernel_expect": {
+        "facts.outcome": "blocked",
+        "facts.policy.policy_outcome": "require_confirmation",
+        "facts.policy.software_criticality": "sensitive"
+      },
+      "model_on_contains": "Explicacao: a remocao de 'sudo' exige confirmacao porque o pacote foi classificado como sensivel."
+    },
+    {
+      "id": "clarify_atomic_surface",
+      "builder": "atomic_surface_clarify",
+      "phrase": "instalar htop",
+      "requested_capability": "clarify",
+      "kernel_expect": {
+        "facts.outcome": "blocked",
+        "facts.policy.policy_outcome": "block",
+        "facts.policy.immutable_host_context.selected_surface": "block"
+      },
+      "model_on_contains": "Clarificacao: em host imutavel, diga explicitamente se voce quer flatpak, rpm-ostree, toolbox ou distrobox."
+    },
+    {
+      "id": "disambiguate_host_package",
+      "builder": "ambiguous_host_package",
+      "phrase": "instalar obs studio",
+      "requested_capability": "disambiguate_limited",
+      "kernel_expect": {
+        "facts.outcome": "blocked",
+        "facts.policy.policy_outcome": "allow",
+        "facts.target_resolution.status": "ambiguous"
+      },
+      "model_on_contains": "Desambiguacao: escolha um dos candidatos ja tipados: obs-studio ou obs_studio."
+    }
+  ]
+}

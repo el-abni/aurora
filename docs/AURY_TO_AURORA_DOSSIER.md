@@ -1,4 +1,4 @@
-# Aury to Aurora Dossier - Aurora v0.6.5
+# Aury to Aurora Dossier - Aurora v0.7.0
 
 ## Leitura canônica
 
@@ -21,6 +21,7 @@ Isso reaproveita aprendizado real da Aury sem copiar mecanicamente sua superfíc
 - qualquer expansão de domínio além do contrato público já aberto;
 - qualquer nova relação operacional entre Aurora e uma Aury futura;
 - qualquer revisão grande de runtime que exija reabrir superfícies ou backlog lateral.
+- qualquer tentativa de usar modelo local para remendar contrato frouxo ou para puxar a Aury para dentro do runtime da Aurora.
 
 ## O que nunca deve migrar como implementação
 
@@ -37,5 +38,7 @@ Esta seção registra, de forma direta, o que não deve migrar como implementaç
 A Aury canônica inspira estrutura, disciplina e leitura operacional.
 
 A Aurora canônica decide, media e publica contrato próprio.
+
+Se a Aurora vier a ligar um modelo local na `v1.0`, esse modelo continua sendo seam proprio da Aurora, com autoridade limitada e fallback deterministico. A Aury nao herda esse papel como centro do runtime.
 
 Isso evita um choque já aprendido pelo repositório: herança útil não é licença para copiar molde mecânico nem para reabrir acoplamentos que a linha atual já deixou para trás.

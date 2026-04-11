@@ -105,6 +105,10 @@ def main() -> int:
         (
             "git diff --check",
             "tests/audit_decision_record_contract.py",
+            "tests/audit_factual_hotspots.py",
+            "tests/audit_factual_baseline.py",
+            "tests/audit_observability_canonical_facts.py",
+            "tests/audit_local_model_eval_baseline.py",
             "test_bootstrap_smoke.py",
             "test_installer_release.py",
             "test_decision_record.py",

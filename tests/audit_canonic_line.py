@@ -51,6 +51,8 @@ def assert_invariants_state() -> None:
     ensure("contrato pequeno" in normalized and "auditavel" in normalized, f"{path} precisa registrar contrato pequeno e auditavel")
     ensure("superficie explicita" in normalized and "fallback magico" in normalized, f"{path} precisa registrar superficie explicita contra fallback magico")
     ensure("ferramenta observada" in normalized and "nao vira suporte" in normalized, f"{path} precisa registrar que ferramenta observada nao vira suporte")
+    ensure("trust_signals" in normalized and "parsing reverso" in normalized, f"{path} precisa registrar que parsing reverso de trust_signals nao pode ficar implicito")
+    ensure("modelo local" in normalized and "kernel deterministico" in normalized, f"{path} precisa registrar o limite de autoridade do modelo local")
     ensure("revisao humana" in normalized and "terminal real" in normalized, f"{path} precisa registrar revisao humana e terminal real")
     ensure("100% python" in normalized and "fish" in normalized and "stage publica" in normalized, f"{path} precisa preservar o centro 100% Python da Aurora")
     ok(f"{path} alinhado")
@@ -69,6 +71,10 @@ def assert_tests_readme_state() -> None:
         "tests/audit_public_release.py",
         "tests/audit_canonic_line.py",
         "tests/audit_decision_record_contract.py",
+        "tests/audit_factual_hotspots.py",
+        "tests/audit_factual_baseline.py",
+        "tests/audit_observability_canonical_facts.py",
+        "tests/audit_local_model_eval_baseline.py",
         "tests/audit_workflow_release.py",
         "tests/REVIEW_CHECKLIST.md",
         "schema",
@@ -92,6 +98,10 @@ def assert_gate_state() -> None:
         "tests/audit_public_release.py",
         "tests/audit_canonic_line.py",
         "tests/audit_decision_record_contract.py",
+        "tests/audit_factual_hotspots.py",
+        "tests/audit_factual_baseline.py",
+        "tests/audit_observability_canonical_facts.py",
+        "tests/audit_local_model_eval_baseline.py",
         "tests/audit_workflow_release.py",
         "release_gate_canonic_line: ok",
     ):
@@ -144,11 +154,17 @@ def assert_architecture_spine() -> None:
         "docs/FACTS_VS_RENDERING.md",
         "docs/AURY_TO_AURORA_DOSSIER.md",
         "tests/audit_decision_record_contract.py",
+        "tests/audit_factual_hotspots.py",
+        "tests/audit_factual_baseline.py",
+        "tests/audit_observability_canonical_facts.py",
+        "tests/audit_local_model_eval_baseline.py",
         "aurora.decision_record.v1",
         "stable_ids",
         "facts",
         "presentation",
     ):
+        ensure(term in text or term in normalized, f"{path} precisa citar {term}")
+    for term in ("local_model", "model_off", "model_on", "fallback deterministico"):
         ensure(term in text or term in normalized, f"{path} precisa citar {term}")
     ensure_any(normalized, ("espinha canonica", "regua corrente da linha", "disciplina operacional"), f"{path} precisa registrar a espinha da linha na {VERSION}")
     ok(f"{path} alinhado")

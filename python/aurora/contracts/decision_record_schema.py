@@ -7,6 +7,13 @@ from aurora.install.sources.aur import (
     supported_aur_helper,
     supported_aur_helpers,
 )
+from aurora.local_model.contracts import (
+    LOCAL_MODEL_ALLOWED_CAPABILITIES,
+    LOCAL_MODEL_AUTHORITY_PROFILE,
+    LOCAL_MODEL_FORBIDDEN_AUTHORITIES,
+    LOCAL_MODEL_INPUT_SCHEMA_ID,
+    MODEL_MODES,
+)
 from aurora.version import read_version
 
 from .decisions import DecisionRecord
@@ -19,11 +26,18 @@ CANONICAL_SECTIONS = ("stable_ids", "facts")
 PRESENTATION_SECTIONS = ("presentation",)
 
 
-def _signal_value(signals: tuple[str, ...], prefix: str) -> str | None:
-    for signal in signals:
-        if signal.startswith(prefix):
-            return signal.split(":", 1)[1]
-    return None
+def _string_or_none(value: str) -> str | None:
+    return value or None
+
+
+def _csv_or_none(items: tuple[str, ...]) -> str | None:
+    return ",".join(items) if items else None
+
+
+def _bool_string_or_none(value: bool | None) -> str | None:
+    if value is None:
+        return None
+    return "true" if value else "false"
 
 
 def _host_profile_to_dict(profile) -> dict[str, object]:
@@ -44,17 +58,136 @@ def _host_profile_to_dict(profile) -> dict[str, object]:
     }
 
 
-def _surface_fields(surface: str) -> tuple[str, ...]:
-    return (
-        f"{surface}_requested_environment",
-        f"{surface}_environment_status",
-        f"{surface}_resolved_environment",
-        f"observed_{surface}_environments",
-        f"{surface}_linux_family",
-        f"{surface}_support_tier",
-        f"{surface}_package_backends",
-        f"{surface}_observed_commands",
-        f"{surface}_sudo_observed",
+def _immutable_host_context_to_dict(facts) -> dict[str, object]:
+    return {
+        "host_is_immutable": facts.host_is_immutable,
+        "observed_surfaces": list(facts.observed_surfaces),
+        "selected_surface": facts.selected_surface,
+        "toolbox_environments": list(facts.toolbox_environments),
+        "distrobox_environments": list(facts.distrobox_environments),
+    }
+
+
+def _mediated_environment_context_to_dict(facts) -> dict[str, object]:
+    return {
+        "requested_environment": facts.requested_environment,
+        "environment_status": facts.environment_status,
+        "resolved_environment": facts.resolved_environment,
+        "observed_environment_tools": list(facts.observed_environment_tools),
+        "observed_environments": list(facts.observed_environments),
+        "linux_family": facts.linux_family,
+        "support_tier": facts.support_tier,
+        "package_backends": list(facts.package_backends),
+        "observed_commands": list(facts.observed_commands),
+        "sudo_observed": facts.sudo_observed,
+    }
+
+
+def _flatpak_context_to_dict(facts) -> dict[str, object]:
+    return {
+        "requested_remote": facts.requested_remote,
+        "effective_remote": facts.effective_remote,
+        "remote_origin": facts.remote_origin,
+        "observed_remotes": list(facts.observed_remotes),
+        "remove_origin_constraint": facts.remove_origin_constraint,
+    }
+
+
+def _ppa_context_to_dict(facts) -> dict[str, object]:
+    return {
+        "supported_distros": list(facts.supported_distros),
+        "capability": facts.capability,
+        "state_probe": facts.state_probe,
+        "install_preparation": list(facts.install_preparation),
+    }
+
+
+def _copr_context_to_dict(facts) -> dict[str, object]:
+    return {
+        "repository_state": facts.repository_state,
+        "repository_enable_action": facts.repository_enable_action,
+        "package_origin": facts.package_origin,
+        "package_from_repo": facts.package_from_repo,
+    }
+
+
+def _rpm_ostree_context_to_dict(facts) -> dict[str, object]:
+    return {
+        "status": facts.status,
+        "booted_requested_packages": list(facts.booted_requested_packages),
+        "booted_packages": list(facts.booted_packages),
+        "pending_deployment": facts.pending_deployment,
+        "pending_requested_packages": list(facts.pending_requested_packages),
+        "pending_packages": list(facts.pending_packages),
+        "transaction_active": facts.transaction_active,
+    }
+
+
+def _append_immutable_policy_fields(policy_payload: dict[str, object], facts) -> None:
+    policy_payload["immutable_host_context"] = _immutable_host_context_to_dict(facts)
+    policy_payload["immutable_host"] = "true" if facts.host_is_immutable else None
+    policy_payload["immutable_observed_surfaces"] = _csv_or_none(facts.observed_surfaces)
+    policy_payload["immutable_selected_surface"] = _string_or_none(facts.selected_surface)
+    policy_payload["immutable_toolbox_environments"] = _csv_or_none(facts.toolbox_environments)
+    policy_payload["immutable_distrobox_environments"] = _csv_or_none(facts.distrobox_environments)
+
+
+def _append_mediated_policy_fields(policy_payload: dict[str, object], surface: str, facts) -> None:
+    policy_payload[surface] = _mediated_environment_context_to_dict(facts)
+    policy_payload["observed_environment_tools"] = _csv_or_none(facts.observed_environment_tools)
+    policy_payload[f"{surface}_requested_environment"] = _string_or_none(facts.requested_environment)
+    policy_payload[f"{surface}_environment_status"] = _string_or_none(facts.environment_status)
+    policy_payload[f"{surface}_resolved_environment"] = _string_or_none(facts.resolved_environment)
+    policy_payload[f"observed_{surface}_environments"] = _csv_or_none(facts.observed_environments)
+    policy_payload[f"{surface}_linux_family"] = _string_or_none(facts.linux_family)
+    policy_payload[f"{surface}_support_tier"] = _string_or_none(facts.support_tier)
+    policy_payload[f"{surface}_package_backends"] = _csv_or_none(facts.package_backends)
+    policy_payload[f"{surface}_observed_commands"] = _csv_or_none(facts.observed_commands)
+    policy_payload[f"{surface}_sudo_observed"] = _bool_string_or_none(facts.sudo_observed)
+
+
+def _append_flatpak_policy_fields(policy_payload: dict[str, object], facts) -> None:
+    policy_payload["flatpak"] = _flatpak_context_to_dict(facts)
+    policy_payload["flatpak_effective_remote"] = _string_or_none(facts.effective_remote)
+    policy_payload["flatpak_remote_origin"] = _string_or_none(facts.remote_origin)
+    policy_payload["flatpak_observed_remotes"] = _csv_or_none(facts.observed_remotes)
+    policy_payload["flatpak_remove_origin_constraint"] = (
+        "enabled" if facts.remove_origin_constraint else None
+    )
+
+
+def _append_ppa_policy_fields(policy_payload: dict[str, object], facts) -> None:
+    policy_payload["ppa"] = _ppa_context_to_dict(facts)
+    policy_payload["ppa_supported_distros"] = _csv_or_none(facts.supported_distros)
+    policy_payload["ppa_capability"] = _string_or_none(facts.capability)
+    policy_payload["ppa_state_probe"] = _string_or_none(facts.state_probe)
+    policy_payload["ppa_install_preparation"] = _csv_or_none(facts.install_preparation)
+
+
+def _append_copr_policy_fields(policy_payload: dict[str, object], facts) -> None:
+    policy_payload["copr"] = _copr_context_to_dict(facts)
+    policy_payload["copr_repository_state"] = _string_or_none(facts.repository_state)
+    policy_payload["copr_repository_enable_action"] = _string_or_none(facts.repository_enable_action)
+    policy_payload["copr_package_origin"] = _string_or_none(facts.package_origin)
+    policy_payload["copr_package_from_repo"] = _string_or_none(facts.package_from_repo)
+
+
+def _append_rpm_ostree_policy_fields(policy_payload: dict[str, object], facts) -> None:
+    policy_payload["rpm_ostree"] = _rpm_ostree_context_to_dict(facts)
+    policy_payload["rpm_ostree_status"] = _string_or_none(facts.status)
+    policy_payload["rpm_ostree_booted_requested_packages"] = _csv_or_none(
+        facts.booted_requested_packages
+    )
+    policy_payload["rpm_ostree_booted_packages"] = _csv_or_none(facts.booted_packages)
+    policy_payload["rpm_ostree_pending_deployment"] = _bool_string_or_none(
+        facts.pending_deployment
+    )
+    policy_payload["rpm_ostree_pending_requested_packages"] = _csv_or_none(
+        facts.pending_requested_packages
+    )
+    policy_payload["rpm_ostree_pending_packages"] = _csv_or_none(facts.pending_packages)
+    policy_payload["rpm_ostree_transaction_active"] = _bool_string_or_none(
+        facts.transaction_active
     )
 
 
@@ -106,7 +239,7 @@ def decision_record_facts(record: DecisionRecord) -> dict[str, object]:
         facts["host_profile"] = _host_profile_to_dict(record.host_profile)
 
     if record.policy is not None:
-        facts["policy"] = {
+        policy_payload: dict[str, object] = {
             "domain_kind": record.policy.domain_kind,
             "source_type": record.policy.source_type,
             "execution_surface": record.policy.execution_surface,
@@ -120,117 +253,36 @@ def decision_record_facts(record: DecisionRecord) -> dict[str, object]:
             "reversal_level": record.policy.reversal_level,
             "reason": record.policy.reason,
         }
+        facts["policy"] = policy_payload
         if record.request.requested_source == "aur":
-            facts["policy"]["observed_aur_helpers"] = (
+            policy_payload["observed_aur_helpers"] = (
                 list(record.host_profile.observed_third_party_package_tools)
                 if record.host_profile is not None
                 else []
             )
-            facts["policy"]["supported_aur_helpers"] = list(supported_aur_helpers())
-            facts["policy"]["selected_aur_helper"] = (
+            policy_payload["supported_aur_helpers"] = list(supported_aur_helpers())
+            policy_payload["selected_aur_helper"] = (
                 supported_aur_helper(record.host_profile) if record.host_profile is not None else None
             )
-            facts["policy"]["out_of_contract_aur_helpers"] = (
+            policy_payload["out_of_contract_aur_helpers"] = (
                 list(observed_out_of_contract_aur_helpers(record.host_profile))
                 if record.host_profile is not None
                 else []
             )
-        if record.request.requested_source == "copr":
-            facts["policy"]["copr_repository_state"] = _signal_value(
-                record.policy.trust_signals,
-                "copr_repository_state:",
-            )
-            facts["policy"]["copr_repository_enable_action"] = _signal_value(
-                record.policy.trust_signals,
-                "copr_repository_enable_action:",
-            )
-            facts["policy"]["copr_package_origin"] = _signal_value(
-                record.policy.trust_signals,
-                "copr_package_origin:",
-            )
-            facts["policy"]["copr_package_from_repo"] = _signal_value(
-                record.policy.trust_signals,
-                "copr_package_from_repo:",
-            )
-        if record.request.requested_source == "ppa":
-            facts["policy"]["ppa_supported_distros"] = _signal_value(
-                record.policy.trust_signals,
-                "ppa_supported_distros:",
-            )
-            facts["policy"]["ppa_capability"] = _signal_value(
-                record.policy.trust_signals,
-                "ppa_capability:",
-            )
-            facts["policy"]["ppa_state_probe"] = _signal_value(
-                record.policy.trust_signals,
-                "ppa_state_probe:",
-            )
-            facts["policy"]["ppa_install_preparation"] = _signal_value(
-                record.policy.trust_signals,
-                "ppa_install_preparation:",
-            )
-        if record.request.domain_kind == "user_software":
-            facts["policy"]["flatpak_effective_remote"] = _signal_value(
-                record.policy.trust_signals,
-                "flatpak_effective_remote:",
-            )
-            facts["policy"]["flatpak_remote_origin"] = _signal_value(
-                record.policy.trust_signals,
-                "flatpak_remote_origin:",
-            )
-            facts["policy"]["flatpak_observed_remotes"] = _signal_value(
-                record.policy.trust_signals,
-                "flatpak_observed_remotes:",
-            )
-            facts["policy"]["flatpak_remove_origin_constraint"] = _signal_value(
-                record.policy.trust_signals,
-                "flatpak_remove_origin_constraint:",
-            )
-        if record.request.execution_surface in {"toolbox", "distrobox"}:
-            surface = record.request.execution_surface
-            facts["policy"]["observed_environment_tools"] = _signal_value(
-                record.policy.trust_signals,
-                "observed_environment_tools:",
-            )
-            for field_name in _surface_fields(surface):
-                facts["policy"][field_name] = _signal_value(
-                    record.policy.trust_signals,
-                    f"{field_name}:",
-                )
-        facts["policy"]["immutable_host"] = _signal_value(
-            record.policy.trust_signals,
-            "immutable_host:",
-        )
-        facts["policy"]["immutable_observed_surfaces"] = _signal_value(
-            record.policy.trust_signals,
-            "immutable_observed_surfaces:",
-        )
-        facts["policy"]["immutable_selected_surface"] = _signal_value(
-            record.policy.trust_signals,
-            "immutable_selected_surface:",
-        )
-        facts["policy"]["immutable_toolbox_environments"] = _signal_value(
-            record.policy.trust_signals,
-            "immutable_toolbox_environments:",
-        )
-        facts["policy"]["immutable_distrobox_environments"] = _signal_value(
-            record.policy.trust_signals,
-            "immutable_distrobox_environments:",
-        )
-        if record.request.execution_surface == "rpm_ostree":
-            for field_name in (
-                "rpm_ostree_status",
-                "rpm_ostree_booted_requested_packages",
-                "rpm_ostree_booted_packages",
-                "rpm_ostree_pending_deployment",
-                "rpm_ostree_pending_requested_packages",
-                "rpm_ostree_pending_packages",
-                "rpm_ostree_transaction_active",
-            ):
-                facts["policy"][field_name] = _signal_value(
-                    record.policy.trust_signals,
-                    f"{field_name}:",
-                )
+        if record.policy.immutable_host_facts is not None:
+            _append_immutable_policy_fields(policy_payload, record.policy.immutable_host_facts)
+        if record.request.requested_source == "copr" and record.policy.copr_facts is not None:
+            _append_copr_policy_fields(policy_payload, record.policy.copr_facts)
+        if record.request.requested_source == "ppa" and record.policy.ppa_facts is not None:
+            _append_ppa_policy_fields(policy_payload, record.policy.ppa_facts)
+        if record.request.domain_kind == "user_software" and record.policy.flatpak_facts is not None:
+            _append_flatpak_policy_fields(policy_payload, record.policy.flatpak_facts)
+        if record.request.execution_surface == "toolbox" and record.policy.toolbox_facts is not None:
+            _append_mediated_policy_fields(policy_payload, "toolbox", record.policy.toolbox_facts)
+        if record.request.execution_surface == "distrobox" and record.policy.distrobox_facts is not None:
+            _append_mediated_policy_fields(policy_payload, "distrobox", record.policy.distrobox_facts)
+        if record.request.execution_surface == "rpm_ostree" and record.policy.rpm_ostree_facts is not None:
+            _append_rpm_ostree_policy_fields(policy_payload, record.policy.rpm_ostree_facts)
 
     if record.environment_resolution is not None:
         facts["environment_resolution"] = {
@@ -291,72 +343,58 @@ def decision_record_facts(record: DecisionRecord) -> dict[str, object]:
             route_payload["selected_aur_helper"] = record.execution_route.backend_name
         if record.execution_route.route_name.startswith("copr."):
             route_payload["copr_enable_planned"] = bool(record.execution_route.pre_commands)
-            if record.policy is not None:
-                route_payload["copr_repository_state"] = _signal_value(
-                    record.policy.trust_signals,
-                    "copr_repository_state:",
+            if record.policy is not None and record.policy.copr_facts is not None:
+                route_payload["copr_repository_state"] = _string_or_none(
+                    record.policy.copr_facts.repository_state
                 )
-                route_payload["copr_package_origin"] = _signal_value(
-                    record.policy.trust_signals,
-                    "copr_package_origin:",
+                route_payload["copr_package_origin"] = _string_or_none(
+                    record.policy.copr_facts.package_origin
                 )
-                route_payload["copr_package_from_repo"] = _signal_value(
-                    record.policy.trust_signals,
-                    "copr_package_from_repo:",
+                route_payload["copr_package_from_repo"] = _string_or_none(
+                    record.policy.copr_facts.package_from_repo
                 )
         if record.execution_route.route_name.startswith("ppa."):
             route_payload["ppa_preparation_planned"] = bool(record.execution_route.pre_commands)
-            if record.policy is not None:
-                route_payload["ppa_supported_distros"] = _signal_value(
-                    record.policy.trust_signals,
-                    "ppa_supported_distros:",
+            if record.policy is not None and record.policy.ppa_facts is not None:
+                route_payload["ppa_supported_distros"] = _csv_or_none(
+                    record.policy.ppa_facts.supported_distros
                 )
-                route_payload["ppa_capability"] = _signal_value(
-                    record.policy.trust_signals,
-                    "ppa_capability:",
-                )
-                route_payload["ppa_install_preparation"] = _signal_value(
-                    record.policy.trust_signals,
-                    "ppa_install_preparation:",
+                route_payload["ppa_capability"] = _string_or_none(record.policy.ppa_facts.capability)
+                route_payload["ppa_install_preparation"] = _csv_or_none(
+                    record.policy.ppa_facts.install_preparation
                 )
         if record.execution_route.route_name.startswith("flatpak.") and record.policy is not None:
-            route_payload["flatpak_effective_remote"] = _signal_value(
-                record.policy.trust_signals,
-                "flatpak_effective_remote:",
-            )
-            route_payload["flatpak_remote_origin"] = _signal_value(
-                record.policy.trust_signals,
-                "flatpak_remote_origin:",
-            )
-            route_payload["flatpak_observed_remotes"] = _signal_value(
-                record.policy.trust_signals,
-                "flatpak_observed_remotes:",
-            )
-            route_payload["flatpak_remove_origin_constraint"] = _signal_value(
-                record.policy.trust_signals,
-                "flatpak_remove_origin_constraint:",
-            )
+            if record.policy.flatpak_facts is not None:
+                route_payload["flatpak_effective_remote"] = _string_or_none(
+                    record.policy.flatpak_facts.effective_remote
+                )
+                route_payload["flatpak_remote_origin"] = _string_or_none(
+                    record.policy.flatpak_facts.remote_origin
+                )
+                route_payload["flatpak_observed_remotes"] = _csv_or_none(
+                    record.policy.flatpak_facts.observed_remotes
+                )
+                route_payload["flatpak_remove_origin_constraint"] = (
+                    "enabled" if record.policy.flatpak_facts.remove_origin_constraint else None
+                )
         if record.execution_route.route_name.startswith("rpm_ostree.") and record.policy is not None:
-            route_payload["immutable_observed_surfaces"] = _signal_value(
-                record.policy.trust_signals,
-                "immutable_observed_surfaces:",
-            )
-            route_payload["immutable_selected_surface"] = _signal_value(
-                record.policy.trust_signals,
-                "immutable_selected_surface:",
-            )
-            route_payload["rpm_ostree_status"] = _signal_value(
-                record.policy.trust_signals,
-                "rpm_ostree_status:",
-            )
-            route_payload["rpm_ostree_pending_deployment"] = _signal_value(
-                record.policy.trust_signals,
-                "rpm_ostree_pending_deployment:",
-            )
-            route_payload["rpm_ostree_pending_requested_packages"] = _signal_value(
-                record.policy.trust_signals,
-                "rpm_ostree_pending_requested_packages:",
-            )
+            if record.policy.immutable_host_facts is not None:
+                route_payload["immutable_observed_surfaces"] = _csv_or_none(
+                    record.policy.immutable_host_facts.observed_surfaces
+                )
+                route_payload["immutable_selected_surface"] = _string_or_none(
+                    record.policy.immutable_host_facts.selected_surface
+                )
+            if record.policy.rpm_ostree_facts is not None:
+                route_payload["rpm_ostree_status"] = _string_or_none(
+                    record.policy.rpm_ostree_facts.status
+                )
+                route_payload["rpm_ostree_pending_deployment"] = _bool_string_or_none(
+                    record.policy.rpm_ostree_facts.pending_deployment
+                )
+                route_payload["rpm_ostree_pending_requested_packages"] = _csv_or_none(
+                    record.policy.rpm_ostree_facts.pending_requested_packages
+                )
         facts["execution_route"] = route_payload
 
     if record.toolbox_profile is not None:
@@ -477,6 +515,22 @@ def validate_decision_record_payload(payload: Mapping[str, object]) -> tuple[str
                 probe = execution.get(probe_name)
                 if isinstance(probe, Mapping) and "summary" in probe:
                     errors.append(f"facts.execution.{probe_name} nao pode carregar summary")
+
+        local_model = facts.get("local_model")
+        if isinstance(local_model, Mapping):
+            if local_model.get("mode") not in MODEL_MODES:
+                errors.append("facts.local_model.mode fora do contrato")
+            if local_model.get("authority_profile") != LOCAL_MODEL_AUTHORITY_PROFILE:
+                errors.append("facts.local_model.authority_profile incorreto")
+            if local_model.get("input_schema_id") != LOCAL_MODEL_INPUT_SCHEMA_ID:
+                errors.append("facts.local_model.input_schema_id incorreto")
+            requested_capability = local_model.get("requested_capability")
+            if requested_capability not in (*LOCAL_MODEL_ALLOWED_CAPABILITIES, "none"):
+                errors.append("facts.local_model.requested_capability fora do contrato")
+            if local_model.get("allowed_capabilities") != list(LOCAL_MODEL_ALLOWED_CAPABILITIES):
+                errors.append("facts.local_model.allowed_capabilities divergente")
+            if local_model.get("forbidden_authorities") != list(LOCAL_MODEL_FORBIDDEN_AUTHORITIES):
+                errors.append("facts.local_model.forbidden_authorities divergente")
 
     presentation = payload.get("presentation")
     if not isinstance(presentation, Mapping):

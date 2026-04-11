@@ -42,6 +42,9 @@ def assert_planned_contract() -> None:
         ensure(payload["stable_ids"]["route_id"] == "host_package.procurar", "route_id precisa canonicalizar host_package.procurar")
         ensure(payload["stable_ids"]["event_id"] == "decision.planned", "event_id planejado precisa ser estavel")
         ensure("summary" not in payload["facts"], "facts nao pode carregar summary")
+        ensure(payload["facts"]["local_model"]["mode"] == "model_off", "facts.local_model precisa nascer em model_off por padrao")
+        ensure(payload["facts"]["local_model"]["status"] == "disabled", "facts.local_model precisa manter fallback deterministico desligado por padrao")
+        ensure(payload["facts"]["local_model"]["requested_capability"] == "summarize", "facts.local_model precisa selecionar summarize no caso planejado basico")
         ensure(payload["facts"]["execution_route"]["route_id"] == "host_package.procurar", "facts.execution_route precisa carregar route_id canonico")
         ensure(payload["facts"]["execution_route"]["legacy_route_name"] == "host_package.search", "route_name legado precisa continuar visivel")
         ensure(payload["execution_route"]["route_name"] == "host_package.search", "espelho legado precisa preservar route_name antigo")
@@ -70,6 +73,8 @@ def assert_executed_contract() -> None:
         ensure("summary" not in payload["facts"]["execution"], "facts.execution nao pode carregar summary")
         ensure("summary" not in payload["facts"]["execution"]["pre_probe"], "facts.pre_probe nao pode carregar summary")
         ensure("summary" not in payload["facts"]["execution"]["post_probe"], "facts.post_probe nao pode carregar summary")
+        ensure(payload["facts"]["local_model"]["mode"] == "model_off", "facts.local_model executado precisa manter model_off por padrao")
+        ensure(payload["facts"]["local_model"]["status"] == "disabled", "facts.local_model executado precisa manter status desligado por padrao")
         ensure(payload["presentation"]["execution"]["summary"], "presentation.execution precisa carregar a voz publica")
         ensure(payload["presentation"]["execution"]["pre_probe_summary"], "presentation.execution precisa carregar pre_probe_summary")
         ensure(payload["presentation"]["execution"]["post_probe_summary"], "presentation.execution precisa carregar post_probe_summary")
@@ -91,6 +96,8 @@ def assert_render_output() -> None:
         ensure("action_id:" in rendered, "renderer precisa expor action_id")
         ensure("route_id:" in rendered, "renderer precisa expor route_id")
         ensure("event_id:" in rendered, "renderer precisa expor event_id")
+        ensure("Local model seam" in rendered, "renderer precisa expor a seam do modelo local")
+        ensure("requested_capability:" in rendered, "renderer precisa expor a capacidade pedida para o modelo local")
         ok("render alinhado")
 
 

@@ -1,4 +1,4 @@
-# Aurora Invariants - v0.6.5
+# Aurora Invariants - v0.7.0
 
 ## Papel
 
@@ -27,6 +27,22 @@ Helper, backend ou comando observado fora do contrato continua sendo apenas obse
 ### Documentação pública alinhada ao código é patrimônio do produto
 
 `README.md`, `resources/help.txt`, `docs/ARCHITECTURE.md`, `docs/COMPATIBILITY_LINUX.md`, `docs/INSTALLATION_POLICY.md` e `docs/AURY_HERITAGE_MAP.md` já fazem parte da superfície auditável da Aurora.
+
+### Parsing reverso de `trust_signals` não pode ficar implícito
+
+Quando um fato ainda precisa ser reconstituído a partir de `trust_signals`, isso deve ficar explícito, curto e auditado. A Aurora não deve tratar parsing reverso de string como contrato invisível.
+
+### `trust_signals` é evidência, não contrato factual central
+
+Quando um fato central puder nascer diretamente no produtor de policy/route/execution, ele deve nascer ali. `trust_signals` pode explicar, contextualizar e preservar evidência, mas não deve seguir como canal semântico principal do kernel factual.
+
+### Bridge legada precisa ficar explícita
+
+Compatibilidade pode sobreviver por espelhos e bridges pequenas, mas a Aurora não deve esconder bridge legada como se fosse contrato canônico novo.
+
+### Modelo local so entra como camada assistiva sobre kernel deterministico
+
+Quando o modelo local existir na linha, ele precisa operar sobre `schema`, `stable_ids`, `facts` e `presentation` ja fechados. Ele pode clarificar, resumir, explicar e desambiguar candidatos ja estruturados, mas nao pode decidir policy, suporte, bloqueio, confirmacao, rota, execucao nem verdade operacional.
 
 ### Gate automatizado não substitui revisão humana nem terminal real
 

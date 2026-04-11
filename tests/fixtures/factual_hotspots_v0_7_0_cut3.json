@@ -1,0 +1,17 @@
+{
+  "phase": "v0.7.0-cut3",
+  "reparsing_modules": [],
+  "serializer_signal_prefixes": [],
+  "renderer_signal_prefixes": [],
+  "critical_fact_paths": [
+    "facts.policy.copr.repository_state",
+    "facts.policy.flatpak.effective_remote",
+    "facts.policy.immutable_host_context.selected_surface",
+    "facts.policy.ppa.supported_distros.0",
+    "facts.policy.rpm_ostree.status",
+    "facts.policy.toolbox.resolved_environment",
+    "facts.execution_route.copr_repository_state",
+    "facts.execution_route.flatpak_effective_remote",
+    "facts.execution_route.rpm_ostree_status"
+  ]
+}

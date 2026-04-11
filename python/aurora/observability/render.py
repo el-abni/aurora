@@ -1,45 +1,43 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from aurora.contracts.decisions import DecisionRecord
-from aurora.install.sources.aur import (
-    observed_out_of_contract_aur_helpers,
-    supported_aur_helper,
-    supported_aur_helpers,
-)
+from aurora.local_model.contracts import LocalModelProvider
 from aurora.observability.decision_record import decision_record_to_dict
 from aurora.presentation.formatting import field
 from aurora.presentation.text_polish import polish_public_text
 
 
-def _signal_value(signals: tuple[str, ...], prefix: str) -> str | None:
-    for signal in signals:
-        if signal.startswith(prefix):
-            return signal.split(":", 1)[1]
-    return None
+def _mapping(value: object) -> Mapping[str, object] | None:
+    return value if isinstance(value, Mapping) else None
 
 
-def _has_any_signal(signals: tuple[str, ...], *prefixes: str) -> bool:
-    return any(_signal_value(signals, prefix) is not None for prefix in prefixes)
+def _present(value: object) -> bool:
+    return value is not None and value != "" and value != []
 
 
-def _scope_label(record: DecisionRecord) -> str:
-    if record.request.execution_surface == "rpm_ostree" and record.request.domain_kind == "host_package":
-        return "pacote do host via rpm-ostree"
-    if record.request.execution_surface == "distrobox" and record.request.domain_kind == "host_package":
-        return "pacote do host dentro da distrobox"
-    if record.request.execution_surface == "toolbox" and record.request.domain_kind == "host_package":
-        return "pacote do host dentro da toolbox"
-    if record.request.domain_kind == "user_software":
-        return "software do usuário"
-    if record.request.domain_kind == "host_package" and record.request.requested_source == "ppa":
-        return "pacote do host via PPA"
-    if record.request.domain_kind == "host_package" and record.request.requested_source == "copr":
-        return "pacote do host via COPR"
-    if record.request.domain_kind == "host_package" and record.request.requested_source == "aur":
-        return "pacote do host pela rota AUR"
-    if record.request.domain_kind == "host_package":
-        return "pacote do host"
-    return "indefinido"
+def _string_or_dash(value: object) -> str:
+    if not _present(value):
+        return "-"
+    return str(value)
+
+
+def _bool_or_dash(value: object) -> str:
+    if value is None:
+        return "-"
+    if isinstance(value, bool):
+        return str(value).lower()
+    return str(value)
+
+
+def _list_or_dash(value: object, *, separator: str) -> str:
+    if isinstance(value, (list, tuple)):
+        return separator.join(str(item) for item in value) or "-"
+    if value is None:
+        return "-"
+    text = str(value)
+    return text or "-"
 
 
 def _compact_diagnostic(value: str) -> str:
@@ -51,95 +49,27 @@ def _compact_diagnostic(value: str) -> str:
     return compact[:197].rstrip() + "..."
 
 
-def _append_surface_policy_lines(lines: list[str], record: DecisionRecord, surface: str) -> None:
-    lines.extend(
-        [
-            field(
-                f"{surface}_requested_environment",
-                _signal_value(record.policy.trust_signals, f"{surface}_requested_environment:") or "-",
-            ),
-            field(
-                f"{surface}_environment_status",
-                _signal_value(record.policy.trust_signals, f"{surface}_environment_status:") or "-",
-            ),
-            field(
-                f"{surface}_resolved_environment",
-                _signal_value(record.policy.trust_signals, f"{surface}_resolved_environment:") or "-",
-            ),
-            field(
-                f"{surface}_linux_family",
-                _signal_value(record.policy.trust_signals, f"{surface}_linux_family:") or "-",
-            ),
-            field(
-                f"{surface}_support_tier",
-                _signal_value(record.policy.trust_signals, f"{surface}_support_tier:") or "-",
-            ),
-            field(
-                f"{surface}_package_backends",
-                _signal_value(record.policy.trust_signals, f"{surface}_package_backends:") or "-",
-            ),
-            field(
-                f"{surface}_observed_commands",
-                _signal_value(record.policy.trust_signals, f"{surface}_observed_commands:") or "-",
-            ),
-            field(
-                f"{surface}_sudo_observed",
-                _signal_value(record.policy.trust_signals, f"{surface}_sudo_observed:") or "-",
-            ),
-        ]
-    )
-
-
-def _append_surface_route_lines(lines: list[str], record: DecisionRecord, surface: str) -> None:
-    lines.extend(
-        [
-            field(
-                f"{surface}_environment_status",
-                (
-                    _signal_value(record.policy.trust_signals, f"{surface}_environment_status:")
-                    if record.policy is not None
-                    else "-"
-                )
-                or "-",
-            ),
-            field(
-                f"{surface}_resolved_environment",
-                (
-                    _signal_value(record.policy.trust_signals, f"{surface}_resolved_environment:")
-                    if record.policy is not None
-                    else "-"
-                )
-                or "-",
-            ),
-            field(
-                f"{surface}_linux_family",
-                (
-                    _signal_value(record.policy.trust_signals, f"{surface}_linux_family:")
-                    if record.policy is not None
-                    else "-"
-                )
-                or "-",
-            ),
-            field(
-                f"{surface}_package_backends",
-                (
-                    _signal_value(record.policy.trust_signals, f"{surface}_package_backends:")
-                    if record.policy is not None
-                    else "-"
-                )
-                or "-",
-            ),
-            field(
-                f"{surface}_sudo_observed",
-                (
-                    _signal_value(record.policy.trust_signals, f"{surface}_sudo_observed:")
-                    if record.policy is not None
-                    else "-"
-                )
-                or "-",
-            ),
-        ]
-    )
+def _scope_label(request: Mapping[str, object]) -> str:
+    execution_surface = request.get("execution_surface")
+    domain_kind = request.get("domain_kind")
+    requested_source = request.get("requested_source")
+    if execution_surface == "rpm_ostree" and domain_kind == "host_package":
+        return "pacote do host via rpm-ostree"
+    if execution_surface == "distrobox" and domain_kind == "host_package":
+        return "pacote do host dentro da distrobox"
+    if execution_surface == "toolbox" and domain_kind == "host_package":
+        return "pacote do host dentro da toolbox"
+    if domain_kind == "user_software":
+        return "software do usuário"
+    if domain_kind == "host_package" and requested_source == "ppa":
+        return "pacote do host via PPA"
+    if domain_kind == "host_package" and requested_source == "copr":
+        return "pacote do host via COPR"
+    if domain_kind == "host_package" and requested_source == "aur":
+        return "pacote do host pela rota AUR"
+    if domain_kind == "host_package":
+        return "pacote do host"
+    return "indefinido"
 
 
 def _append_environment_profile_lines(lines: list[str], profile, title: str) -> None:
@@ -163,35 +93,302 @@ def _append_environment_profile_lines(lines: list[str], profile, title: str) -> 
     )
 
 
-def render_decision_record(record: DecisionRecord) -> str:
-    payload = decision_record_to_dict(record)
-    stable_ids = payload["stable_ids"]
-    presentation = payload["presentation"]
+def _policy_section(policy: Mapping[str, object], section_name: str) -> Mapping[str, object] | None:
+    return _mapping(policy.get(section_name))
+
+
+def _policy_section_value(
+    policy: Mapping[str, object],
+    section_name: str,
+    key: str,
+    legacy_key: str | None = None,
+) -> object:
+    section = _policy_section(policy, section_name)
+    if section is not None:
+        value = section.get(key)
+        if _present(value) or value is False:
+            return value
+    if legacy_key is None:
+        return None
+    return policy.get(legacy_key)
+
+
+def _route_or_policy_value(
+    route: Mapping[str, object],
+    route_key: str,
+    policy: Mapping[str, object] | None = None,
+    *,
+    policy_section: str | None = None,
+    policy_key: str | None = None,
+    policy_legacy_key: str | None = None,
+) -> object:
+    value = route.get(route_key)
+    if _present(value) or value is False:
+        return value
+    if policy is None or policy_section is None or policy_key is None:
+        return None
+    return _policy_section_value(policy, policy_section, policy_key, policy_legacy_key)
+
+
+def _append_surface_policy_lines(lines: list[str], policy: Mapping[str, object], surface: str) -> None:
+    lines.extend(
+        [
+            field(
+                f"{surface}_requested_environment",
+                _string_or_dash(
+                    _policy_section_value(
+                        policy,
+                        surface,
+                        "requested_environment",
+                        f"{surface}_requested_environment",
+                    )
+                ),
+            ),
+            field(
+                f"{surface}_environment_status",
+                _string_or_dash(
+                    _policy_section_value(
+                        policy,
+                        surface,
+                        "environment_status",
+                        f"{surface}_environment_status",
+                    )
+                ),
+            ),
+            field(
+                f"{surface}_resolved_environment",
+                _string_or_dash(
+                    _policy_section_value(
+                        policy,
+                        surface,
+                        "resolved_environment",
+                        f"{surface}_resolved_environment",
+                    )
+                ),
+            ),
+            field(
+                f"{surface}_linux_family",
+                _string_or_dash(
+                    _policy_section_value(policy, surface, "linux_family", f"{surface}_linux_family")
+                ),
+            ),
+            field(
+                f"{surface}_support_tier",
+                _string_or_dash(
+                    _policy_section_value(policy, surface, "support_tier", f"{surface}_support_tier")
+                ),
+            ),
+            field(
+                f"{surface}_package_backends",
+                _list_or_dash(
+                    _policy_section_value(
+                        policy,
+                        surface,
+                        "package_backends",
+                        f"{surface}_package_backends",
+                    ),
+                    separator=",",
+                ),
+            ),
+            field(
+                f"{surface}_observed_commands",
+                _list_or_dash(
+                    _policy_section_value(
+                        policy,
+                        surface,
+                        "observed_commands",
+                        f"{surface}_observed_commands",
+                    ),
+                    separator=",",
+                ),
+            ),
+            field(
+                f"{surface}_sudo_observed",
+                _bool_or_dash(
+                    _policy_section_value(
+                        policy,
+                        surface,
+                        "sudo_observed",
+                        f"{surface}_sudo_observed",
+                    )
+                ),
+            ),
+        ]
+    )
+
+
+def _append_surface_route_lines(
+    lines: list[str],
+    route: Mapping[str, object],
+    policy: Mapping[str, object] | None,
+    surface: str,
+) -> None:
+    lines.extend(
+        [
+            field(
+                f"{surface}_environment_status",
+                _string_or_dash(
+                    _route_or_policy_value(
+                        route,
+                        f"{surface}_environment_status",
+                        policy,
+                        policy_section=surface,
+                        policy_key="environment_status",
+                        policy_legacy_key=f"{surface}_environment_status",
+                    )
+                ),
+            ),
+            field(
+                f"{surface}_resolved_environment",
+                _string_or_dash(
+                    _route_or_policy_value(
+                        route,
+                        f"{surface}_resolved_environment",
+                        policy,
+                        policy_section=surface,
+                        policy_key="resolved_environment",
+                        policy_legacy_key=f"{surface}_resolved_environment",
+                    )
+                ),
+            ),
+            field(
+                f"{surface}_linux_family",
+                _string_or_dash(
+                    _route_or_policy_value(
+                        route,
+                        f"{surface}_linux_family",
+                        policy,
+                        policy_section=surface,
+                        policy_key="linux_family",
+                        policy_legacy_key=f"{surface}_linux_family",
+                    )
+                ),
+            ),
+            field(
+                f"{surface}_package_backends",
+                _list_or_dash(
+                    _route_or_policy_value(
+                        route,
+                        f"{surface}_package_backends",
+                        policy,
+                        policy_section=surface,
+                        policy_key="package_backends",
+                        policy_legacy_key=f"{surface}_package_backends",
+                    ),
+                    separator=",",
+                ),
+            ),
+            field(
+                f"{surface}_sudo_observed",
+                _bool_or_dash(
+                    _route_or_policy_value(
+                        route,
+                        f"{surface}_sudo_observed",
+                        policy,
+                        policy_section=surface,
+                        policy_key="sudo_observed",
+                        policy_legacy_key=f"{surface}_sudo_observed",
+                    )
+                ),
+            ),
+        ]
+    )
+
+
+def render_decision_record(
+    record: DecisionRecord,
+    *,
+    model_mode: str | None = None,
+    model_provider: LocalModelProvider | None = None,
+    environ: dict[str, str] | None = None,
+) -> str:
+    payload = decision_record_to_dict(
+        record,
+        model_mode=model_mode,
+        model_provider=model_provider,
+        environ=environ,
+    )
+    schema = _mapping(payload.get("schema")) or {}
+    stable_ids = _mapping(payload.get("stable_ids")) or {}
+    presentation = _mapping(payload.get("presentation")) or {}
+    facts = _mapping(payload.get("facts")) or {}
+    local_model = _mapping(facts.get("local_model"))
+    request = _mapping(facts.get("request")) or {}
+    policy = _mapping(facts.get("policy"))
+    environment_resolution = _mapping(facts.get("environment_resolution"))
+    target_resolution = _mapping(facts.get("target_resolution"))
+    route = _mapping(facts.get("execution_route"))
+    execution = _mapping(facts.get("execution"))
+    rpm_ostree_status = _mapping(facts.get("rpm_ostree_status"))
+
     lines = [
         "Aurora decision record",
-        field("schema_version", payload["schema"]["schema_version"]),
-        field("action_id", stable_ids["action_id"] or "-"),
-        field("route_id", stable_ids["route_id"] or "-"),
-        field("event_id", stable_ids["event_id"]),
-        field("outcome", payload["facts"]["outcome"]),
-        field("summary", polish_public_text(presentation["summary"])),
-        "",
-        "Request",
-        field("original_text", record.request.original_text),
-        field("normalized_text", record.request.normalized_text),
-        field("intent", record.request.intent),
-        field("domain_kind", record.request.domain_kind),
-        field("execution_surface", record.request.execution_surface),
-        field("requested_source", record.request.requested_source or "-"),
-        field("source_coordinate", record.request.source_coordinate or "-"),
-        field("environment_target", record.request.environment_target or "-"),
-        field("scope_label", _scope_label(record)),
-        field("target", record.request.target or "-"),
-        field("status", record.request.status),
-        field("reason", polish_public_text(record.request.reason)),
-        field("observations", ", ".join(record.request.observations) or "-"),
-        field("action_count", str(record.request.action_count)),
+        field("schema_version", _string_or_dash(schema.get("schema_version"))),
+        field("action_id", _string_or_dash(stable_ids.get("action_id"))),
+        field("route_id", _string_or_dash(stable_ids.get("route_id"))),
+        field("event_id", _string_or_dash(stable_ids.get("event_id"))),
+        field("outcome", _string_or_dash(facts.get("outcome"))),
+        field("summary", polish_public_text(_string_or_dash(presentation.get("summary")))),
     ]
+
+    if local_model is not None:
+        lines.extend(
+            [
+                "",
+                "Local model seam",
+                field("mode", _string_or_dash(local_model.get("mode"))),
+                field("status", _string_or_dash(local_model.get("status"))),
+                field(
+                    "requested_capability",
+                    _string_or_dash(local_model.get("requested_capability")),
+                ),
+                field(
+                    "authority_profile",
+                    _string_or_dash(local_model.get("authority_profile")),
+                ),
+                field("advisory_only", _bool_or_dash(local_model.get("advisory_only"))),
+                field("provider_name", _string_or_dash(local_model.get("provider_name"))),
+                field(
+                    "allowed_capabilities",
+                    _list_or_dash(local_model.get("allowed_capabilities"), separator=", "),
+                ),
+                field(
+                    "forbidden_authorities",
+                    _list_or_dash(local_model.get("forbidden_authorities"), separator=", "),
+                ),
+                field(
+                    "consumed_sections",
+                    _list_or_dash(local_model.get("consumed_sections"), separator=", "),
+                ),
+                field("input_schema_id", _string_or_dash(local_model.get("input_schema_id"))),
+                field(
+                    "fallback_reason",
+                    polish_public_text(_string_or_dash(local_model.get("fallback_reason"))),
+                ),
+                field("output_text", polish_public_text(_string_or_dash(local_model.get("output_text")))),
+            ]
+        )
+
+    lines.extend(
+        [
+            "",
+            "Request",
+            field("original_text", _string_or_dash(request.get("original_text"))),
+            field("normalized_text", _string_or_dash(request.get("normalized_text"))),
+            field("intent", _string_or_dash(request.get("intent"))),
+            field("domain_kind", _string_or_dash(request.get("domain_kind"))),
+            field("execution_surface", _string_or_dash(request.get("execution_surface"))),
+            field("requested_source", _string_or_dash(request.get("requested_source"))),
+            field("source_coordinate", _string_or_dash(request.get("source_coordinate"))),
+            field("environment_target", _string_or_dash(request.get("environment_target"))),
+            field("scope_label", _scope_label(request)),
+            field("target", _string_or_dash(request.get("target"))),
+            field("status", _string_or_dash(request.get("status"))),
+            field("reason", polish_public_text(_string_or_dash(request.get("reason")))),
+            field("observations", _list_or_dash(request.get("observations"), separator=", ")),
+            field("action_count", _string_or_dash(request.get("action_count"))),
+        ]
+    )
 
     if record.host_profile is not None:
         lines.extend(
@@ -229,461 +426,653 @@ def render_decision_record(record: DecisionRecord) -> str:
             ]
         )
 
-    if record.policy is not None:
+    if policy is not None:
         lines.extend(
             [
                 "",
                 "Policy",
-                field("domain_kind", record.policy.domain_kind),
-                field("source_type", record.policy.source_type),
-                field("execution_surface", record.policy.execution_surface),
-                field("trust_level", record.policy.trust_level),
-                field("software_criticality", record.policy.software_criticality),
-                field("policy_outcome", record.policy.policy_outcome),
-                field("requires_confirmation", str(record.policy.requires_confirmation).lower()),
-                field("confirmation_supplied", str(record.policy.confirmation_supplied).lower()),
-                field("reversal_level", record.policy.reversal_level),
-                field("trust_signals", ", ".join(record.policy.trust_signals) or "-"),
-                field("trust_gaps", ", ".join(record.policy.trust_gaps) or "-"),
-                field("policy_reason", polish_public_text(record.policy.reason)),
+                field("domain_kind", _string_or_dash(policy.get("domain_kind"))),
+                field("source_type", _string_or_dash(policy.get("source_type"))),
+                field("execution_surface", _string_or_dash(policy.get("execution_surface"))),
+                field("trust_level", _string_or_dash(policy.get("trust_level"))),
+                field("software_criticality", _string_or_dash(policy.get("software_criticality"))),
+                field("policy_outcome", _string_or_dash(policy.get("policy_outcome"))),
+                field("requires_confirmation", _bool_or_dash(policy.get("requires_confirmation"))),
+                field("confirmation_supplied", _bool_or_dash(policy.get("confirmation_supplied"))),
+                field("reversal_level", _string_or_dash(policy.get("reversal_level"))),
+                field("trust_signals", _list_or_dash(policy.get("trust_signals"), separator=", ")),
+                field("trust_gaps", _list_or_dash(policy.get("trust_gaps"), separator=", ")),
+                field("policy_reason", polish_public_text(_string_or_dash(policy.get("reason")))),
             ]
         )
-        if record.request.requested_source == "aur":
-            observed_helpers = (
-                ", ".join(record.host_profile.observed_third_party_package_tools)
-                if record.host_profile is not None and record.host_profile.observed_third_party_package_tools
-                else "-"
-            )
-            out_of_contract = ", ".join(observed_out_of_contract_aur_helpers(record.host_profile)) or "-"
-            selected_helper = supported_aur_helper(record.host_profile) or "-"
+        if request.get("requested_source") == "aur":
             lines.extend(
                 [
-                    field("observed_aur_helpers", observed_helpers),
-                    field("supported_aur_helpers", ", ".join(supported_aur_helpers())),
-                    field("selected_aur_helper", selected_helper),
-                    field("out_of_contract_aur_helpers", out_of_contract),
+                    field("observed_aur_helpers", _list_or_dash(policy.get("observed_aur_helpers"), separator=", ")),
+                    field("supported_aur_helpers", _list_or_dash(policy.get("supported_aur_helpers"), separator=", ")),
+                    field("selected_aur_helper", _string_or_dash(policy.get("selected_aur_helper"))),
+                    field(
+                        "out_of_contract_aur_helpers",
+                        _list_or_dash(policy.get("out_of_contract_aur_helpers"), separator=", "),
+                    ),
                 ]
             )
-        if record.request.requested_source == "copr":
+        if request.get("requested_source") == "copr":
             lines.extend(
                 [
                     field(
                         "copr_repository_state",
-                        _signal_value(record.policy.trust_signals, "copr_repository_state:") or "-",
+                        _string_or_dash(
+                            _policy_section_value(policy, "copr", "repository_state", "copr_repository_state")
+                        ),
                     ),
                     field(
                         "copr_repository_enable_action",
-                        _signal_value(record.policy.trust_signals, "copr_repository_enable_action:")
-                        or "-",
+                        _string_or_dash(
+                            _policy_section_value(
+                                policy,
+                                "copr",
+                                "repository_enable_action",
+                                "copr_repository_enable_action",
+                            )
+                        ),
                     ),
                     field(
                         "copr_package_origin",
-                        _signal_value(record.policy.trust_signals, "copr_package_origin:") or "-",
+                        _string_or_dash(
+                            _policy_section_value(policy, "copr", "package_origin", "copr_package_origin")
+                        ),
                     ),
                     field(
                         "copr_package_from_repo",
-                        _signal_value(record.policy.trust_signals, "copr_package_from_repo:") or "-",
+                        _string_or_dash(
+                            _policy_section_value(policy, "copr", "package_from_repo", "copr_package_from_repo")
+                        ),
                     ),
                 ]
             )
-        if record.request.requested_source == "ppa":
+        if request.get("requested_source") == "ppa":
             lines.extend(
                 [
                     field(
                         "ppa_supported_distros",
-                        _signal_value(record.policy.trust_signals, "ppa_supported_distros:") or "-",
+                        _list_or_dash(
+                            _policy_section_value(policy, "ppa", "supported_distros", "ppa_supported_distros"),
+                            separator=",",
+                        ),
                     ),
                     field(
                         "ppa_capability",
-                        _signal_value(record.policy.trust_signals, "ppa_capability:") or "-",
+                        _string_or_dash(
+                            _policy_section_value(policy, "ppa", "capability", "ppa_capability")
+                        ),
                     ),
                     field(
                         "ppa_state_probe",
-                        _signal_value(record.policy.trust_signals, "ppa_state_probe:") or "-",
+                        _string_or_dash(
+                            _policy_section_value(policy, "ppa", "state_probe", "ppa_state_probe")
+                        ),
                     ),
                     field(
                         "ppa_install_preparation",
-                        _signal_value(record.policy.trust_signals, "ppa_install_preparation:") or "-",
+                        _list_or_dash(
+                            _policy_section_value(
+                                policy,
+                                "ppa",
+                                "install_preparation",
+                                "ppa_install_preparation",
+                            ),
+                            separator=",",
+                        ),
                     ),
                 ]
             )
-        if record.request.domain_kind == "user_software":
+        if request.get("domain_kind") == "user_software":
+            flatpak_remove_constraint = _policy_section_value(
+                policy,
+                "flatpak",
+                "remove_origin_constraint",
+                "flatpak_remove_origin_constraint",
+            )
             lines.extend(
                 [
                     field(
                         "flatpak_effective_remote",
-                        _signal_value(record.policy.trust_signals, "flatpak_effective_remote:") or "-",
+                        _string_or_dash(
+                            _policy_section_value(
+                                policy,
+                                "flatpak",
+                                "effective_remote",
+                                "flatpak_effective_remote",
+                            )
+                        ),
                     ),
                     field(
                         "flatpak_remote_origin",
-                        _signal_value(record.policy.trust_signals, "flatpak_remote_origin:") or "-",
+                        _string_or_dash(
+                            _policy_section_value(policy, "flatpak", "remote_origin", "flatpak_remote_origin")
+                        ),
                     ),
                     field(
                         "flatpak_observed_remotes",
-                        _signal_value(record.policy.trust_signals, "flatpak_observed_remotes:") or "-",
+                        _list_or_dash(
+                            _policy_section_value(
+                                policy,
+                                "flatpak",
+                                "observed_remotes",
+                                "flatpak_observed_remotes",
+                            ),
+                            separator=",",
+                        ),
                     ),
                     field(
                         "flatpak_remove_origin_constraint",
-                        _signal_value(record.policy.trust_signals, "flatpak_remove_origin_constraint:")
-                        or "-",
+                        "enabled"
+                        if flatpak_remove_constraint in {True, "enabled"}
+                        else _string_or_dash(
+                            flatpak_remove_constraint if flatpak_remove_constraint not in {False, ""} else None
+                        ),
                     ),
                 ]
             )
-        if _has_any_signal(
-            record.policy.trust_signals,
-            "immutable_host:",
-            "immutable_observed_surfaces:",
-            "immutable_selected_surface:",
-            "immutable_toolbox_environments:",
-            "immutable_distrobox_environments:",
+        immutable_context = _policy_section(policy, "immutable_host_context")
+        if immutable_context is not None and any(
+            _present(immutable_context.get(key)) or immutable_context.get(key) is True
+            for key in (
+                "host_is_immutable",
+                "observed_surfaces",
+                "selected_surface",
+                "toolbox_environments",
+                "distrobox_environments",
+            )
         ):
             lines.extend(
                 [
                     field(
                         "immutable_host",
-                        _signal_value(record.policy.trust_signals, "immutable_host:") or "-",
+                        _bool_or_dash(
+                            immutable_context.get("host_is_immutable", policy.get("immutable_host"))
+                        ),
                     ),
                     field(
                         "immutable_observed_surfaces",
-                        _signal_value(record.policy.trust_signals, "immutable_observed_surfaces:") or "-",
+                        _list_or_dash(
+                            immutable_context.get(
+                                "observed_surfaces",
+                                policy.get("immutable_observed_surfaces"),
+                            ),
+                            separator=",",
+                        ),
                     ),
                     field(
                         "immutable_selected_surface",
-                        _signal_value(record.policy.trust_signals, "immutable_selected_surface:") or "-",
+                        _string_or_dash(
+                            immutable_context.get(
+                                "selected_surface",
+                                policy.get("immutable_selected_surface"),
+                            )
+                        ),
                     ),
                     field(
                         "immutable_toolbox_environments",
-                        _signal_value(record.policy.trust_signals, "immutable_toolbox_environments:") or "-",
+                        _list_or_dash(
+                            immutable_context.get(
+                                "toolbox_environments",
+                                policy.get("immutable_toolbox_environments"),
+                            ),
+                            separator=",",
+                        ),
                     ),
                     field(
                         "immutable_distrobox_environments",
-                        _signal_value(record.policy.trust_signals, "immutable_distrobox_environments:") or "-",
+                        _list_or_dash(
+                            immutable_context.get(
+                                "distrobox_environments",
+                                policy.get("immutable_distrobox_environments"),
+                            ),
+                            separator=",",
+                        ),
                     ),
                 ]
             )
-        if record.request.execution_surface in {"toolbox", "distrobox"}:
-            _append_surface_policy_lines(lines, record, record.request.execution_surface)
-        if record.request.execution_surface == "rpm_ostree":
+        if request.get("execution_surface") in {"toolbox", "distrobox"}:
+            _append_surface_policy_lines(lines, policy, str(request.get("execution_surface")))
+        if request.get("execution_surface") == "rpm_ostree":
             lines.extend(
                 [
                     field(
                         "rpm_ostree_status",
-                        _signal_value(record.policy.trust_signals, "rpm_ostree_status:") or "-",
+                        _string_or_dash(
+                            _policy_section_value(policy, "rpm_ostree", "status", "rpm_ostree_status")
+                        ),
                     ),
                     field(
                         "rpm_ostree_booted_requested_packages",
-                        _signal_value(record.policy.trust_signals, "rpm_ostree_booted_requested_packages:")
-                        or "-",
+                        _list_or_dash(
+                            _policy_section_value(
+                                policy,
+                                "rpm_ostree",
+                                "booted_requested_packages",
+                                "rpm_ostree_booted_requested_packages",
+                            ),
+                            separator=",",
+                        ),
                     ),
                     field(
                         "rpm_ostree_booted_packages",
-                        _signal_value(record.policy.trust_signals, "rpm_ostree_booted_packages:") or "-",
+                        _list_or_dash(
+                            _policy_section_value(
+                                policy,
+                                "rpm_ostree",
+                                "booted_packages",
+                                "rpm_ostree_booted_packages",
+                            ),
+                            separator=",",
+                        ),
                     ),
                     field(
                         "rpm_ostree_pending_deployment",
-                        _signal_value(record.policy.trust_signals, "rpm_ostree_pending_deployment:")
-                        or "-",
+                        _bool_or_dash(
+                            _policy_section_value(
+                                policy,
+                                "rpm_ostree",
+                                "pending_deployment",
+                                "rpm_ostree_pending_deployment",
+                            )
+                        ),
                     ),
                     field(
                         "rpm_ostree_pending_requested_packages",
-                        _signal_value(record.policy.trust_signals, "rpm_ostree_pending_requested_packages:")
-                        or "-",
+                        _list_or_dash(
+                            _policy_section_value(
+                                policy,
+                                "rpm_ostree",
+                                "pending_requested_packages",
+                                "rpm_ostree_pending_requested_packages",
+                            ),
+                            separator=",",
+                        ),
                     ),
                     field(
                         "rpm_ostree_pending_packages",
-                        _signal_value(record.policy.trust_signals, "rpm_ostree_pending_packages:") or "-",
+                        _list_or_dash(
+                            _policy_section_value(
+                                policy,
+                                "rpm_ostree",
+                                "pending_packages",
+                                "rpm_ostree_pending_packages",
+                            ),
+                            separator=",",
+                        ),
                     ),
                     field(
                         "rpm_ostree_transaction_active",
-                        _signal_value(record.policy.trust_signals, "rpm_ostree_transaction_active:") or "-",
+                        _bool_or_dash(
+                            _policy_section_value(
+                                policy,
+                                "rpm_ostree",
+                                "transaction_active",
+                                "rpm_ostree_transaction_active",
+                            )
+                        ),
                     ),
                 ]
             )
 
-    if record.environment_resolution is not None:
+    if environment_resolution is not None:
         lines.extend(
             [
                 "",
                 "Environment resolution",
-                field("execution_surface", record.environment_resolution.execution_surface),
-                field("original_environment", record.environment_resolution.original_environment or "-"),
-                field("resolved_environment", record.environment_resolution.resolved_environment or "-"),
+                field("execution_surface", _string_or_dash(environment_resolution.get("execution_surface"))),
+                field("original_environment", _string_or_dash(environment_resolution.get("original_environment"))),
+                field("resolved_environment", _string_or_dash(environment_resolution.get("resolved_environment"))),
                 field(
                     "observed_environments",
-                    ", ".join(record.environment_resolution.observed_environments) or "-",
+                    _list_or_dash(environment_resolution.get("observed_environments"), separator=", "),
                 ),
-                field("status", record.environment_resolution.status),
-                field("source", record.environment_resolution.source or "-"),
-                field("reason", polish_public_text(record.environment_resolution.reason)),
+                field("status", _string_or_dash(environment_resolution.get("status"))),
+                field("source", _string_or_dash(environment_resolution.get("source"))),
+                field("reason", polish_public_text(_string_or_dash(environment_resolution.get("reason")))),
             ]
         )
         if (
-            record.environment_resolution.diagnostic_command
-            or record.environment_resolution.diagnostic_exit_code is not None
-            or record.environment_resolution.diagnostic_stdout
-            or record.environment_resolution.diagnostic_stderr
+            environment_resolution.get("diagnostic_command")
+            or environment_resolution.get("diagnostic_exit_code") is not None
+            or environment_resolution.get("diagnostic_stdout")
+            or environment_resolution.get("diagnostic_stderr")
         ):
             lines.extend(
                 [
                     field(
                         "diagnostic_command",
-                        " ".join(record.environment_resolution.diagnostic_command) or "-",
+                        _list_or_dash(environment_resolution.get("diagnostic_command"), separator=" "),
                     ),
                     field(
                         "diagnostic_exit_code",
-                        (
-                            str(record.environment_resolution.diagnostic_exit_code)
-                            if record.environment_resolution.diagnostic_exit_code is not None
-                            else "-"
-                        ),
+                        _string_or_dash(environment_resolution.get("diagnostic_exit_code")),
                     ),
-                    field("diagnostic_stdout", _compact_diagnostic(record.environment_resolution.diagnostic_stdout)),
-                    field("diagnostic_stderr", _compact_diagnostic(record.environment_resolution.diagnostic_stderr)),
+                    field(
+                        "diagnostic_stdout",
+                        _compact_diagnostic(str(environment_resolution.get("diagnostic_stdout") or "")),
+                    ),
+                    field(
+                        "diagnostic_stderr",
+                        _compact_diagnostic(str(environment_resolution.get("diagnostic_stderr") or "")),
+                    ),
                 ]
             )
 
-    if record.target_resolution is not None:
+    if target_resolution is not None:
         lines.extend(
             [
                 "",
                 "Target resolution",
-                field("original_target", record.target_resolution.original_target or "-"),
-                field("consulted_target", record.target_resolution.consulted_target or "-"),
-                field("consulted_targets", ", ".join(record.target_resolution.consulted_targets) or "-"),
-                field("resolved_target", record.target_resolution.resolved_target or "-"),
-                field("status", record.target_resolution.status),
-                field("source", record.target_resolution.source or "-"),
-                field("canonicalized", str(record.target_resolution.canonicalized).lower()),
-                field("candidates", ", ".join(record.target_resolution.candidates) or "-"),
-                field("resolution_reason", polish_public_text(record.target_resolution.reason)),
+                field("original_target", _string_or_dash(target_resolution.get("original_target"))),
+                field("consulted_target", _string_or_dash(target_resolution.get("consulted_target"))),
+                field(
+                    "consulted_targets",
+                    _list_or_dash(target_resolution.get("consulted_targets"), separator=", "),
+                ),
+                field("resolved_target", _string_or_dash(target_resolution.get("resolved_target"))),
+                field("status", _string_or_dash(target_resolution.get("status"))),
+                field("source", _string_or_dash(target_resolution.get("source"))),
+                field("canonicalized", _bool_or_dash(target_resolution.get("canonicalized"))),
+                field("candidates", _list_or_dash(target_resolution.get("candidates"), separator=", ")),
+                field(
+                    "resolution_reason",
+                    polish_public_text(_string_or_dash(target_resolution.get("reason"))),
+                ),
             ]
         )
         if (
-            record.target_resolution.diagnostic_command
-            or record.target_resolution.diagnostic_exit_code is not None
-            or record.target_resolution.diagnostic_stdout
-            or record.target_resolution.diagnostic_stderr
+            target_resolution.get("diagnostic_command")
+            or target_resolution.get("diagnostic_exit_code") is not None
+            or target_resolution.get("diagnostic_stdout")
+            or target_resolution.get("diagnostic_stderr")
         ):
             lines.extend(
                 [
                     field(
                         "diagnostic_command",
-                        " ".join(record.target_resolution.diagnostic_command) or "-",
+                        _list_or_dash(target_resolution.get("diagnostic_command"), separator=" "),
                     ),
                     field(
                         "diagnostic_exit_code",
-                        (
-                            str(record.target_resolution.diagnostic_exit_code)
-                            if record.target_resolution.diagnostic_exit_code is not None
-                            else "-"
-                        ),
+                        _string_or_dash(target_resolution.get("diagnostic_exit_code")),
                     ),
-                    field("diagnostic_stdout", _compact_diagnostic(record.target_resolution.diagnostic_stdout)),
-                    field("diagnostic_stderr", _compact_diagnostic(record.target_resolution.diagnostic_stderr)),
+                    field(
+                        "diagnostic_stdout",
+                        _compact_diagnostic(str(target_resolution.get("diagnostic_stdout") or "")),
+                    ),
+                    field(
+                        "diagnostic_stderr",
+                        _compact_diagnostic(str(target_resolution.get("diagnostic_stderr") or "")),
+                    ),
                 ]
             )
 
-    if record.execution_route is not None:
+    if route is not None:
         lines.extend(
             [
                 "",
                 "Execution route",
-                field("route_name", record.execution_route.route_name),
-                field("action_name", record.execution_route.action_name),
-                field("backend_name", record.execution_route.backend_name),
-                field("execution_surface", record.execution_route.execution_surface),
-                field("environment_target", record.execution_route.environment_target or "-"),
-                field("scope_label", _scope_label(record)),
-                field("implemented", str(record.execution_route.implemented).lower()),
+                field("route_name", _string_or_dash(route.get("route_name"))),
+                field("action_name", _string_or_dash(route.get("action_name"))),
+                field("backend_name", _string_or_dash(route.get("backend_name"))),
+                field("execution_surface", _string_or_dash(route.get("execution_surface"))),
+                field("environment_target", _string_or_dash(route.get("environment_target"))),
+                field("scope_label", _scope_label(request)),
+                field("implemented", _bool_or_dash(route.get("implemented"))),
                 field(
                     "requires_privilege_escalation",
-                    str(record.execution_route.requires_privilege_escalation).lower(),
+                    _bool_or_dash(route.get("requires_privilege_escalation")),
                 ),
-                field(
-                    "interactive_passthrough",
-                    str(record.execution_route.interactive_passthrough).lower(),
-                ),
+                field("interactive_passthrough", _bool_or_dash(route.get("interactive_passthrough"))),
                 field(
                     "pre_commands",
-                    " | ".join(" ".join(command) for command in record.execution_route.pre_commands) or "-",
+                    (
+                        " | ".join(" ".join(str(part) for part in command) for command in route.get("pre_commands", []))
+                        or "-"
+                    ),
                 ),
-                field("command", " ".join(record.execution_route.command) or "-"),
-                field("state_probe", " ".join(record.execution_route.state_probe_command) or "-"),
-                field("notes", polish_public_text("; ".join(record.execution_route.notes) or "-")),
+                field("command", _list_or_dash(route.get("command"), separator=" ")),
+                field("state_probe", _list_or_dash(route.get("state_probe_command"), separator=" ")),
+                field("notes", polish_public_text(_list_or_dash(route.get("notes"), separator="; "))),
             ]
         )
-        if record.execution_route.route_name.startswith("aur."):
-            lines.append(field("selected_aur_helper", record.execution_route.backend_name or "-"))
-        if record.execution_route.route_name.startswith("copr."):
+        route_name = str(route.get("route_name") or "")
+        if route_name.startswith("aur."):
+            lines.append(field("selected_aur_helper", _string_or_dash(route.get("backend_name"))))
+        if route_name.startswith("copr."):
             lines.extend(
                 [
-                    field(
-                        "copr_enable_planned",
-                        str(bool(record.execution_route.pre_commands)).lower(),
-                    ),
+                    field("copr_enable_planned", _bool_or_dash(route.get("copr_enable_planned"))),
                     field(
                         "copr_repository_state",
-                        (
-                            _signal_value(record.policy.trust_signals, "copr_repository_state:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _string_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "copr_repository_state",
+                                policy,
+                                policy_section="copr",
+                                policy_key="repository_state",
+                                policy_legacy_key="copr_repository_state",
+                            )
+                        ),
                     ),
                     field(
                         "copr_package_origin",
-                        (
-                            _signal_value(record.policy.trust_signals, "copr_package_origin:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _string_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "copr_package_origin",
+                                policy,
+                                policy_section="copr",
+                                policy_key="package_origin",
+                                policy_legacy_key="copr_package_origin",
+                            )
+                        ),
                     ),
                     field(
                         "copr_package_from_repo",
-                        (
-                            _signal_value(record.policy.trust_signals, "copr_package_from_repo:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _string_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "copr_package_from_repo",
+                                policy,
+                                policy_section="copr",
+                                policy_key="package_from_repo",
+                                policy_legacy_key="copr_package_from_repo",
+                            )
+                        ),
                     ),
                 ]
             )
-        if record.execution_route.route_name.startswith("ppa."):
+        if route_name.startswith("ppa."):
             lines.extend(
                 [
-                    field(
-                        "ppa_preparation_planned",
-                        str(bool(record.execution_route.pre_commands)).lower(),
-                    ),
+                    field("ppa_preparation_planned", _bool_or_dash(route.get("ppa_preparation_planned"))),
                     field(
                         "ppa_supported_distros",
-                        (
-                            _signal_value(record.policy.trust_signals, "ppa_supported_distros:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _list_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "ppa_supported_distros",
+                                policy,
+                                policy_section="ppa",
+                                policy_key="supported_distros",
+                                policy_legacy_key="ppa_supported_distros",
+                            ),
+                            separator=",",
+                        ),
                     ),
                     field(
                         "ppa_capability",
-                        (
-                            _signal_value(record.policy.trust_signals, "ppa_capability:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _string_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "ppa_capability",
+                                policy,
+                                policy_section="ppa",
+                                policy_key="capability",
+                                policy_legacy_key="ppa_capability",
+                            )
+                        ),
                     ),
                     field(
                         "ppa_install_preparation",
-                        (
-                            _signal_value(record.policy.trust_signals, "ppa_install_preparation:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _list_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "ppa_install_preparation",
+                                policy,
+                                policy_section="ppa",
+                                policy_key="install_preparation",
+                                policy_legacy_key="ppa_install_preparation",
+                            ),
+                            separator=",",
+                        ),
                     ),
                 ]
             )
-        if record.execution_route.route_name.startswith("flatpak."):
+        if route_name.startswith("flatpak."):
+            flatpak_remove_constraint = _route_or_policy_value(
+                route,
+                "flatpak_remove_origin_constraint",
+                policy,
+                policy_section="flatpak",
+                policy_key="remove_origin_constraint",
+                policy_legacy_key="flatpak_remove_origin_constraint",
+            )
             lines.extend(
                 [
                     field(
                         "flatpak_effective_remote",
-                        (
-                            _signal_value(record.policy.trust_signals, "flatpak_effective_remote:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _string_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "flatpak_effective_remote",
+                                policy,
+                                policy_section="flatpak",
+                                policy_key="effective_remote",
+                                policy_legacy_key="flatpak_effective_remote",
+                            )
+                        ),
                     ),
                     field(
                         "flatpak_remote_origin",
-                        (
-                            _signal_value(record.policy.trust_signals, "flatpak_remote_origin:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _string_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "flatpak_remote_origin",
+                                policy,
+                                policy_section="flatpak",
+                                policy_key="remote_origin",
+                                policy_legacy_key="flatpak_remote_origin",
+                            )
+                        ),
                     ),
                     field(
                         "flatpak_observed_remotes",
-                        (
-                            _signal_value(record.policy.trust_signals, "flatpak_observed_remotes:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _list_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "flatpak_observed_remotes",
+                                policy,
+                                policy_section="flatpak",
+                                policy_key="observed_remotes",
+                                policy_legacy_key="flatpak_observed_remotes",
+                            ),
+                            separator=",",
+                        ),
                     ),
                     field(
                         "flatpak_remove_origin_constraint",
-                        (
-                            _signal_value(
-                                record.policy.trust_signals,
-                                "flatpak_remove_origin_constraint:",
-                            )
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        "enabled"
+                        if flatpak_remove_constraint in {True, "enabled"}
+                        else _string_or_dash(
+                            flatpak_remove_constraint if flatpak_remove_constraint not in {False, ""} else None
+                        ),
                     ),
                 ]
             )
-        if record.execution_route.route_name.startswith("rpm_ostree."):
+        if route_name.startswith("rpm_ostree."):
             lines.extend(
                 [
                     field(
                         "immutable_observed_surfaces",
-                        (
-                            _signal_value(record.policy.trust_signals, "immutable_observed_surfaces:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _list_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "immutable_observed_surfaces",
+                                policy,
+                                policy_section="immutable_host_context",
+                                policy_key="observed_surfaces",
+                                policy_legacy_key="immutable_observed_surfaces",
+                            ),
+                            separator=",",
+                        ),
                     ),
                     field(
                         "immutable_selected_surface",
-                        (
-                            _signal_value(record.policy.trust_signals, "immutable_selected_surface:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _string_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "immutable_selected_surface",
+                                policy,
+                                policy_section="immutable_host_context",
+                                policy_key="selected_surface",
+                                policy_legacy_key="immutable_selected_surface",
+                            )
+                        ),
                     ),
                     field(
                         "rpm_ostree_status",
-                        (
-                            _signal_value(record.policy.trust_signals, "rpm_ostree_status:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _string_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "rpm_ostree_status",
+                                policy,
+                                policy_section="rpm_ostree",
+                                policy_key="status",
+                                policy_legacy_key="rpm_ostree_status",
+                            )
+                        ),
                     ),
                     field(
                         "rpm_ostree_pending_deployment",
-                        (
-                            _signal_value(record.policy.trust_signals, "rpm_ostree_pending_deployment:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _bool_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "rpm_ostree_pending_deployment",
+                                policy,
+                                policy_section="rpm_ostree",
+                                policy_key="pending_deployment",
+                                policy_legacy_key="rpm_ostree_pending_deployment",
+                            )
+                        ),
                     ),
                     field(
                         "rpm_ostree_pending_requested_packages",
-                        (
-                            _signal_value(record.policy.trust_signals, "rpm_ostree_pending_requested_packages:")
-                            if record.policy is not None
-                            else "-"
-                        )
-                        or "-",
+                        _list_or_dash(
+                            _route_or_policy_value(
+                                route,
+                                "rpm_ostree_pending_requested_packages",
+                                policy,
+                                policy_section="rpm_ostree",
+                                policy_key="pending_requested_packages",
+                                policy_legacy_key="rpm_ostree_pending_requested_packages",
+                            ),
+                            separator=",",
+                        ),
                     ),
                 ]
             )
-        if record.execution_route.route_name.startswith("toolbox."):
-            _append_surface_route_lines(lines, record, "toolbox")
-        if record.execution_route.route_name.startswith("distrobox."):
-            _append_surface_route_lines(lines, record, "distrobox")
+        if route_name.startswith("toolbox."):
+            _append_surface_route_lines(lines, route, policy, "toolbox")
+        if route_name.startswith("distrobox."):
+            _append_surface_route_lines(lines, route, policy, "distrobox")
 
     if record.toolbox_profile is not None:
         _append_environment_profile_lines(lines, record.toolbox_profile, "Toolbox profile")
@@ -691,84 +1080,100 @@ def render_decision_record(record: DecisionRecord) -> str:
     if record.distrobox_profile is not None:
         _append_environment_profile_lines(lines, record.distrobox_profile, "Distrobox profile")
 
-    if record.rpm_ostree_status is not None:
+    if rpm_ostree_status is not None:
         lines.extend(
             [
                 "",
                 "rpm-ostree status",
-                field("observed", str(record.rpm_ostree_status.observed).lower()),
-                field("status", record.rpm_ostree_status.status),
-                field("source", record.rpm_ostree_status.source or "-"),
-                field("reason", polish_public_text(record.rpm_ostree_status.reason)),
-                field("transaction_active", str(record.rpm_ostree_status.transaction_active).lower()),
+                field("observed", _bool_or_dash(rpm_ostree_status.get("observed"))),
+                field("status", _string_or_dash(rpm_ostree_status.get("status"))),
+                field("source", _string_or_dash(rpm_ostree_status.get("source"))),
+                field("reason", polish_public_text(_string_or_dash(rpm_ostree_status.get("reason")))),
+                field("transaction_active", _bool_or_dash(rpm_ostree_status.get("transaction_active"))),
                 field(
                     "booted_requested_packages",
-                    ", ".join(record.rpm_ostree_status.booted_requested_packages) or "-",
+                    _list_or_dash(rpm_ostree_status.get("booted_requested_packages"), separator=", "),
                 ),
-                field("booted_packages", ", ".join(record.rpm_ostree_status.booted_packages) or "-"),
+                field(
+                    "booted_packages",
+                    _list_or_dash(rpm_ostree_status.get("booted_packages"), separator=", "),
+                ),
                 field(
                     "booted_base_removals",
-                    ", ".join(record.rpm_ostree_status.booted_base_removals) or "-",
+                    _list_or_dash(rpm_ostree_status.get("booted_base_removals"), separator=", "),
                 ),
-                field("pending_deployment", str(record.rpm_ostree_status.pending_deployment).lower()),
+                field("pending_deployment", _bool_or_dash(rpm_ostree_status.get("pending_deployment"))),
                 field(
                     "pending_requested_packages",
-                    ", ".join(record.rpm_ostree_status.pending_requested_packages) or "-",
+                    _list_or_dash(rpm_ostree_status.get("pending_requested_packages"), separator=", "),
                 ),
-                field("pending_packages", ", ".join(record.rpm_ostree_status.pending_packages) or "-"),
+                field(
+                    "pending_packages",
+                    _list_or_dash(rpm_ostree_status.get("pending_packages"), separator=", "),
+                ),
                 field(
                     "pending_base_removals",
-                    ", ".join(record.rpm_ostree_status.pending_base_removals) or "-",
+                    _list_or_dash(rpm_ostree_status.get("pending_base_removals"), separator=", "),
                 ),
-                field("diagnostic_command", " ".join(record.rpm_ostree_status.diagnostic_command) or "-"),
+                field(
+                    "diagnostic_command",
+                    _list_or_dash(rpm_ostree_status.get("diagnostic_command"), separator=" "),
+                ),
                 field(
                     "diagnostic_exit_code",
-                    (
-                        str(record.rpm_ostree_status.diagnostic_exit_code)
-                        if record.rpm_ostree_status.diagnostic_exit_code is not None
-                        else "-"
-                    ),
+                    _string_or_dash(rpm_ostree_status.get("diagnostic_exit_code")),
                 ),
-                field("diagnostic_stdout", _compact_diagnostic(record.rpm_ostree_status.diagnostic_stdout)),
-                field("diagnostic_stderr", _compact_diagnostic(record.rpm_ostree_status.diagnostic_stderr)),
+                field(
+                    "diagnostic_stdout",
+                    _compact_diagnostic(str(rpm_ostree_status.get("diagnostic_stdout") or "")),
+                ),
+                field(
+                    "diagnostic_stderr",
+                    _compact_diagnostic(str(rpm_ostree_status.get("diagnostic_stderr") or "")),
+                ),
             ]
         )
 
-    if record.execution is not None:
+    if execution is not None:
+        execution_presentation = _mapping(presentation.get("execution")) or {}
         lines.extend(
             [
                 "",
                 "Execution",
-                field("status", record.execution.status),
-                field("attempted", str(record.execution.attempted).lower()),
-                field("confirmation_supplied", str(record.execution.confirmation_supplied).lower()),
-                field("interactive_passthrough", str(record.execution.interactive_passthrough).lower()),
-                field("exit_code", str(record.execution.exit_code) if record.execution.exit_code is not None else "-"),
-                field("summary", polish_public_text(record.execution.summary)),
+                field("status", _string_or_dash(execution.get("status"))),
+                field("attempted", _bool_or_dash(execution.get("attempted"))),
+                field("confirmation_supplied", _bool_or_dash(execution.get("confirmation_supplied"))),
+                field("interactive_passthrough", _bool_or_dash(execution.get("interactive_passthrough"))),
+                field("exit_code", _string_or_dash(execution.get("exit_code"))),
+                field(
+                    "summary",
+                    polish_public_text(_string_or_dash(execution_presentation.get("summary"))),
+                ),
                 field(
                     "pre_probe",
-                    (
-                        polish_public_text(record.execution.pre_probe.summary)
-                        if record.execution.pre_probe is not None
-                        else "-"
+                    polish_public_text(
+                        _string_or_dash(execution_presentation.get("pre_probe_summary"))
                     ),
                 ),
                 field(
                     "post_probe",
-                    (
-                        polish_public_text(record.execution.post_probe.summary)
-                        if record.execution.post_probe is not None
-                        else "-"
+                    polish_public_text(
+                        _string_or_dash(execution_presentation.get("post_probe_summary"))
                     ),
                 ),
             ]
         )
-        if record.execution.diagnostic_stdout or record.execution.diagnostic_stderr:
+        if execution.get("diagnostic_stdout") or execution.get("diagnostic_stderr"):
             lines.extend(
                 [
-                    field("diagnostic_stdout", _compact_diagnostic(record.execution.diagnostic_stdout)),
-                    field("diagnostic_stderr", _compact_diagnostic(record.execution.diagnostic_stderr)),
+                    field(
+                        "diagnostic_stdout",
+                        _compact_diagnostic(str(execution.get("diagnostic_stdout") or "")),
+                    ),
+                    field(
+                        "diagnostic_stderr",
+                        _compact_diagnostic(str(execution.get("diagnostic_stderr") or "")),
+                    ),
                 ]
             )
-
     return "\n".join(lines)
