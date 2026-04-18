@@ -1,4 +1,4 @@
-# Aurora Invariants - v0.7.0
+# Aurora Invariants - v1.0.0
 
 ## Papel
 
@@ -42,7 +42,7 @@ Compatibilidade pode sobreviver por espelhos e bridges pequenas, mas a Aurora n�
 
 ### Modelo local so entra como camada assistiva sobre kernel deterministico
 
-Quando o modelo local existir na linha, ele precisa operar sobre `schema`, `stable_ids`, `facts` e `presentation` ja fechados. Ele pode clarificar, resumir, explicar e desambiguar candidatos ja estruturados, mas nao pode decidir policy, suporte, bloqueio, confirmacao, rota, execucao nem verdade operacional.
+Na `v1.0.0`, o modelo local opera sobre `schema`, `stable_ids`, `facts` e `presentation` ja fechados. Ele pode clarificar, resumir, explicar e desambiguar candidatos ja estruturados, mas nao pode decidir policy, suporte, bloqueio, confirmacao, rota, execucao nem verdade operacional.
 
 ### Gate automatizado não substitui revisão humana nem terminal real
 

@@ -1,8 +1,8 @@
-# Workflow de Testes e Release - Aurora v0.7.0
+# Workflow de Testes e Release - Aurora v1.0.0
 
 ## Papel
 
-Este documento formaliza a disciplina operacional preservada pela `v0.7.0`.
+Este documento formaliza a disciplina operacional preservada pela `v1.0.0`.
 
 Ele não abre domínio novo, não cria framework de CI e não substitui leitura do código. Ele existe para separar claramente:
 
@@ -101,6 +101,7 @@ Também é obrigatório:
 - checklist humano completo;
 - versão, help e changelog coerentes;
 - terminal real validado para a superfície tocada;
+- se a seam `local_model` entrou no corte, validar `model_off`, `model_on + provider configurado` e `model_on + provider indisponível` no terminal real;
 - worktree final já revisada para o corte de release.
 
 ### Antes de release
@@ -121,11 +122,20 @@ Nunca devem subir por gate automático sozinho:
 - mudanças em handoff interativo, prompts, senha, `toolbox`, `distrobox`, `rpm-ostree` ou AUR;
 - qualquer alteração cuja honestidade só apareça no terminal real.
 
-## Leitura correta da v0.7.0
+## Leitura correta da v1.0.0
 
 - `tests/release_gate_canonic_line.sh` continua sendo a régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` continua como gate histórico;
 - `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh` e `tests/release_gate_pre_release.sh` organizam a rotina operacional por etapa;
 - gate automatizado não substitui checklist humano;
 - checklist humano não substitui terminal real;
-- a `v0.7.0` preserva disciplina de subida, promove a superfície pública final pré-`v1.0.0` e não abre frente nova de domínio.
+- a `v1.0.0` preserva disciplina de subida, fecha a superfície pública/documental da seam `local_model` e não abre frente nova de domínio.
+
+## Checklist curta da v1.0.0
+
+Para este corte, a revisão curta precisa confirmar:
+
+- `model_off` continua íntegro por default em `aurora dev`;
+- `model_on` só entra quando configurado, com `ollama` como provider canônico atual;
+- provider indisponível cai em fallback determinístico honesto, com `provider_name` e `fallback_reason` factuais;
+- docs, changelog e checklist não prometem mais do que os smokes reais recentes sustentam.

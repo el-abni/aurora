@@ -87,7 +87,12 @@ _WORD_REPLACEMENTS = (
     ("rapido", "rápido"),
 )
 
-_STATUS_PREFIXES = ("❌ ", "✅ ", "ℹ ")
+_STATUS_PREFIXES = (
+    ("❌ ", "❌ | {marker} "),
+    ("✅ ", "✅ | {marker} "),
+    ("ℹ️ ", "ℹ️ | {marker} "),
+    ("ℹ ", "ℹ️ | {marker} "),
+)
 
 
 def polish_public_text(text: str) -> str:
@@ -121,9 +126,9 @@ def apply_speech_indicator(text: str, marker: str = "🌌") -> str:
         return text
 
     decorated = first_line
-    for prefix in _STATUS_PREFIXES:
+    for prefix, decoration in _STATUS_PREFIXES:
         if first_line.startswith(prefix):
-            decorated = f"{prefix}{marker} {first_line[len(prefix):]}"
+            decorated = decoration.format(marker=marker) + first_line[len(prefix):]
             break
     else:
         decorated = f"{marker} {first_line}"

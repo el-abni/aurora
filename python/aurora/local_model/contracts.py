@@ -40,6 +40,39 @@ LOCAL_MODEL_CONSUMED_SECTIONS = (
     "presentation.summary",
 )
 
+FALLBACK_REASON_PROVIDER_NOT_CONFIGURED = "provider_not_configured"
+FALLBACK_REASON_PROVIDER_CONNECTION_ERROR = "provider_connection_error"
+FALLBACK_REASON_PROVIDER_TIMEOUT = "provider_timeout"
+FALLBACK_REASON_PROVIDER_INVALID_RESPONSE = "provider_invalid_response"
+FALLBACK_REASON_PROVIDER_UNAVAILABLE = "provider_unavailable"
+FALLBACK_REASON_PROVIDER_RETURNED_EMPTY_OUTPUT = "provider_returned_empty_output"
+
+LOCAL_MODEL_FALLBACK_REASONS = (
+    FALLBACK_REASON_PROVIDER_NOT_CONFIGURED,
+    FALLBACK_REASON_PROVIDER_CONNECTION_ERROR,
+    FALLBACK_REASON_PROVIDER_TIMEOUT,
+    FALLBACK_REASON_PROVIDER_INVALID_RESPONSE,
+    FALLBACK_REASON_PROVIDER_UNAVAILABLE,
+    FALLBACK_REASON_PROVIDER_RETURNED_EMPTY_OUTPUT,
+)
+
+_LOCAL_MODEL_FALLBACK_REASON_ALIASES = {
+    "provider_not_supported": FALLBACK_REASON_PROVIDER_UNAVAILABLE,
+    "provider_returned_forbidden_capability": FALLBACK_REASON_PROVIDER_INVALID_RESPONSE,
+    "provider_returned_capability_mismatch": FALLBACK_REASON_PROVIDER_INVALID_RESPONSE,
+}
+
+
+def normalize_local_model_fallback_reason(reason: object, *, default: str = "") -> str:
+    raw = str(reason or "").strip()
+    if not raw:
+        return default
+    normalized = raw.replace("-", "_").lower()
+    canonical = _LOCAL_MODEL_FALLBACK_REASON_ALIASES.get(normalized, normalized)
+    if canonical in LOCAL_MODEL_FALLBACK_REASONS:
+        return canonical
+    return default or canonical
+
 
 @dataclass(frozen=True)
 class LocalModelRequest:
@@ -61,6 +94,13 @@ class LocalModelProvider(Protocol):
 
     def assist(self, request: LocalModelRequest) -> LocalModelResponse:
         ...
+
+
+class LocalModelProviderError(RuntimeError):
+    def __init__(self, reason: str, *, provider_name: str = "") -> None:
+        super().__init__(reason)
+        self.reason = reason
+        self.provider_name = provider_name
 
 
 @dataclass(frozen=True)

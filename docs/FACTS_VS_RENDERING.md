@@ -1,4 +1,4 @@
-# Facts vs Rendering - Aurora v0.7.0
+# Facts vs Rendering - Aurora v1.0.0
 
 ## Papel
 
@@ -14,6 +14,7 @@ Ele reaproveita uma lição já visível no repositório: `messages.py` e `text_
 - resolução de ambiente e alvo;
 - rota selecionada;
 - status final de execução;
+- `fallback_reason` e `output_text` da seam `local_model`, quando existirem;
 - `action_id`, `route_id` e `event_id`.
 
 Essas decisões vivem em `facts`.
@@ -29,7 +30,7 @@ Essas decisões vivem em `facts`.
 
 Esses detalhes vivem em `presentation` ou na camada `presentation/`.
 
-Quando existir `facts.local_model`, ele continua sendo camada assistiva e auditavel acima do kernel: pode consumir o payload canonico para sugerir clarificacao, resumo, explicacao ou desambiguacao limitada, mas nao vira fonte de verdade operacional.
+Quando existir `facts.local_model`, ele continua sendo camada assistiva e auditavel acima do kernel: pode consumir o payload canonico para sugerir clarificacao, resumo, explicacao ou desambiguacao limitada, mas nao vira fonte de verdade operacional. `fallback_reason` e `output_text` permanecem fatos crus dessa seam, nao wording publico.
 
 ## O que renderização nunca decide
 
@@ -39,8 +40,9 @@ Quando existir `facts.local_model`, ele continua sendo camada assistiva e audita
 - confirmação;
 - resultado;
 - rota;
-- verdade observada pelo probe.
-- policy, suporte, bloqueio, confirmação, rota, execução ou verdade operacional em nome de um modelo local.
+- execução;
+- verdade observada pelo probe;
+- `fallback_reason` e `output_text` da seam em nome de polimento, “voz” ou conveniência de renderização.
 
 ## Choque evitado
 
@@ -48,7 +50,7 @@ Sem essa fronteira, o `decision_record` voltaria a misturar contrato com voz e r
 
 ## Recorte desta linha
 
-Na `v0.7.0`, o corte continua propositalmente pequeno:
+Na `v1.0.0`, o corte continua propositalmente pequeno:
 
 - `facts` concentra o estado operacional;
 - `presentation` concentra a voz;
@@ -56,6 +58,8 @@ Na `v0.7.0`, o corte continua propositalmente pequeno:
 - a revisão humana ainda lê a renderização no terminal real sem transformar voz em truth layer;
 - a presença pública pode ganhar marcador discreto e voz mais composta sem contaminar o `decision_record` técnico;
 - o help público continua na camada de renderização e volta a ser curto, enquanto compatibilidade, política e workflow detalhados ficam no README/docs;
+- o bloco `Local model seam` do `aurora dev` mostra apenas `mode`, `status` e `requested_capability`, somando `provider_name` + `fallback_reason` em fallback ou `provider_name` + `output_text` em `completed`;
+- `output_text` continua cru e não passa por `polish_public_text(...)`;
 - não há refactor ornamental amplo do renderer.
 
 ## Hotspots explícitos do ponto de partida factual

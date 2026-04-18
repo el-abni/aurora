@@ -1,5 +1,31 @@
 # Changelog
 
+## 🌌 Aurora v1.0.0
+
+Fechamento curto de contrato e abertura pública honesta do estado já fechado nas Fases 0–3 da seam `local_model`. Esta release não redesenha o kernel: ela promove o provider real já integrado, mantém `model_off` íntegro por default e fixa `model_on` como camada assistiva opcional, factual e subordinada ao kernel determinístico.
+
+### Alterado
+
+- `VERSION`, `README.md`, `resources/help.txt`, `docs/COMPATIBILITY_LINUX.md`, `docs/INSTALLATION_POLICY.md`, docs centrais, `tests/REVIEW_CHECKLIST.md` e auditorias públicas passam a refletir a `v1.0.0` como release atual;
+- a seam em `python/aurora/local_model/` entra publicamente no caminho observável de `aurora dev` / `decision_record`, sem abrir rota nova, sem tocar em `policy`, `support`, `block`, `confirmation`, `route`, `execution` nem em verdade operacional;
+- o provider real canônico atual passa a ser `ollama`, com `qwen2.5:3b-instruct` como modelo canônico inicial quando `AURORA_LOCAL_MODEL_MODEL` não é informado;
+- `model_off` continua baseline adulto por default; `model_on` continua opcional e apenas assistivo quando `AURORA_MODEL_MODE=model_on` e `AURORA_LOCAL_MODEL_PROVIDER=ollama`;
+- `facts.local_model` e o bloco `Local model seam` passam a ser documentados como observabilidade factual mínima, com `stable_ids`, `facts` e `presentation` preservados como espinha pública, `fallback_reason` canônico em snake_case, `output_text` preservado cru como fato e fallback determinístico quando o provider falta, falha ou sai do contrato;
+- o endurecimento operacional inicial do provider permanece pequeno e contido: timeout default calibrado por smoke real, piso maior para `explain` no caminho default, `keep_alive` e `num_predict` curto por capability.
+- o fechamento da `v1.0.0` passa a incluir `tests/release_gate_canonic_line.sh` no fluxo final de validação antes de push/tag/release.
+- a release `v1.0.0` foi fechada com disciplina operacional seguindo `docs/WORKFLOW_DE_TESTES_E_RELEASE.md`, `tests/REVIEW_CHECKLIST.md`, `tests/release_gate_canonic_line.sh`, `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh`, `tests/release_gate_pre_release.sh` e `tests/audit_workflow_release.py`.
+
+### Continua fora da v1.0.0
+
+- múltiplos providers públicos ou seleção automática entre providers;
+- múltiplos modelos canônicos públicos;
+- qualquer autoridade do modelo sobre `policy`, suporte, bloqueio, confirmação, rota, execução ou verdade operacional;
+- qualquer uso do modelo local como frente genérica de chat ou como muleta para contrato frouxo;
+- `host_maintenance`, rede e arquivos;
+- parser amplo;
+- refactor estrutural grande;
+- qualquer abertura lateral de Aury ou backlog futuro como se já estivesse entregue.
+
 ## 🌌 Aurora v0.7.0
 
 Release pública pequena em superfície e grande em papel estrutural. Esta rodada não abre a `v1.0.0`: ela promove publicamente a linha já fechada em quatro cortes internos, mantém a superfície pública curta e deixa a Aurora pronta para receber o modelo local depois sobre um kernel determinístico já adulto.

@@ -5,13 +5,19 @@ from dataclasses import replace
 
 from .contracts import (
     MODEL_OFF,
-    MODEL_ON,
     MODEL_MODES,
+    FALLBACK_REASON_PROVIDER_INVALID_RESPONSE,
+    FALLBACK_REASON_PROVIDER_NOT_CONFIGURED,
+    FALLBACK_REASON_PROVIDER_RETURNED_EMPTY_OUTPUT,
+    FALLBACK_REASON_PROVIDER_UNAVAILABLE,
     LOCAL_MODEL_ALLOWED_CAPABILITIES,
     LocalModelProvider,
+    LocalModelProviderError,
     LocalModelRequest,
     LocalModelState,
+    normalize_local_model_fallback_reason,
 )
+from .provider_ollama import resolve_local_model_provider_from_environment
 
 
 def _mapping(value: object) -> dict[str, object]:
@@ -79,12 +85,18 @@ def build_local_model_state(
     if resolved_mode == MODEL_OFF:
         return state
 
-    if provider is None:
-        return replace(
-            state,
-            status="fallback_deterministic",
-            fallback_reason="provider_not_configured",
-        )
+    resolved_provider = provider
+    if resolved_provider is None:
+        resolved_provider, fallback_reason = resolve_local_model_provider_from_environment(environ=environ)
+        if resolved_provider is None:
+            return replace(
+                state,
+                status="fallback_deterministic",
+                fallback_reason=normalize_local_model_fallback_reason(
+                    fallback_reason,
+                    default=FALLBACK_REASON_PROVIDER_NOT_CONFIGURED,
+                ),
+            )
 
     request = LocalModelRequest(
         capability=requested_capability,
@@ -93,15 +105,27 @@ def build_local_model_state(
         facts=_mapping(payload.get("facts")),
         presentation=_mapping(payload.get("presentation")),
     )
-    response = provider.assist(request)
-    provider_name = str(getattr(provider, "provider_name", "") or "")
+    provider_name = str(getattr(resolved_provider, "provider_name", "") or "")
+
+    try:
+        response = resolved_provider.assist(request)
+    except LocalModelProviderError as exc:
+        return replace(
+            state,
+            status="fallback_deterministic",
+            provider_name=exc.provider_name or provider_name,
+            fallback_reason=normalize_local_model_fallback_reason(
+                exc.reason,
+                default=FALLBACK_REASON_PROVIDER_UNAVAILABLE,
+            ),
+        )
 
     if response.capability not in LOCAL_MODEL_ALLOWED_CAPABILITIES:
         return replace(
             state,
             status="fallback_deterministic",
             provider_name=provider_name,
-            fallback_reason="provider_returned_forbidden_capability",
+            fallback_reason=FALLBACK_REASON_PROVIDER_INVALID_RESPONSE,
         )
 
     if response.capability != requested_capability:
@@ -109,16 +133,16 @@ def build_local_model_state(
             state,
             status="fallback_deterministic",
             provider_name=provider_name,
-            fallback_reason="provider_returned_capability_mismatch",
+            fallback_reason=FALLBACK_REASON_PROVIDER_INVALID_RESPONSE,
         )
 
-    output_text = " ".join(str(response.text).split()).strip()
-    if not output_text:
+    output_text = str(response.text)
+    if not output_text.strip():
         return replace(
             state,
             status="fallback_deterministic",
             provider_name=provider_name,
-            fallback_reason="provider_returned_empty_output",
+            fallback_reason=FALLBACK_REASON_PROVIDER_RETURNED_EMPTY_OUTPUT,
         )
 
     return replace(

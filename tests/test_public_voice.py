@@ -7,7 +7,9 @@ from pathlib import Path
 from aurora.observability.dev_command import render_dev_report
 from aurora.presentation.messages import (
     blocked_message,
+    interactive_handoff_start_message,
     invalid_command_message,
+    mediated_execution_start_message,
     mutation_success_message,
     search_results_message,
 )
@@ -19,13 +21,16 @@ class PublicVoiceTests(unittest.TestCase):
         invalid = invalid_command_message()
         blocked = blocked_message("falta confirmacao explicita nesta rodada.")
         success = mutation_success_message("instalar", "ripgrep")
+        info = interactive_handoff_start_message("paru")
 
-        self.assertTrue(invalid.startswith("❌ 🌌 "))
-        self.assertTrue(blocked.startswith("❌ 🌌 "))
-        self.assertTrue(success.startswith("✅ 🌌 "))
+        self.assertTrue(invalid.startswith("❌ | 🌌 "))
+        self.assertTrue(blocked.startswith("❌ | 🌌 "))
+        self.assertTrue(success.startswith("✅ | 🌌 "))
+        self.assertTrue(info.startswith("ℹ️ | 🌌 "))
         self.assertEqual(invalid.count("🌌"), 1)
         self.assertEqual(blocked.count("🌌"), 1)
         self.assertEqual(success.count("🌌"), 1)
+        self.assertEqual(info.count("🌌"), 1)
 
     def test_multiline_search_message_marks_only_the_first_line(self) -> None:
         message = search_results_message(
@@ -35,8 +40,14 @@ class PublicVoiceTests(unittest.TestCase):
         )
 
         lines = message.splitlines()
-        self.assertTrue(lines[0].startswith("✅ 🌌 "))
+        self.assertTrue(lines[0].startswith("✅ | 🌌 "))
         self.assertTrue(all("🌌" not in line for line in lines[1:]))
+
+    def test_mediated_execution_messages_follow_info_visual_pattern(self) -> None:
+        message = mediated_execution_start_message("toolbox", "devbox", "pacman")
+
+        self.assertTrue(message.startswith("ℹ️ | 🌌 "))
+        self.assertIn("Vou iniciar a execução mediada na toolbox 'devbox'", message)
 
     def test_dev_report_stays_technical_without_speech_indicator(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

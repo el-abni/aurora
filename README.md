@@ -1,15 +1,15 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v0.7.0-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v1.0.0-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com política explícita, observabilidade própria e execução real sobre um contrato pequeno e auditável.
 
-A release pública atual é a `v0.7.0`. Ela não abre a `v1.0.0` ainda, nem frente nova de produto. Reaproveita a espinha canônica fechada na `v0.6.3`, preserva a disciplina operacional fechada na `v0.6.4`, consolida o endurecimento factual e a observabilidade canônica dos cortes `1` a `3` e promove publicamente a prontidão real para o modelo local do corte `4`, sem transformar o modelo em autoridade do runtime. Os detalhes longos continuam em `README/docs`, não no help.
+A release pública atual é a `v1.0.0`. Ela não redesenha o produto nem abre frente lateral: promove com honestidade o estado já fechado nas Fases `0` a `3` da seam `local_model` sobre a espinha canônica fechada na `v0.6.3` e a disciplina operacional fechada na `v0.6.4`. O provider real entra hoje apenas pela seam observável de `aurora dev` / `decision_record`, com `model_off` íntegro por default, `model_on` opcional e assistivo e fallback determinístico quando a borda falha. Os detalhes longos continuam em `README/docs`, não no help.
 
-Na `v0.7.0`, a superfície pública continua pequena e deliberadamente próxima da `v0.6.5`:
+Na `v1.0.0`, a superfície pública continua pequena e deliberadamente próxima da `v0.7.0`:
 
 - `host_package` para pacotes do host no `execution_surface=host`;
 - `AUR` como fonte explícita de terceiro dentro de `host_package`;
@@ -22,7 +22,7 @@ Na `v0.7.0`, a superfície pública continua pequena e deliberadamente próxima 
 
 ## Espinha canônica da linha
 
-A `v0.7.0` reaproveita uma lição já aprendida pela Aurora: endurecimento de linha pede regra executável e docs canônicas curtas, não feature nova. Por isso, a espinha fechada na `v0.6.3` continua amarrada por:
+A `v1.0.0` reaproveita uma lição já aprendida pela Aurora: endurecimento de linha pede regra executável e docs canônicas curtas, não feature nova. Por isso, a espinha fechada na `v0.6.3` continua amarrada por:
 
 - `tests/release_gate_canonic_line.sh` como régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` como gate histórico da release `v0.6.2`;
@@ -32,7 +32,7 @@ A `v0.7.0` reaproveita uma lição já aprendida pela Aurora: endurecimento de l
 - `docs/FACTS_VS_RENDERING.md` como fronteira explícita entre fato operacional e voz;
 - `docs/AURY_TO_AURORA_DOSSIER.md` como dossiê canônico de herança e limite entre Aury e Aurora.
 
-Leitura correta da `v0.7.0`:
+Leitura correta da `v1.0.0`:
 
 - `toolbox` não é fonte de pacote;
 - `toolbox` não é `host_package` com outro nome;
@@ -54,9 +54,9 @@ Leitura correta da `v0.7.0`:
 - pedido nu em host imutável não sofre fallback mágico: a Aurora mostra as superfícies observadas e bloqueia quando a frase não escolhe uma delas;
 - `host`, `toolbox`, `distrobox` e `rpm_ostree` aparecem separados em request, policy, route, execution e `aurora dev`.
 
-## Workflow operacional da v0.7.0
+## Workflow operacional da v1.0.0
 
-A `v0.7.0` preserva uma lição que o repositório já vinha ensinando: gate automatizado sozinho não segura release honesta quando a superfície pública ainda depende de docs, help, renderização, launchers e terminal real.
+A `v1.0.0` preserva uma lição que o repositório já vinha ensinando: gate automatizado sozinho não segura release honesta quando a superfície pública ainda depende de docs, help, renderização, launchers e terminal real.
 
 Por isso, esta release amarra:
 
@@ -68,7 +68,7 @@ Por isso, esta release amarra:
 - separação explícita entre teste automático, revisão manual e teste real no terminal local;
 - `tests/release_gate_v0_6_2.sh` preservado como gate histórico exercitado no fechamento mais duro, sem virar régua corrente da linha.
 
-O foco da `v0.7.0` é superfície pública curta sobre a espinha já canonizada:
+O foco da `v1.0.0` é superfície pública curta sobre a espinha já canonizada:
 
 - `tests/release_gate_canonic_line.sh` continua como régua corrente da linha;
 - `tests/README.md` passa a explicar o papel dos gates por etapa;
@@ -77,15 +77,28 @@ O foco da `v0.7.0` é superfície pública curta sobre a espinha já canonizada:
 - a espinha da linha continua 100% Python, sem puxar Fish ou stage pública para o centro da Aurora;
 - o help público volta a priorizar uso rápido, enquanto compatibilidade, limites e workflow detalhado continuam neste README e nos docs centrais.
 
-## O que a v0.7.0 fecha estruturalmente
+## O que a v1.0.0 fecha estruturalmente
 
-A `v0.7.0` torna pública uma leitura que já estava fechada no checkout:
+A `v1.0.0` torna pública uma leitura que já estava fechada no checkout:
 
 - o baseline factual dos cortes `1` e `2` sai da zona de hotspot principal;
 - a observabilidade canônica do corte `3` passa a ser parte assumida da linha pública;
 - `local_model/` entra como seam pequena e explícita, com `model_off` como modo íntegro por default;
+- o provider real canônico `ollama` entra apenas nessa seam observável, com `qwen2.5:3b-instruct` como modelo canônico inicial;
 - `model_on` continua apenas como camada assistiva opcional, com fallback determinístico e autoridade limitada;
+- `fallback_reason` permanece factual em dialeto canônico curto e `output_text` permanece preservado cru como fato;
 - essa seam pode clarificar, resumir, explicar e desambiguar candidatos já estruturados, mas não pode decidir `policy`, bloqueio, confirmação, rota, execução ou verdade operacional.
+
+## Seam `local_model`
+
+A leitura correta desta abertura é curta:
+
+- sem variável de ambiente, `aurora dev` continua em `model_off`;
+- `model_on` só entra quando `AURORA_MODEL_MODE=model_on` e `AURORA_LOCAL_MODEL_PROVIDER=ollama`;
+- o provider canônico atual é `ollama`, com `qwen2.5:3b-instruct` como modelo canônico inicial quando `AURORA_LOCAL_MODEL_MODEL` não é informado;
+- a seam consome `schema + stable_ids + facts + presentation`, mas não decide `policy`, suporte, bloqueio, confirmação, rota, execução ou verdade operacional;
+- se o provider faltar, falhar, expirar ou sair do contrato, a linha cai em fallback determinístico e o kernel permanece suficiente;
+- `aurora dev` mostra um bloco técnico curto `Local model seam`; `fallback_reason` e `output_text` permanecem fatos crus, sem polimento textual.
 
 ## O que a Aurora faz
 
@@ -102,19 +115,20 @@ A Aurora funciona como uma camada de decisão e execução sobre Linux. Em vez d
 
 ## Decision Record Canônico
 
-Na `v0.7.0`, a leitura parseável do `decision_record` continua sendo:
+Na `v1.0.0`, a leitura parseável do `decision_record` continua sendo:
 
 - `schema.schema_id=aurora.decision_record.v1`;
 - `stable_ids.action_id`, `stable_ids.route_id` e `stable_ids.event_id` como IDs mínimos estáveis;
 - `facts` como seção canônica do estado operacional;
 - `presentation` como seção de voz e renderização.
+- `facts.local_model` como seam factual assistiva, com `mode`, `status`, `requested_capability`, `provider_name`, `fallback_reason` e `output_text` quando couber.
 
 Compatibilidade desta linha:
 
 - o payload antigo continua espelhado no topo por compatibilidade com a base já aberta;
 - `host_package.search` continua existindo apenas como `route_name` legado; o ID canônico da rota é `host_package.procurar`.
 
-## Contrato público da v0.7.0
+## Contrato público da v1.0.0
 
 Rotas reais abertas nesta release:
 
@@ -248,6 +262,8 @@ aurora dev "instalar obs-studio do ppa ppa:obsproject/obs-studio --confirm"
 aurora dev "procurar ripgrep na toolbox devbox"
 aurora dev "procurar ripgrep na distrobox devbox"
 aurora dev "instalar htop no rpm-ostree"
+AURORA_MODEL_MODE=model_on AURORA_LOCAL_MODEL_PROVIDER=ollama aurora dev "procurar firefox"
+AURORA_MODEL_MODE=model_on AURORA_LOCAL_MODEL_PROVIDER=ollama AURORA_LOCAL_MODEL_URL=http://127.0.0.1:11434/indisponivel aurora dev "procurar firefox"
 ```
 
 ## Compatibilidade Linux
@@ -377,15 +393,15 @@ A identidade pública da ferramenta é:
 🌌 Aurora
 ```
 
-Na `v0.7.0`, o help público continua sendo superfície curta de uso. Compatibilidade detalhada, limites e workflow continuam no README e nos docs.
+Na `v1.0.0`, o help público continua sendo superfície curta de uso. Compatibilidade detalhada, limites e workflow continuam no README e nos docs.
 
 No help público, a versão aparece como:
 
 ```text
-🌌 Aurora v0.7.0
+🌌 Aurora v1.0.0
 ```
 
-## O que a v0.7.0 não promete
+## O que a v1.0.0 não promete
 
 A Aurora ainda não abre:
 
@@ -406,7 +422,9 @@ A Aurora ainda não abre:
 - descoberta automática de remotes `flatpak`;
 - add automático de remote arbitrário;
 - administração geral de remotes `flatpak`;
-- provider real de modelo local ligado na superfície pública;
+- múltiplos providers públicos ou seleção automática entre providers;
+- múltiplos modelos canônicos públicos;
+- uso do modelo local fora da seam assistiva observável de `aurora dev` / `decision_record`;
 - qualquer autoridade do modelo sobre policy, suporte, bloqueio, confirmação, rota, execução ou resultado operacional;
 - AppImage e GitHub Releases;
 - `ujust`;

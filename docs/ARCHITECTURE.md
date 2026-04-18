@@ -1,4 +1,4 @@
-# Architecture - Aurora v0.7.0
+# Architecture - Aurora v1.0.0
 
 ## Tese curta
 
@@ -17,7 +17,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 
 ## Espinha canônica da linha
 
-A `v0.7.0` não abre rota nova. Ela preserva a espinha canônica fechada na `v0.6.3`, mantém a disciplina operacional fechada na `v0.6.4` e fecha a prontidão real para o modelo local sem abrir a `v1.0.0`:
+A `v1.0.0` não abre rota nova. Ela preserva a espinha canônica fechada na `v0.6.3`, mantém a disciplina operacional fechada na `v0.6.4` e abre publicamente a seam assistiva `local_model` com provider real canônico apenas em `aurora dev` / `decision_record`, sem tocar no kernel determinístico:
 
 - `tests/release_gate_canonic_line.sh` como régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` preservado como gate histórico da release `v0.6.2`;
@@ -30,9 +30,9 @@ A `v0.7.0` não abre rota nova. Ela preserva a espinha canônica fechada na `v0.
 
 Essa espinha reaproveita uma lição já aprendida pela Aurora: a linha endurece melhor com contrato pequeno, docs auditáveis e gate curto do que com feature nova. Ela também evita um choque já conhecido com o patrimônio do repo: Fish e stage pública não entram como centro do gate da Aurora.
 
-## Disciplina operacional da v0.7.0
+## Disciplina operacional da v1.0.0
 
-A `v0.7.0` preserva o workflow formalizado em volta dessa espinha:
+A `v1.0.0` preserva o workflow formalizado em volta dessa espinha:
 
 - `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` define as três camadas de validação;
 - `tests/REVIEW_CHECKLIST.md` fixa a revisão humana curta;
@@ -55,7 +55,7 @@ A `v0.7.0` preserva o workflow formalizado em volta dessa espinha:
 9. `install/execution_handoff.py` executa, faz probes e mantém visível se a ação ocorre no host mutável, no host imutável via `rpm-ostree`, dentro da toolbox ou dentro da distrobox.
 10. `contracts/decision_record_schema.py` e `contracts/stable_ids.py` fixam o schema versionado e os IDs mínimos estáveis do `decision_record`.
 11. `observability/` registra `facts`, preserva compatibilidade por espelhos legados e renderiza a camada pública.
-12. `local_model/` pluga por cima de `schema + stable_ids + facts + presentation`, em `model_off` por default, com fallback determinístico e autoridade limitada.
+12. `local_model/` pluga por cima de `schema + stable_ids + facts + presentation` no caminho de `aurora dev` / `decision_record`, em `model_off` por default, com provider canônico `ollama`, fallback determinístico e autoridade limitada.
 
 ## Módulos principais
 
@@ -100,7 +100,7 @@ A `v0.7.0` preserva o workflow formalizado em volta dessa espinha:
 - `rpm_ostree_status`;
 - `immutable_selected_surface`;
 - `tests/audit_factual_hotspots.py`, `tests/audit_factual_baseline.py` e `tests/audit_observability_canonical_facts.py` como contenção curta da observabilidade canônica após os cortes 2 e 3;
-- `tests/audit_local_model_eval_baseline.py` como baseline curto de prontidão para comparar `model_off` e `model_on` sem entregar autoridade operacional ao modelo;
+- `tests/audit_local_model_eval_baseline.py` como baseline curto do contrato `model_off` vs `model_on`, sem entregar autoridade operacional ao modelo;
 - renderização curta e expandida;
 - `aurora dev`.
 
@@ -116,16 +116,18 @@ A `v0.7.0` preserva o workflow formalizado em volta dessa espinha:
 
 ### `local_model/`
 
-- seam explícita e pequena para a futura integração do modelo local;
+- seam explícita e pequena no caminho observável de `aurora dev` / `decision_record`;
 - `model_off` como modo íntegro e suficiente da linha;
 - `model_on` apenas como camada assistiva opcional sobre payload canônico;
+- provider canônico atual `ollama`, resolvido por ambiente apenas quando `AURORA_MODEL_MODE=model_on` e `AURORA_LOCAL_MODEL_PROVIDER=ollama`;
+- modelo canônico inicial `qwen2.5:3b-instruct` quando `AURORA_LOCAL_MODEL_MODEL` não é informado;
 - contrato de autoridade limitada para clarificação, resumo, explicação e desambiguação entre candidatos já estruturados;
 - proibição explícita de decidir policy, suporte, bloqueio, confirmação, rota, execução ou verdade operacional;
 - fallback determinístico quando provider não existe, falha ou devolve algo fora do contrato.
 
 ## Decision Record Canônico
 
-Na `v0.7.0`, o `decision_record` continua com uma leitura canônica curta:
+Na `v1.0.0`, o `decision_record` continua com uma leitura canônica curta:
 
 - `schema.schema_id=aurora.decision_record.v1`;
 - `stable_ids.action_id`, `stable_ids.route_id` e `stable_ids.event_id` como IDs mínimos estáveis;
@@ -138,7 +140,7 @@ Compatibilidade:
 - `host_package.search` continua apenas como `route_name` legado;
 - o ID canônico da rota de busca do host passa a ser `host_package.procurar`.
 
-## Rotas abertas na v0.7.0
+## Rotas abertas na v1.0.0
 
 ### `host_package`
 
@@ -282,13 +284,14 @@ Garantias:
 
 ## Fronteiras deliberadas
 
-A `v0.6.4` continua pequena de propósito:
+A `v1.0.0` continua pequena de propósito:
 
 - pedido nu continua em `host_package` no host;
 - em host imutável, pedido nu bloqueia com `immutable_observed_surfaces` e `immutable_selected_surface=block`;
 - `toolbox` não vira escape hatch implícito para Atomic/imutáveis;
 - `distrobox` também não vira escape hatch implícito para Atomic/imutáveis;
 - `rpm-ostree` também não vira backend mágico para qualquer limitação do host;
+- o provider real do modelo local não vira rota, policy, execução nem verdade operacional;
 - `toolbox.instalar` e `toolbox.remover` não fazem canonicalização ampla de alvo;
 - `distrobox.instalar` e `distrobox.remover` não fazem canonicalização ampla de alvo;
 - `rpm_ostree.instalar` e `rpm_ostree.remover` não abrem `apply-live`, reboot automático, `override remove` nem chaining amplo;

@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from aurora.contracts.decisions import DecisionRecord
 from aurora.local_model.contracts import LocalModelProvider
 from aurora.observability.decision_record import decision_record_to_dict
-from aurora.presentation.formatting import field
+from aurora.presentation.formatting import FIELD_WIDTH, field
 from aurora.presentation.text_polish import polish_public_text
 
 
@@ -47,6 +47,48 @@ def _compact_diagnostic(value: str) -> str:
     if len(compact) <= 200:
         return compact
     return compact[:197].rstrip() + "..."
+
+
+def _raw_field(label: str, value: str) -> str:
+    return f"{label + ':':<{FIELD_WIDTH}} {value}"
+
+
+def _multiline_fact_field(label: str, value: object) -> str:
+    if not _present(value):
+        return field(label, "-")
+    text = str(value)
+    first_line, *remaining_lines = text.splitlines() or [text]
+    rendered_lines = [_raw_field(label, first_line)]
+    indent = " " * FIELD_WIDTH + " "
+    rendered_lines.extend(f"{indent}{line}" for line in remaining_lines)
+    return "\n".join(rendered_lines)
+
+
+def _append_local_model_lines(lines: list[str], local_model: Mapping[str, object]) -> None:
+    status = str(local_model.get("status") or "")
+    lines.extend(
+        [
+            "",
+            "Local model seam",
+            field("mode", _string_or_dash(local_model.get("mode"))),
+            field("status", _string_or_dash(local_model.get("status"))),
+            field(
+                "requested_capability",
+                _string_or_dash(local_model.get("requested_capability")),
+            ),
+        ]
+    )
+
+    provider_name = local_model.get("provider_name")
+    if _present(provider_name):
+        lines.append(field("provider_name", str(provider_name)))
+
+    if status == "fallback_deterministic":
+        lines.append(field("fallback_reason", _string_or_dash(local_model.get("fallback_reason"))))
+        return
+
+    if status == "completed":
+        lines.append(_multiline_fact_field("output_text", local_model.get("output_text")))
 
 
 def _scope_label(request: Mapping[str, object]) -> str:
@@ -332,42 +374,7 @@ def render_decision_record(
     ]
 
     if local_model is not None:
-        lines.extend(
-            [
-                "",
-                "Local model seam",
-                field("mode", _string_or_dash(local_model.get("mode"))),
-                field("status", _string_or_dash(local_model.get("status"))),
-                field(
-                    "requested_capability",
-                    _string_or_dash(local_model.get("requested_capability")),
-                ),
-                field(
-                    "authority_profile",
-                    _string_or_dash(local_model.get("authority_profile")),
-                ),
-                field("advisory_only", _bool_or_dash(local_model.get("advisory_only"))),
-                field("provider_name", _string_or_dash(local_model.get("provider_name"))),
-                field(
-                    "allowed_capabilities",
-                    _list_or_dash(local_model.get("allowed_capabilities"), separator=", "),
-                ),
-                field(
-                    "forbidden_authorities",
-                    _list_or_dash(local_model.get("forbidden_authorities"), separator=", "),
-                ),
-                field(
-                    "consumed_sections",
-                    _list_or_dash(local_model.get("consumed_sections"), separator=", "),
-                ),
-                field("input_schema_id", _string_or_dash(local_model.get("input_schema_id"))),
-                field(
-                    "fallback_reason",
-                    polish_public_text(_string_or_dash(local_model.get("fallback_reason"))),
-                ),
-                field("output_text", polish_public_text(_string_or_dash(local_model.get("output_text")))),
-            ]
-        )
+        _append_local_model_lines(lines, local_model)
 
     lines.extend(
         [

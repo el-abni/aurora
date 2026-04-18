@@ -5,9 +5,19 @@ from .contracts import (
     LOCAL_MODEL_AUTHORITY_PROFILE,
     LOCAL_MODEL_INPUT_SCHEMA_ID,
     LocalModelProvider,
+    LocalModelProviderError,
     LocalModelRequest,
     LocalModelResponse,
     LocalModelState,
+)
+from .provider_ollama import (
+    DEFAULT_OLLAMA_MODEL,
+    DEFAULT_OLLAMA_TIMEOUT_MS,
+    DEFAULT_OLLAMA_URL,
+    OLLAMA_PROVIDER_NAME,
+    OllamaLocalModelProvider,
+    resolve_local_model_provider_from_environment,
+    resolve_ollama_provider_from_environment,
 )
 from .seam import build_local_model_state, local_model_state_to_dict, resolve_local_model_mode
 
@@ -18,10 +28,18 @@ __all__ = [
     "LOCAL_MODEL_AUTHORITY_PROFILE",
     "LOCAL_MODEL_INPUT_SCHEMA_ID",
     "LocalModelProvider",
+    "LocalModelProviderError",
     "LocalModelRequest",
     "LocalModelResponse",
     "LocalModelState",
+    "OLLAMA_PROVIDER_NAME",
+    "DEFAULT_OLLAMA_MODEL",
+    "DEFAULT_OLLAMA_URL",
+    "DEFAULT_OLLAMA_TIMEOUT_MS",
+    "OllamaLocalModelProvider",
     "build_local_model_state",
     "local_model_state_to_dict",
+    "resolve_local_model_provider_from_environment",
     "resolve_local_model_mode",
+    "resolve_ollama_provider_from_environment",
 ]

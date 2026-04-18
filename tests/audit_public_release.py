@@ -75,14 +75,14 @@ def assert_terms(path: str, *terms: str) -> None:
 
 
 def main() -> int:
-    ensure(VERSION == "v0.7.0", "VERSION precisa estar promovido para v0.7.0 no fechamento desta release")
+    ensure(VERSION == "v1.0.0", "VERSION precisa estar promovido para v1.0.0 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v0.7.0")
+    ok("VERSION promovido para v1.0.0")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
     ensure(f"## 🌌 Aurora {VERSION}" in changelog, f"CHANGELOG.md precisa abrir a release publica {VERSION}")
-    for preserved in ("v0.6.5", "v0.6.4", "v0.6.3", "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.1", "v0.5.0"):
+    for preserved in ("v0.7.0", "v0.6.5", "v0.6.4", "v0.6.3", "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.1", "v0.5.0"):
         ensure(f"## 🌌 Aurora {preserved}" in changelog, f"CHANGELOG.md precisa preservar a release publica {preserved}")
     for term in (
         "resources/help.txt",
@@ -98,14 +98,18 @@ def main() -> int:
         "tests/audit_workflow_release.py",
         "local_model",
         "model_off",
+        "model_on",
+        "ollama",
+        "qwen2.5:3b-instruct",
+        "provider real",
         "fallback deterministico",
         "autoridade limitada",
         "stable_ids",
         "presentation",
-        "v0.6.5",
+        "v0.7.0",
     ):
         ensure(term in changelog or term.lower() in changelog_normalized, f"CHANGELOG.md precisa citar {term}")
-    ensure_any(changelog_normalized, ("superficie publica", "pre-v1.0.0", "modelo local"), "CHANGELOG.md precisa tratar a v0.7.0 como promocao publica pre-v1.0.0 sem abrir feature nova")
+    ensure_any(changelog_normalized, ("provider real", "ollama", "fallback deterministico"), "CHANGELOG.md precisa tratar a v1.0.0 como abertura publica honesta da seam local_model")
     assert_no_auroboros("CHANGELOG.md", changelog)
     ok("CHANGELOG.md alinhado")
 
@@ -141,6 +145,11 @@ def main() -> int:
         "presentation",
         "local_model",
         "model_off",
+        "model_on",
+        "ollama",
+        "qwen2.5:3b-instruct",
+        "AURORA_MODEL_MODE",
+        "AURORA_LOCAL_MODEL_PROVIDER",
         "fallback deterministico",
         "autoridade limitada",
         "host_package.procurar",
@@ -153,7 +162,7 @@ def main() -> int:
         "aurora --help",
     ):
         ensure(term in readme or term in readme_normalized, f"README.md precisa citar {term}")
-    ensure_any(readme_normalized, ("workflow operacional", "disciplina operacional", "superficie curta de uso", "pre-v1.0.0"), "README.md precisa tratar a v0.7.0 como release coerente de linha e promocao publica final pre-v1.0.0")
+    ensure_any(readme_normalized, ("workflow operacional", "disciplina operacional", "superficie curta de uso", "provider real"), "README.md precisa tratar a v1.0.0 como release coerente de linha e abertura honesta da seam local_model")
     assert_no_auroboros("README.md", readme)
     ok("README.md alinhado")
 
@@ -176,6 +185,10 @@ def main() -> int:
         "tests/audit_decision_record_contract.py",
         "local_model/",
         "model_off",
+        "model_on",
+        "ollama",
+        "qwen2.5:3b-instruct",
+        "aurora dev",
         "fallback deterministico",
         "autoridade limitada",
         "aurora.decision_record.v1",
@@ -190,7 +203,7 @@ def main() -> int:
         "rpm_ostree.remover",
     ):
         ensure(term in architecture or term in architecture_normalized, f"docs/ARCHITECTURE.md precisa citar {term}")
-    ensure_any(architecture_normalized, ("workflow", "disciplina operacional", "v1.0.0"), "ARCHITECTURE precisa tratar a v0.7.0 como release estrutural pre-v1.0.0 sem abrir a v1.0.0")
+    ensure_any(architecture_normalized, ("workflow", "disciplina operacional", "ollama"), "ARCHITECTURE precisa tratar a v1.0.0 como release estrutural com seam assistiva real sem abrir frente lateral")
     assert_no_auroboros("docs/ARCHITECTURE.md", architecture)
     ok("docs/ARCHITECTURE.md alinhado")
 
@@ -282,6 +295,12 @@ def main() -> int:
         "stable_ids.event_id",
         "facts",
         "presentation",
+        "provider_name",
+        "fallback_reason",
+        "output_text",
+        "disabled",
+        "completed",
+        "fallback_deterministic",
         "host_package.procurar",
         "host_package.search",
         "payload antigo",
@@ -297,6 +316,9 @@ def main() -> int:
         "text_polish.py",
         "facts",
         "presentation",
+        "fallback_reason",
+        "output_text",
+        "Local model seam",
         "policy",
         "bloqueio",
         "confirmacao",
@@ -315,6 +337,7 @@ def main() -> int:
         "aurora",
         "raiz operacional",
         "decisao e mediacao",
+        "modelo local",
         "nao deve migrar",
         "frontend da aurora",
         "fish",

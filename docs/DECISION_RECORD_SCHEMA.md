@@ -1,4 +1,4 @@
-# Decision Record Schema - Aurora v0.7.0
+# Decision Record Schema - Aurora v1.0.0
 
 ## Papel
 
@@ -62,20 +62,31 @@ Detalhe importante desta release:
 
 - o payload antigo continua espelhado no topo por compatibilidade;
 - o contrato novo a ser consumido daqui em diante é `schema + stable_ids + facts + presentation`.
-- a `v0.7.0` não entrega schema novo nem motor novo; ela promove publicamente a seam limitada em `facts.local_model` sem relaxar o contrato central.
+- a `v1.0.0` não entrega schema novo nem motor novo; ela abre publicamente a seam limitada em `facts.local_model` com provider real canônico, sem relaxar o contrato central.
 
 ## Seam local do modelo
 
 Quando `facts.local_model` estiver presente, a leitura correta e minima e:
 
 - `mode`: `model_off` ou `model_on`;
-- `status`: desligado, concluido ou em fallback deterministico;
+- `status`: `disabled`, `completed` ou `fallback_deterministic`;
 - `requested_capability`: `clarify`, `summarize`, `explain` ou `disambiguate_limited`;
-- `authority_profile=aurora.local_model.limited_assist.v1`;
-- `advisory_only=true`;
-- `input_schema_id=aurora.local_model.input.v1`.
+- invariantes contratuais: `authority_profile=aurora.local_model.limited_assist.v1`, `advisory_only=true`, `input_schema_id=aurora.local_model.input.v1`;
+- guardrails contratuais adicionais: `allowed_capabilities`, `forbidden_authorities` e `consumed_sections`;
+- campos por estado: `provider_name`, `fallback_reason` e `output_text`.
 
-Esse bloco existe para registrar a seam do futuro modelo local sem transformar o modelo em motor de policy ou execucao.
+Leitura factual desses campos por estado:
+
+- `provider_name` fica vazio em `model_off` e registra o provider efetivamente usado quando a seam entra;
+- `fallback_reason` só e significativo em `fallback_deterministic` e usa um dialeto canonico curto: `provider_not_configured`, `provider_connection_error`, `provider_timeout`, `provider_invalid_response`, `provider_unavailable`, `provider_returned_empty_output`;
+- `output_text` so e significativo em `completed` e preserva o texto cru devolvido pelo provider, sem polimento;
+- o bloco tecnico `Local model seam` do `aurora dev` projeta esses fatos de forma minima por estado, sem reescrever esses valores.
+
+Entrada atual do provider real:
+
+- o provider publico suportado hoje e `ollama`;
+- ele so e resolvido quando `mode=model_on` e `AURORA_LOCAL_MODEL_PROVIDER=ollama`;
+- o modelo canonico inicial e `qwen2.5:3b-instruct` quando `AURORA_LOCAL_MODEL_MODEL` nao e informado.
 
 Limites do bloco:
 
@@ -92,7 +103,7 @@ O schema atual já separa `facts` e `presentation`, e os cortes 2 e 3 fecharam a
 - `trust_signals` permanece como trilha evidencial e explicativa, não mais como canal semântico central do serializer nem do render canônico;
 - `decision_record` e `aurora dev` agora preferem os fatos promovidos, mantendo bridges legadas explícitas só onde a linha ainda precisa sobreviver;
 - o estado real do corte 3 fica congelado em `tests/audit_factual_hotspots.py` com `tests/fixtures/factual_hotspots_v0_7_0_cut3.json`, em `tests/audit_factual_baseline.py` com `tests/fixtures/factual_baseline_v0_7_0_cut3.json` e em `tests/audit_observability_canonical_facts.py`.
-- o estado real do corte 4 fica cercado em `facts.local_model` e em `tests/audit_local_model_eval_baseline.py` com `tests/fixtures/local_model_eval_baseline_v0_7_0_cut4.json`.
+- o baseline factual herdado do corte 4 continua cercando `facts.local_model` em `tests/audit_local_model_eval_baseline.py` com `tests/fixtures/local_model_eval_baseline_v0_7_0_cut4.json`.
 
 ## Fica para depois
 
