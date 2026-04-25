@@ -5,7 +5,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 cd "$ROOT"
 
-PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_*.py'
+mapfile -t PUBLIC_TESTS < <(git ls-files 'tests/test_*.py')
+PYTHONPATH=python:tests python3 -m unittest "${PUBLIC_TESTS[@]}"
 PYTHONPATH=python:tests python3 tests/audit_public_release.py
 PYTHONPATH=python:tests python3 tests/audit_canonic_line.py
 PYTHONPATH=python:tests python3 tests/audit_decision_record_contract.py

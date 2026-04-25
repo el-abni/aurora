@@ -1,17 +1,18 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v1.0.0-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v1.1.0-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com política explícita, observabilidade própria e execução real sobre um contrato pequeno e auditável.
 
-A release pública atual é a `v1.0.0`. Ela não redesenha o produto nem abre frente lateral: promove com honestidade o estado já fechado nas Fases `0` a `3` da seam `local_model` sobre a espinha canônica fechada na `v0.6.3` e a disciplina operacional fechada na `v0.6.4`. O provider real entra hoje apenas pela seam observável de `aurora dev` / `decision_record`, com `model_off` íntegro por default, `model_on` opcional e assistivo e fallback determinístico quando a borda falha. Os detalhes longos continuam em `README/docs`, não no help.
+A release pública atual é a `v1.1.0`. Ela fecha formalmente a absorção funcional I com `host_maintenance.atualizar`, mantendo o recorte pequeno já validado: `aurora atualizar sistema --confirm` em host Arch mutável com `pacman` observado, confirmação explícita obrigatória e backend `sudo + pacman`. A `v1.0.0` permanece o marco histórico da seam assistiva `local_model`: `model_off` íntegro por default, `model_on` opcional e assistivo, provider real apenas na observabilidade de `aurora dev` / `decision_record` e fallback determinístico quando a borda falha. Os detalhes longos continuam em `README/docs`, não no help.
 
-Na `v1.0.0`, a superfície pública continua pequena e deliberadamente próxima da `v0.7.0`:
+Na `v1.1.0`, a superfície pública continua pequena e deliberadamente próxima da linha já canonizada:
 
 - `host_package` para pacotes do host no `execution_surface=host`;
+- `host_maintenance` para atualização explícita e contida do sistema do host;
 - `AUR` como fonte explícita de terceiro dentro de `host_package`;
 - `COPR` como fonte explícita de terceiro dentro de `host_package`;
 - `PPA` como fonte explícita de terceiro dentro de `host_package`;
@@ -20,7 +21,7 @@ Na `v1.0.0`, a superfície pública continua pequena e deliberadamente próxima 
 - `distrobox` como `execution_surface` explícita para operar pacote distro-managed dentro de um ambiente mediado nomeado.
 - `rpm-ostree` como `execution_surface` explícita para layering/uninstall no host imutável.
 
-No checkout atual, já existe um recorte local de abertura da `v1.1.0` ainda não promovido como release pública:
+Recorte fechado de `host_maintenance.atualizar` na `v1.1.0`:
 
 - `host_maintenance.atualizar` via `aurora atualizar sistema --confirm`;
 - suporte real apenas em host Arch mutável;
@@ -29,7 +30,7 @@ No checkout atual, já existe um recorte local de abertura da `v1.1.0` ainda nã
 
 ## Espinha canônica da linha
 
-A `v1.0.0` reaproveita uma lição já aprendida pela Aurora: endurecimento de linha pede regra executável e docs canônicas curtas, não feature nova. Por isso, a espinha fechada na `v0.6.3` continua amarrada por:
+A `v1.1.0` reaproveita uma lição já aprendida pela Aurora: endurecimento de linha pede regra executável e docs canônicas curtas, não feature nova. Por isso, a espinha fechada na `v0.6.3` continua amarrada por:
 
 - `tests/release_gate_canonic_line.sh` como régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` como gate histórico da release `v0.6.2`;
@@ -39,7 +40,7 @@ A `v1.0.0` reaproveita uma lição já aprendida pela Aurora: endurecimento de l
 - `docs/FACTS_VS_RENDERING.md` como fronteira explícita entre fato operacional e voz;
 - `docs/AURY_TO_AURORA_DOSSIER.md` como dossiê canônico de herança e limite entre Aury e Aurora.
 
-Leitura correta da `v1.0.0`:
+Leitura correta da `v1.1.0`:
 
 - `toolbox` não é fonte de pacote;
 - `toolbox` não é `host_package` com outro nome;
@@ -61,9 +62,9 @@ Leitura correta da `v1.0.0`:
 - pedido nu em host imutável não sofre fallback mágico: a Aurora mostra as superfícies observadas e bloqueia quando a frase não escolhe uma delas;
 - `host`, `toolbox`, `distrobox` e `rpm_ostree` aparecem separados em request, policy, route, execution e `aurora dev`.
 
-## Workflow operacional da v1.0.0
+## Workflow operacional da v1.1.0
 
-A `v1.0.0` preserva uma lição que o repositório já vinha ensinando: gate automatizado sozinho não segura release honesta quando a superfície pública ainda depende de docs, help, renderização, launchers e terminal real.
+A `v1.1.0` preserva uma lição que o repositório já vinha ensinando: gate automatizado sozinho não segura release honesta quando a superfície pública ainda depende de docs, help, renderização, launchers e terminal real.
 
 Por isso, esta release amarra:
 
@@ -75,7 +76,7 @@ Por isso, esta release amarra:
 - separação explícita entre teste automático, revisão manual e teste real no terminal local;
 - `tests/release_gate_v0_6_2.sh` preservado como gate histórico exercitado no fechamento mais duro, sem virar régua corrente da linha.
 
-O foco da `v1.0.0` é superfície pública curta sobre a espinha já canonizada:
+O foco da `v1.1.0` é superfície pública curta sobre a espinha já canonizada:
 
 - `tests/release_gate_canonic_line.sh` continua como régua corrente da linha;
 - `tests/README.md` passa a explicar o papel dos gates por etapa;
@@ -84,9 +85,18 @@ O foco da `v1.0.0` é superfície pública curta sobre a espinha já canonizada:
 - a espinha da linha continua 100% Python, sem puxar Fish ou stage pública para o centro da Aurora;
 - o help público volta a priorizar uso rápido, enquanto compatibilidade, limites e workflow detalhado continuam neste README e nos docs centrais.
 
-## O que a v1.0.0 fecha estruturalmente
+## O que a v1.1.0 fecha estruturalmente
 
-A `v1.0.0` torna pública uma leitura que já estava fechada no checkout:
+A `v1.1.0` fecha formalmente a primeira absorção funcional de manutenção do host sem reabrir o kernel:
+
+- `host_maintenance.atualizar` entra no contrato público como rota mínima;
+- a frase pública mínima é `aurora atualizar sistema --confirm`;
+- a execução real fica restrita a host Arch mutável com `pacman` observado;
+- a rota usa apenas `sudo + pacman`;
+- confirmação explícita é obrigatória;
+- `paru`, helpers AUR, `otimizar`, cache, órfãos, bundles amplos e equivalência para outras distros ficam fora.
+
+A `v1.0.0` tornou pública uma leitura que já estava fechada na linha e que a `v1.1.0` herda:
 
 - o baseline factual dos cortes `1` e `2` sai da zona de hotspot principal;
 - a observabilidade canônica do corte `3` passa a ser parte assumida da linha pública;
@@ -122,7 +132,7 @@ A Aurora funciona como uma camada de decisão e execução sobre Linux. Em vez d
 
 ## Decision Record Canônico
 
-Na `v1.0.0`, a leitura parseável do `decision_record` continua sendo:
+Na `v1.1.0`, a leitura parseável do `decision_record` continua sendo:
 
 - `schema.schema_id=aurora.decision_record.v1`;
 - `stable_ids.action_id`, `stable_ids.route_id` e `stable_ids.event_id` como IDs mínimos estáveis;
@@ -135,13 +145,14 @@ Compatibilidade desta linha:
 - o payload antigo continua espelhado no topo por compatibilidade com a base já aberta;
 - `host_package.search` continua existindo apenas como `route_name` legado; o ID canônico da rota é `host_package.procurar`.
 
-## Contrato público da v1.0.0
+## Contrato público da v1.1.0
 
 Rotas reais abertas nesta release:
 
 - `host_package.procurar`
 - `host_package.instalar`
 - `host_package.remover`
+- `host_maintenance.atualizar`
 - `aur.procurar`
 - `aur.instalar`
 - `aur.remover`
@@ -160,10 +171,6 @@ Rotas reais abertas nesta release:
 - `distrobox.remover`
 - `rpm_ostree.instalar`
 - `rpm_ostree.remover`
-
-Rota adicional já aberta no checkout atual, como absorção funcional I da `v1.1.0` ainda não fechada em release:
-
-- `host_maintenance.atualizar`
 
 Comportamento garantido:
 
@@ -191,6 +198,7 @@ Comportamento garantido:
 - `decision_record` e `aurora dev` deixam visíveis `execution_surface`, `environment_target`, `environment_resolution`, `toolbox_profile`, `distrobox_profile`, `rpm_ostree_status`, `immutable_observed_surfaces`, `immutable_selected_surface`, capacidades observadas, gaps e fronteira host vs ambiente mediado ou host imutável;
 - host Atomic/imutável já não é apenas bloqueio genérico: `flatpak`, `toolbox`, `distrobox` e `rpm-ostree` podem ser escolhidos explicitamente, e pedido nu bloqueia com inventário das superfícies observadas.
 - `--confirm` e `--yes` funcionam como marcadores equivalentes de confirmação explícita quando a política exigir.
+- `host_maintenance.atualizar` cobre apenas `atualizar sistema` em host Arch mutável com `pacman` observado, exige confirmação explícita e usa `sudo + pacman`.
 
 ## Exemplos rápidos
 
@@ -288,7 +296,7 @@ AURORA_MODEL_MODE=model_on AURORA_LOCAL_MODEL_PROVIDER=ollama AURORA_LOCAL_MODEL
 
 ### `host_maintenance`
 
-- abertura local atual: `host_maintenance.atualizar` via `aurora atualizar sistema --confirm`;
+- rota formal da `v1.1.0`: `host_maintenance.atualizar` via `aurora atualizar sistema --confirm`;
 - suporte real inicial: host Arch mutável com `pacman` observado;
 - confirmação explícita é obrigatória antes da execução;
 - a rota usa apenas `sudo + pacman`;
@@ -415,18 +423,22 @@ A identidade pública da ferramenta é:
 🌌 Aurora
 ```
 
-Na `v1.0.0`, o help público continua sendo superfície curta de uso. Compatibilidade detalhada, limites e workflow continuam no README e nos docs.
+Na `v1.1.0`, o help público continua sendo superfície curta de uso. Compatibilidade detalhada, limites e workflow continuam no README e nos docs.
 
 No help público, a versão aparece como:
 
 ```text
-🌌 Aurora v1.0.0
+🌌 Aurora v1.1.0
 ```
 
-## O que a v1.0.0 não promete
+## O que a v1.1.0 não promete
 
 A Aurora ainda não abre:
 
+- `otimizar`, cache, órfãos ou bundles amplos de manutenção do host;
+- `paru`, `yay` ou qualquer helper AUR como backend de `host_maintenance`;
+- AUR implícita em `atualizar sistema`;
+- suporte equivalente de `host_maintenance.atualizar` em Debian/Ubuntu, Fedora ou OpenSUSE nesta primeira absorção;
 - fallback automático de pedido nu para AUR;
 - fallback automático do host para `toolbox`;
 - fallback automático do host para `distrobox`;

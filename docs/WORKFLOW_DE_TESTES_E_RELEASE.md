@@ -1,8 +1,8 @@
-# Workflow de Testes e Release - Aurora v1.0.0
+# Workflow de Testes e Release - Aurora v1.1.0
 
 ## Papel
 
-Este documento formaliza a disciplina operacional preservada pela `v1.0.0`.
+Este documento formaliza a disciplina operacional preservada pela `v1.1.0`.
 
 Ele não abre domínio novo, não cria framework de CI e não substitui leitura do código. Ele existe para separar claramente:
 
@@ -20,7 +20,7 @@ Teste automático é o que a Aurora consegue validar de forma mecânica e repet�
 - auditorias em `tests/`;
 - gates shell por etapa.
 
-Ele existe para proteger regressão executável, coerência pública e contrato pequeno. Ele não substitui revisão humana nem terminal real.
+Ele existe para proteger regressão executável pública rastreada pelo Git, coerência pública e contrato pequeno. Ele não substitui revisão humana nem terminal real.
 
 ### Revisão e teste manual
 
@@ -122,20 +122,23 @@ Nunca devem subir por gate automático sozinho:
 - mudanças em handoff interativo, prompts, senha, `toolbox`, `distrobox`, `rpm-ostree` ou AUR;
 - qualquer alteração cuja honestidade só apareça no terminal real.
 
-## Leitura correta da v1.0.0
+## Leitura correta da v1.1.0
 
 - `tests/release_gate_canonic_line.sh` continua sendo a régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` continua como gate histórico;
 - `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh` e `tests/release_gate_pre_release.sh` organizam a rotina operacional por etapa;
 - gate automatizado não substitui checklist humano;
 - checklist humano não substitui terminal real;
-- a `v1.0.0` preserva disciplina de subida, fecha a superfície pública/documental da seam `local_model` e não abre frente nova de domínio.
+- a `v1.0.0` permanece o fechamento histórico da seam assistiva `local_model`;
+- a rodada interna pós-`v1.0.0` de saneamento canônico/hardening basal foi preparação de linha, não release pública retroativa;
+- a `v1.1.0` preserva disciplina de subida e fecha formalmente `host_maintenance.atualizar` sem abrir manutenção ampla do host.
 
-## Checklist curta da v1.0.0
+## Checklist curta da v1.1.0
 
 Para este corte, a revisão curta precisa confirmar:
 
 - `model_off` continua íntegro por default em `aurora dev`;
 - `model_on` só entra quando configurado, com `ollama` como provider canônico atual;
 - provider indisponível cai em fallback determinístico honesto, com `provider_name` e `fallback_reason` factuais;
+- `aurora atualizar sistema --confirm` continua restrito a host Arch mutável com `pacman` observado, confirmação explícita obrigatória e backend `sudo + pacman`;
 - docs, changelog e checklist não prometem mais do que os smokes reais recentes sustentam.

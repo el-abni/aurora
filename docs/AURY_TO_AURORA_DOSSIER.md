@@ -1,18 +1,19 @@
-# Aury to Aurora Dossier - Aurora v1.0.0
+# Aury to Aurora Dossier - Aurora v1.1.0
 
 ## Leitura canônica
 
 - `Aury` é a raiz operacional.
 - `Aurora` é a camada de decisão e mediação.
 
-Essa leitura é patrimônio estrutural da linha também na `v1.0.0`.
+Essa leitura é patrimônio estrutural da linha também na `v1.1.0`.
 
-## O que a Aurora herda na v1.0.0
+## O que a Aurora herda na v1.1.0
 
 - disciplina de normalização e proteção de tokens;
 - leitura mínima de host Linux e probes operacionais;
 - experiência acumulada de runtime e observabilidade;
 - lição de que contrato pequeno e explícito endurece melhor do que amplitude implícita.
+- leitura de que manutenção do host só entra quando policy, execução real, observabilidade e confirmação explícita estão fechadas.
 
 Isso reaproveita aprendizado real da Aury sem copiar mecanicamente sua superfície.
 
@@ -39,6 +40,6 @@ A Aury canônica inspira estrutura, disciplina e leitura operacional.
 
 A Aurora canônica decide, media e publica contrato próprio.
 
-Na `v1.0.0`, o modelo local entra como seam propria da Aurora, com autoridade limitada e fallback deterministico. A Aury nao herda esse papel como centro do runtime.
+Desde a `v1.0.0`, o modelo local entra como seam propria da Aurora, com autoridade limitada e fallback deterministico. A Aury nao herda esse papel como centro do runtime.
 
 Isso evita um choque já aprendido pelo repositório: herança útil não é licença para copiar molde mecânico nem para reabrir acoplamentos que a linha atual já deixou para trás.

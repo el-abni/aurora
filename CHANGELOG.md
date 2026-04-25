@@ -1,5 +1,35 @@
 # Changelog
 
+## 🌌 Aurora v1.1.0
+
+Fechamento formal da absorção funcional I com `host_maintenance.atualizar`. Esta release promove o recorte mínimo já implementado e validado: `aurora atualizar sistema --confirm` em host Arch mutável com `pacman` observado, confirmação explícita obrigatória e execução real via `sudo + pacman`.
+
+A rodada interna pós-`v1.0.0` de saneamento canônico e hardening basal fica registrada como preparação da linha. Ela não vira release pública retroativa e não altera o fato histórico de que a `v1.0.0` fechou a seam assistiva `local_model` observável.
+
+### Alterado
+
+- `VERSION`, `README.md`, docs centrais, checklist, auditoria pública e changelog passam a refletir a `v1.1.0` como release atual;
+- `host_maintenance.atualizar` deixa de ser descrito como recorte transicional e entra formalmente no contrato público da release;
+- a superfície pública mínima documentada é `aurora atualizar sistema --confirm`;
+- `stable_ids`, `facts` e `presentation` seguem como espinha parseável e de renderização, sem deslocar verdade operacional para texto;
+- o suporte real desta primeira absorção continua restrito a host Arch mutável com `pacman` observado;
+- a execução validada no terminal real usa `sudo + pacman`, sem `paru` e sem AUR implícita;
+- a confirmação explícita continua obrigatória antes de qualquer execução;
+- hosts Atomic/imutáveis continuam bloqueados por política para esta frente;
+- `model_off` continua íntegro e `local_model` permanece camada assistiva, sem decidir policy, suporte, bloqueio, confirmação, rota, execução nem verdade operacional.
+- o fechamento formal foi validado pela disciplina de `docs/WORKFLOW_DE_TESTES_E_RELEASE.md`, `tests/REVIEW_CHECKLIST.md`, `tests/release_gate_canonic_line.sh`, `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh`, `tests/release_gate_pre_release.sh` e `tests/audit_workflow_release.py`.
+
+### Continua fora da v1.1.0
+
+- `otimizar`, cache, órfãos e bundles amplos de manutenção;
+- `paru`, `yay` ou qualquer helper AUR como backend de `host_maintenance`;
+- AUR implícita;
+- Debian/Ubuntu, Fedora e OpenSUSE como suporte real equivalente para `host_maintenance.atualizar` nesta primeira absorção;
+- equivalência automática entre `host_maintenance` e `rpm-ostree`, `flatpak`, `toolbox` ou `distrobox`;
+- conversação, mediação ampla e qualquer frente genérica de chat;
+- Personas operacionais e frentes futuras correlatas fora deste produto;
+- refatoração ampla ou expansão lateral fora do recorte fechado.
+
 ## 🌌 Aurora v1.0.0
 
 Fechamento curto de contrato e abertura pública honesta do estado já fechado nas Fases 0–3 da seam `local_model`. Esta release não redesenha o kernel: ela promove o provider real já integrado, mantém `model_off` íntegro por default e fixa `model_on` como camada assistiva opcional, factual e subordinada ao kernel determinístico.

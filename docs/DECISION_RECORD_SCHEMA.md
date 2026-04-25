@@ -1,4 +1,4 @@
-# Decision Record Schema - Aurora v1.0.0
+# Decision Record Schema - Aurora v1.1.0
 
 ## Papel
 
@@ -10,7 +10,7 @@ Ele não é manifesto, não é framework genérico e não substitui leitura do c
 
 - `schema.schema_id=aurora.decision_record.v1`
 - `schema.schema_version=v1`
-- `stable_ids.action_id`: ação mínima estável da rodada (`procurar`, `instalar`, `remover`)
+- `stable_ids.action_id`: ação mínima estável da rodada (`procurar`, `instalar`, `remover`, `atualizar`)
 - `stable_ids.route_id`: rota canônica estável da rodada
 - `stable_ids.event_id`: evento estável de decisão ou execução
 - `facts`: estado operacional canônico
@@ -57,12 +57,13 @@ Detalhe importante desta release:
 
 - `host_package.search` continua apenas como `route_name` legado para compatibilidade;
 - o ID canônico da rota de busca do host passa a ser `host_package.procurar`.
+- `host_maintenance.atualizar` entra como ID canônico da atualização explícita e contida do sistema.
 
 ## Compatibilidade desta linha
 
 - o payload antigo continua espelhado no topo por compatibilidade;
 - o contrato novo a ser consumido daqui em diante é `schema + stable_ids + facts + presentation`.
-- a `v1.0.0` não entrega schema novo nem motor novo; ela abre publicamente a seam limitada em `facts.local_model` com provider real canônico, sem relaxar o contrato central.
+- a `v1.1.0` não entrega schema novo nem motor novo; ela herda da `v1.0.0` a seam limitada em `facts.local_model` com provider real canônico e fecha `host_maintenance.atualizar` sem relaxar o contrato central.
 
 ## Seam local do modelo
 

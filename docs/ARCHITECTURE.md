@@ -1,4 +1,4 @@
-# Architecture - Aurora v1.0.0
+# Architecture - Aurora v1.1.0
 
 ## Tese curta
 
@@ -18,7 +18,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 
 ## Espinha canônica da linha
 
-A `v1.0.0` não abre rota nova. Ela preserva a espinha canônica fechada na `v0.6.3`, mantém a disciplina operacional fechada na `v0.6.4` e abre publicamente a seam assistiva `local_model` com provider real canônico apenas em `aurora dev` / `decision_record`, sem tocar no kernel determinístico:
+A `v1.1.0` fecha formalmente `host_maintenance.atualizar` como absorção funcional I, sem transformar manutenção do host em superfície ampla. Ela preserva a espinha canônica fechada na `v0.6.3`, mantém a disciplina operacional fechada na `v0.6.4` e herda da `v1.0.0` a seam assistiva `local_model` com provider real canônico apenas em `aurora dev` / `decision_record`, sem tocar no kernel determinístico:
 
 - `tests/release_gate_canonic_line.sh` como régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` preservado como gate histórico da release `v0.6.2`;
@@ -31,9 +31,9 @@ A `v1.0.0` não abre rota nova. Ela preserva a espinha canônica fechada na `v0.
 
 Essa espinha reaproveita uma lição já aprendida pela Aurora: a linha endurece melhor com contrato pequeno, docs auditáveis e gate curto do que com feature nova. Ela também evita um choque já conhecido com o patrimônio do repo: Fish e stage pública não entram como centro do gate da Aurora.
 
-## Disciplina operacional da v1.0.0
+## Disciplina operacional da v1.1.0
 
-A `v1.0.0` preserva o workflow formalizado em volta dessa espinha:
+A `v1.1.0` preserva o workflow formalizado em volta dessa espinha:
 
 - `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` define as três camadas de validação;
 - `tests/REVIEW_CHECKLIST.md` fixa a revisão humana curta;
@@ -128,7 +128,7 @@ A `v1.0.0` preserva o workflow formalizado em volta dessa espinha:
 
 ## Decision Record Canônico
 
-Na `v1.0.0`, o `decision_record` continua com uma leitura canônica curta:
+Na `v1.1.0`, o `decision_record` continua com uma leitura canônica curta:
 
 - `schema.schema_id=aurora.decision_record.v1`;
 - `stable_ids.action_id`, `stable_ids.route_id` e `stable_ids.event_id` como IDs mínimos estáveis;
@@ -141,7 +141,7 @@ Compatibilidade:
 - `host_package.search` continua apenas como `route_name` legado;
 - o ID canônico da rota de busca do host passa a ser `host_package.procurar`.
 
-## Rotas abertas na v1.0.0
+## Rotas abertas na v1.1.0
 
 ### `host_package`
 
@@ -153,7 +153,7 @@ Rotas reais:
 
 ### `host_maintenance`
 
-Rota aberta no checkout atual como abertura local da `v1.1.0`, ainda sem fechamento de release:
+Rota real formalmente fechada na `v1.1.0`:
 
 - `host_maintenance.atualizar`
 
@@ -164,7 +164,7 @@ Garantias:
 - a rota usa apenas `sudo + pacman`;
 - confirmação explícita é obrigatória antes da execução;
 - `paru`, `yay` e qualquer helper AUR observado continuam fora do contrato desta frente;
-- `otimizar`, bundles de manutenção e equivalência para outros hosts continuam fora do corte.
+- `otimizar`, cache, órfãos, bundles de manutenção e equivalência para outros hosts continuam fora do corte.
 
 ### `AUR` explícito
 
@@ -300,7 +300,7 @@ Garantias:
 
 ## Fronteiras deliberadas
 
-A `v1.0.0` continua pequena de propósito:
+A `v1.1.0` continua pequena de propósito:
 
 - pedido nu continua em `host_package` no host;
 - `atualizar sistema` não vira alias amplo de manutenção nem passa a misturar AUR;

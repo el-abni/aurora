@@ -71,9 +71,9 @@ def assert_terms(path: str, *terms: str) -> None:
 
 
 def main() -> int:
-    ensure(VERSION == "v1.0.0", "VERSION precisa estar promovido para v1.0.0 no fechamento desta release")
+    ensure(VERSION == "v1.1.0", "VERSION precisa estar promovido para v1.1.0 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v1.0.0")
+    ok("VERSION promovido para v1.1.0")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
@@ -103,9 +103,17 @@ def main() -> int:
         "stable_ids",
         "presentation",
         "v0.7.0",
+        "v1.0.0",
+        "host_maintenance.atualizar",
+        "aurora atualizar sistema --confirm",
+        "sudo + pacman",
+        "sem `paru`",
+        "AUR implícita",
+        "preparação da linha",
     ):
         ensure(term in changelog or term.lower() in changelog_normalized, f"CHANGELOG.md precisa citar {term}")
-    ensure_any(changelog_normalized, ("provider real", "ollama", "fallback deterministico"), "CHANGELOG.md precisa tratar a v1.0.0 como abertura publica honesta da seam local_model")
+    ensure_any(changelog_normalized, ("provider real", "ollama", "fallback deterministico"), "CHANGELOG.md precisa preservar a v1.0.0 como base publica honesta da seam local_model")
+    ensure_any(changelog_normalized, ("absorcao funcional i", "host_maintenance.atualizar", "aurora atualizar sistema --confirm"), "CHANGELOG.md precisa tratar a v1.1.0 como fechamento formal de host_maintenance.atualizar")
     ok("CHANGELOG.md alinhado")
 
     readme = read("README.md")
@@ -149,6 +157,10 @@ def main() -> int:
         "autoridade limitada",
         "host_package.procurar",
         "host_package.search",
+        "host_maintenance.atualizar",
+        "aurora atualizar sistema --confirm",
+        "sudo + pacman",
+        "sem `paru`",
     ):
         ensure(term in readme or term in readme_normalized, f"README.md precisa citar {term}")
     for term in (
@@ -157,7 +169,8 @@ def main() -> int:
         "aurora --help",
     ):
         ensure(term in readme or term in readme_normalized, f"README.md precisa citar {term}")
-    ensure_any(readme_normalized, ("workflow operacional", "disciplina operacional", "superficie curta de uso", "provider real"), "README.md precisa tratar a v1.0.0 como release coerente de linha e abertura honesta da seam local_model")
+    ensure_any(readme_normalized, ("workflow operacional", "disciplina operacional", "superficie curta de uso", "provider real"), "README.md precisa tratar a v1.1.0 como release coerente de linha e preservar a seam local_model herdada")
+    ensure_any(readme_normalized, ("absorcao funcional i", "host_maintenance.atualizar", "sudo + pacman"), "README.md precisa tratar a v1.1.0 como fechamento formal de host_maintenance.atualizar")
     ok("README.md alinhado")
 
     architecture = read("docs/ARCHITECTURE.md")
@@ -191,13 +204,16 @@ def main() -> int:
         "presentation",
         "host_package.procurar",
         "host_package.search",
+        "host_maintenance.atualizar",
+        "sudo + pacman",
         "toolbox.procurar",
         "distrobox.procurar",
         "rpm_ostree.instalar",
         "rpm_ostree.remover",
     ):
         ensure(term in architecture or term in architecture_normalized, f"docs/ARCHITECTURE.md precisa citar {term}")
-    ensure_any(architecture_normalized, ("workflow", "disciplina operacional", "ollama"), "ARCHITECTURE precisa tratar a v1.0.0 como release estrutural com seam assistiva real sem abrir frente lateral")
+    ensure_any(architecture_normalized, ("workflow", "disciplina operacional", "ollama"), "ARCHITECTURE precisa preservar a seam assistiva real herdada sem abrir frente lateral")
+    ensure_any(architecture_normalized, ("host_maintenance.atualizar", "absorcao funcional i", "sudo + pacman"), "ARCHITECTURE precisa tratar a v1.1.0 como fechamento formal de host_maintenance.atualizar")
     ok("docs/ARCHITECTURE.md alinhado")
 
     assert_terms(
@@ -233,6 +249,9 @@ def main() -> int:
         "PPA",
         "pending deployment",
         "status --json",
+        "host_maintenance",
+        "atualizar sistema",
+        "sudo + pacman",
     )
     ok("docs/COMPATIBILITY_LINUX.md alinhado")
 
@@ -249,6 +268,8 @@ def main() -> int:
         "flatpak_effective_remote",
         "toolbox_requested_environment",
         "distrobox_requested_environment",
+        "host_maintenance",
+        "requires_confirmation",
     )
     ok("docs/INSTALLATION_POLICY.md alinhado")
 
@@ -296,6 +317,8 @@ def main() -> int:
         "fallback_deterministic",
         "host_package.procurar",
         "host_package.search",
+        "host_maintenance.atualizar",
+        "atualizar",
         "payload antigo",
     ):
         ensure(term in schema_doc or term in schema_normalized, f"docs/DECISION_RECORD_SCHEMA.md precisa citar {term}")
@@ -318,6 +341,7 @@ def main() -> int:
         "resultado",
         "refactor ornamental",
         "terminal real",
+        "host_maintenance.atualizar",
     ):
         ensure(term in facts_doc or term in facts_normalized, f"docs/FACTS_VS_RENDERING.md precisa citar {term}")
     ok("docs/FACTS_VS_RENDERING.md alinhado")

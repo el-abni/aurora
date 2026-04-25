@@ -1,10 +1,11 @@
-# Installation Policy - Aurora v1.0.0
+# Installation Policy - Aurora v1.1.0
 
 ## Escopo real da política
 
-Na `v1.0.0`, a política operacional da Aurora governa dois domínios, três superfícies explícitas fora do host mutável comum e oito leituras reais de rota:
+Na `v1.1.0`, a política operacional da Aurora governa três domínios, três superfícies explícitas fora do host mutável comum e nove leituras reais de rota:
 
 - `host_package` com `execution_surface=host` e `source_type=host_package_manager`;
+- `host_maintenance` com `execution_surface=host` e `source_type=host_maintenance`;
 - `host_package` explicitamente marcado com `source_type=aur_repository`;
 - `host_package` explicitamente marcado com `source_type=copr_repository`;
 - `host_package` explicitamente marcado com `source_type=ppa_repository`;
@@ -13,9 +14,7 @@ Na `v1.0.0`, a política operacional da Aurora governa dois domínios, três sup
 - `host_package` explicitamente marcado com `execution_surface=rpm_ostree` e `source_type=rpm_ostree_layering`;
 - `user_software` com `source_type=flatpak_remote`.
 
-No checkout atual, a abertura local da `v1.1.0` também governa um recorte mínimo adicional:
-
-- `host_maintenance` com `source_type=host_maintenance` para `atualizar sistema` no host Arch mutável.
+O recorte de `host_maintenance` é mínimo e formalmente fechado nesta release: apenas `atualizar sistema` no host Arch mutável com `pacman` observado.
 
 A política existe para explicitar contrato, risco e limite da rota. Ela não existe para simular amplitude.
 
@@ -173,7 +172,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v1.0.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v1.1.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -235,8 +234,12 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 
 ## O que ainda não está aberto
 
-Continuam fora da `v1.0.0`:
+Continuam fora da `v1.1.0`:
 
+- `otimizar`, cache, órfãos e bundles amplos de manutenção;
+- `paru`, `yay` ou qualquer helper AUR como backend de `host_maintenance`;
+- AUR implícita em `atualizar sistema`;
+- suporte equivalente de `host_maintenance.atualizar` em Debian/Ubuntu, Fedora ou OpenSUSE nesta primeira absorção;
 - fallback automático do host para `toolbox`;
 - fallback automático do host para `distrobox`;
 - fallback automático do host para `rpm-ostree`;

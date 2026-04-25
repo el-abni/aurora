@@ -1,4 +1,4 @@
-# Review Checklist - Aurora v1.0.0
+# Review Checklist - Aurora v1.1.0
 
 Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplica, a dispensa precisa ser consciente.
 
@@ -10,7 +10,7 @@ Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplic
 - [ ] `aurora --help` reflete a superfície pública real.
 - [ ] Se contrato, payload ou renderização mudaram, `aurora dev "<caso feliz>"` e `aurora dev "<caso ruim>"` foram lidos.
 
-## Seam `local_model` da v1.0.0
+## Seam `local_model` herdada da v1.0.0
 
 - [ ] `model_off` segue íntegro por default na leitura real de `aurora dev`.
 - [ ] `model_on` só entra quando configurado, com `ollama` como provider canônico atual e `qwen2.5:3b-instruct` como modelo canônico inicial.
@@ -27,7 +27,7 @@ Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplic
 
 - [ ] Se a rodada tocou PV/contexto ou roadmap privado, `python3 tests/audit_canonic_integrity.py` passou.
 - [ ] Pointers canônicos centrais agora apontam para arquivos reais.
-- [ ] Material pré-`v1.0.0` ou de abertura da `v1.0.0` que continuou útil foi marcado como histórico/transicional.
+- [ ] Material pré-`v1.1.0` ou de preparação pós-`v1.0.0` que continuou útil foi marcado como histórico/transicional.
 - [ ] A promoção de versão, a classificação final de roadmap e a decisão de canon continuam tratadas como decisão humana de mantenedor/revisor, não do guardrail local.
 
 ## Terminal real

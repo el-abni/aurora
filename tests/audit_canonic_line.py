@@ -94,7 +94,8 @@ def assert_gate_state() -> None:
     text = read(path)
     normalized = normalize(text)
     for term in (
-        "python3 -m unittest discover -s tests -p 'test_*.py'",
+        "git ls-files 'tests/test_*.py'",
+        "python3 -m unittest",
         "tests/audit_public_release.py",
         "tests/audit_canonic_line.py",
         "tests/audit_decision_record_contract.py",
