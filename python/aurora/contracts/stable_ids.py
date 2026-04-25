@@ -6,13 +6,14 @@ from .decisions import DecisionRecord
 from .execution import ExecutionRoute
 from .requests import SemanticRequest
 
-ACTION_IDS = frozenset({"procurar", "instalar", "remover"})
+ACTION_IDS = frozenset({"procurar", "instalar", "atualizar", "remover"})
 
 ROUTE_IDS = frozenset(
     {
         "host_package.procurar",
         "host_package.instalar",
         "host_package.remover",
+        "host_maintenance.atualizar",
         "aur.procurar",
         "aur.instalar",
         "aur.remover",

@@ -92,6 +92,10 @@ def _extract_source_target(action, *, hint_tokens: set[str]) -> str:
     return " ".join(original for original, _normalized in pairs).strip()
 
 
+def _normalized_target_text(action) -> str:
+    return " ".join(normalized for _original, normalized in extract_target_token_pairs(action)).strip()
+
+
 def _source_hint(action, *, hint_tokens: set[str]) -> str | None:
     pairs = extract_target_token_pairs(action)
     for index in range(len(pairs) - 1):
@@ -479,6 +483,49 @@ def classify_text(text: str) -> SemanticRequest:
     action = actions[0]
     first_token = action.normalized_tokens[0] if action.normalized_tokens else ""
     intent = canonicalize_intent(first_token)
+
+    if intent == "atualizar":
+        target = extract_package_target(action)
+        normalized_target = _normalized_target_text(action)
+        observations = (
+            "domain_selection:host_maintenance",
+            "host_maintenance_scope:system_update",
+        )
+        if not target:
+            return SemanticRequest(
+                original_text=phrase.original_text,
+                normalized_text=phrase.normalized_text,
+                intent="atualizar",
+                domain_kind="host_maintenance",
+                target="",
+                status="BLOCKED",
+                reason="faltou explicitar 'sistema' para a atualizacao do host nesta rodada.",
+                observations=observations,
+                action_count=1,
+            )
+        if normalized_target != "sistema":
+            return SemanticRequest(
+                original_text=phrase.original_text,
+                normalized_text=phrase.normalized_text,
+                intent="atualizar",
+                domain_kind="host_maintenance",
+                target=target,
+                status="OUT_OF_SCOPE",
+                reason="'atualizar' foi aberto apenas para 'sistema' nesta rodada de manutencao do host.",
+                observations=observations + ("host_maintenance_scope:system_only",),
+                action_count=1,
+            )
+        return SemanticRequest(
+            original_text=phrase.original_text,
+            normalized_text=phrase.normalized_text,
+            intent="atualizar",
+            domain_kind="host_maintenance",
+            target=target,
+            status="CONSISTENT",
+            reason="pedido enquadrado na atualizacao do sistema do host.",
+            observations=observations,
+            action_count=1,
+        )
 
     if intent in {"procurar", "instalar", "remover"}:
         execution_surface = "host"

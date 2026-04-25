@@ -20,6 +20,13 @@ Na `v1.0.0`, a superfície pública continua pequena e deliberadamente próxima 
 - `distrobox` como `execution_surface` explícita para operar pacote distro-managed dentro de um ambiente mediado nomeado.
 - `rpm-ostree` como `execution_surface` explícita para layering/uninstall no host imutável.
 
+No checkout atual, já existe um recorte local de abertura da `v1.1.0` ainda não promovido como release pública:
+
+- `host_maintenance.atualizar` via `aurora atualizar sistema --confirm`;
+- suporte real apenas em host Arch mutável;
+- confirmação explícita obrigatória;
+- sem `otimizar`, sem `paru` e sem AUR implícita.
+
 ## Espinha canônica da linha
 
 A `v1.0.0` reaproveita uma lição já aprendida pela Aurora: endurecimento de linha pede regra executável e docs canônicas curtas, não feature nova. Por isso, a espinha fechada na `v0.6.3` continua amarrada por:
@@ -154,6 +161,10 @@ Rotas reais abertas nesta release:
 - `rpm_ostree.instalar`
 - `rpm_ostree.remover`
 
+Rota adicional já aberta no checkout atual, como absorção funcional I da `v1.1.0` ainda não fechada em release:
+
+- `host_maintenance.atualizar`
+
 Comportamento garantido:
 
 - pedido nu continua em `host_package` no `execution_surface=host`;
@@ -188,6 +199,7 @@ Comportamento garantido:
 ```bash
 aurora procurar firefox
 aurora instalar firefox
+aurora atualizar sistema --confirm
 aurora instalar sudo --confirm
 aurora remover firefox
 aurora remover sudo --confirm
@@ -273,6 +285,16 @@ AURORA_MODEL_MODE=model_on AURORA_LOCAL_MODEL_PROVIDER=ollama AURORA_LOCAL_MODEL
 - suportado agora: Arch/derivadas mutáveis, Debian/Ubuntu/derivadas mutáveis e Fedora mutável;
 - suportado contido: OpenSUSE mutável;
 - em hosts Atomic/imutáveis, pedido nu bloqueia cedo e exige escolha explícita entre `flatpak`, `toolbox`, `distrobox`, `rpm-ostree` ou bloqueio.
+
+### `host_maintenance`
+
+- abertura local atual: `host_maintenance.atualizar` via `aurora atualizar sistema --confirm`;
+- suporte real inicial: host Arch mutável com `pacman` observado;
+- confirmação explícita é obrigatória antes da execução;
+- a rota usa apenas `sudo + pacman`;
+- `paru`, `yay` ou qualquer helper AUR observado continuam fora do contrato desta frente;
+- Debian/Ubuntu, Fedora e OpenSUSE mutáveis continuam fora do recorte equivalente nesta primeira absorção;
+- hosts Atomic/imutáveis continuam bloqueados por política.
 
 ### `AUR` explícito
 

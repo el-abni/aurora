@@ -32,6 +32,10 @@ from aurora.presentation.messages import (
     backend_missing_message,
     blocked_message,
     confirmation_required_message,
+    host_maintenance_confirmation_required_message,
+    host_maintenance_return_message,
+    host_maintenance_start_message,
+    host_maintenance_success_message,
     interactive_handoff_return_message,
     interactive_handoff_start_message,
     mediated_execution_return_message,
@@ -187,6 +191,10 @@ def _is_user_software(record: DecisionRecord) -> bool:
     return record.request.domain_kind == "user_software"
 
 
+def _is_host_maintenance(record: DecisionRecord) -> bool:
+    return record.request.domain_kind == "host_maintenance"
+
+
 def _mediated_surface_name(record: DecisionRecord) -> str | None:
     if record.request.execution_surface in {"toolbox", "distrobox"}:
         return record.request.execution_surface
@@ -214,6 +222,8 @@ def _is_aur_source(record: DecisionRecord) -> bool:
 
 
 def _target_label(record: DecisionRecord) -> str:
+    if _is_host_maintenance(record):
+        return "sistema do host"
     mediated_surface = _mediated_surface_name(record)
     if mediated_surface is not None:
         return f"pacote da {mediated_surface}"
@@ -229,6 +239,8 @@ def _target_label(record: DecisionRecord) -> str:
 
 
 def _location_label(record: DecisionRecord) -> str:
+    if _is_host_maintenance(record):
+        return "neste host"
     mediated_surface = _mediated_surface_name(record)
     if mediated_surface is not None:
         environment_name = (
@@ -278,6 +290,39 @@ def _probe_summary(record: DecisionRecord, package_present: bool) -> str:
     if package_present:
         return "pacote presente no host."
     return "pacote ausente no host."
+
+
+def _requires_state_confirmation(record: DecisionRecord) -> bool:
+    route = record.execution_route
+    if route is None:
+        return False
+    return route.action_name in {"instalar", "remover"}
+
+
+def _confirmation_message(record: DecisionRecord) -> str:
+    if _is_host_maintenance(record):
+        return host_maintenance_confirmation_required_message()
+    assert record.policy is not None
+    return confirmation_required_message(
+        record.request.target,
+        record.policy.software_criticality,
+        record.policy.reversal_level,
+        target_label=_target_label(record),
+    )
+
+
+def _mutation_success_message(record: DecisionRecord) -> str:
+    route = record.execution_route
+    assert route is not None
+    if _is_host_maintenance(record):
+        return host_maintenance_success_message()
+    if _is_rpm_ostree_surface(record):
+        return rpm_ostree_mutation_success_message(route.action_name, record.request.target)
+    return mutation_success_message(
+        route.action_name,
+        record.request.target,
+        target_label=_target_label(record),
+    )
 
 
 def _target_resolution_block_reason(record: DecisionRecord) -> str | None:
@@ -510,12 +555,7 @@ def _execute_mutation(
         )
 
     if record.policy is not None and record.policy.policy_outcome == "require_confirmation":
-        message = confirmation_required_message(
-            record.request.target,
-            record.policy.software_criticality,
-            record.policy.reversal_level,
-            target_label=_target_label(record),
-        )
+        message = _confirmation_message(record)
         return _result(
             record,
             exit_code=1,
@@ -591,7 +631,9 @@ def _execute_mutation(
                 ),
             )
 
-    if route.interactive_passthrough and announce is not None:
+    if route.interactive_passthrough and announce is not None and _is_host_maintenance(record):
+        announce(host_maintenance_start_message(route.backend_name))
+    elif route.interactive_passthrough and announce is not None:
         announce(interactive_handoff_start_message(route.backend_name))
     elif _should_announce_mediated_execution(record) and announce is not None:
         announce(
@@ -604,7 +646,9 @@ def _execute_mutation(
 
     command_runner = run_interactive if route.interactive_passthrough else run
     proc = command_runner(route.command)
-    if route.interactive_passthrough and announce is not None:
+    if route.interactive_passthrough and announce is not None and _is_host_maintenance(record):
+        announce(host_maintenance_return_message(route.backend_name, proc.returncode))
+    elif route.interactive_passthrough and announce is not None:
         announce(interactive_handoff_return_message(route.backend_name, proc.returncode))
     elif _should_announce_mediated_execution(record) and announce is not None:
         announce(
@@ -647,6 +691,27 @@ def _execute_mutation(
             message=message,
             execution=ExecutionResult(
                 status="operational_error",
+                attempted=True,
+                confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
+                command=route.command,
+                exit_code=proc.returncode,
+                pre_probe=pre_probe,
+                interactive_passthrough=route.interactive_passthrough,
+                diagnostic_stdout=proc.stdout,
+                diagnostic_stderr=proc.stderr,
+                summary=message,
+            ),
+        )
+
+    if not _requires_state_confirmation(record):
+        message = _mutation_success_message(record)
+        return _result(
+            record,
+            exit_code=0,
+            outcome="executed",
+            message=message,
+            execution=ExecutionResult(
+                status="executed",
                 attempted=True,
                 confirmation_supplied=record.policy.confirmation_supplied if record.policy else False,
                 command=route.command,
@@ -711,14 +776,7 @@ def _execute_mutation(
             ),
         )
 
-    if _is_rpm_ostree_surface(record):
-        message = rpm_ostree_mutation_success_message(route.action_name, record.request.target)
-    else:
-        message = mutation_success_message(
-            route.action_name,
-            record.request.target,
-            target_label=_target_label(record),
-        )
+    message = _mutation_success_message(record)
     return _result(
         record,
         exit_code=0,
@@ -788,7 +846,7 @@ def perform_execution(
 
     if record.policy is not None and record.policy.policy_outcome == "require_confirmation":
         route = record.execution_route
-        if route is not None and route.action_name in {"instalar", "remover"}:
+        if route is not None and route.action_name != "procurar":
             return _execute_mutation(
                 record,
                 run=run,
@@ -796,12 +854,7 @@ def perform_execution(
                 announce=announce,
                 environ=environ,
             )
-        message = confirmation_required_message(
-            record.request.target,
-            record.policy.software_criticality,
-            record.policy.reversal_level,
-            target_label=_target_label(record),
-        )
+        message = _confirmation_message(record)
         return _result(
             record,
             exit_code=1,

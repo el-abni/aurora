@@ -99,6 +99,26 @@ def mediated_execution_return_message(
     )
 
 
+def host_maintenance_start_message(name: str) -> str:
+    return _info(
+        f"Vou iniciar a atualização do sistema do host com o backend '{name}'. "
+        "A partir daqui, o terminal pode pedir senha, confirmação do gerenciador e também pode ter espera silenciosa. "
+        "Quando o backend devolver o controle, a Aurora encerra a rota com o status observado."
+    )
+
+
+def host_maintenance_return_message(name: str, exit_code: int) -> str:
+    if exit_code == 0:
+        return _info(
+            f"O backend '{name}' devolveu o controle da atualização do sistema do host. "
+            "A Aurora vai encerrar a rota com o status observado."
+        )
+    return _info(
+        f"O backend '{name}' devolveu o controle da atualização do sistema do host com exit code {exit_code}. "
+        "A Aurora vai encerrar a rota com o status reportado."
+    )
+
+
 def no_results_message(target: str, backend_name: str) -> str:
     return _info(f"Não encontrei resultados para '{target}' no backend '{backend_name}'.")
 
@@ -212,8 +232,19 @@ def confirmation_required_message(
     )
 
 
+def host_maintenance_confirmation_required_message() -> str:
+    return _voice(
+        "❌ Bloqueado por política: a atualização do sistema do host exige confirmação explícita nesta rodada. "
+        "Use --confirm para prosseguir."
+    )
+
+
 def out_of_scope_message(reason: str) -> str:
     return _voice(f"❌ Fora do recorte atual: {polish_public_text(reason)}")
+
+
+def host_maintenance_success_message() -> str:
+    return _success("Pronto, eu concluí a atualização do sistema do host suportado.")
 
 
 def not_implemented_message(intent: str, domain_kind: str) -> str:

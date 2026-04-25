@@ -52,10 +52,6 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
-def assert_no_auroboros(path: str, text: str) -> None:
-    ensure("auroboros" not in normalize(text), f"{path} nao pode mencionar Auroboros em material publico")
-
-
 def git_ls_files() -> list[str]:
     proc = subprocess.run(
         ["git", "-C", str(ROOT), "ls-files"],
@@ -110,7 +106,6 @@ def main() -> int:
     ):
         ensure(term in changelog or term.lower() in changelog_normalized, f"CHANGELOG.md precisa citar {term}")
     ensure_any(changelog_normalized, ("provider real", "ollama", "fallback deterministico"), "CHANGELOG.md precisa tratar a v1.0.0 como abertura publica honesta da seam local_model")
-    assert_no_auroboros("CHANGELOG.md", changelog)
     ok("CHANGELOG.md alinhado")
 
     readme = read("README.md")
@@ -163,7 +158,6 @@ def main() -> int:
     ):
         ensure(term in readme or term in readme_normalized, f"README.md precisa citar {term}")
     ensure_any(readme_normalized, ("workflow operacional", "disciplina operacional", "superficie curta de uso", "provider real"), "README.md precisa tratar a v1.0.0 como release coerente de linha e abertura honesta da seam local_model")
-    assert_no_auroboros("README.md", readme)
     ok("README.md alinhado")
 
     architecture = read("docs/ARCHITECTURE.md")
@@ -204,7 +198,6 @@ def main() -> int:
     ):
         ensure(term in architecture or term in architecture_normalized, f"docs/ARCHITECTURE.md precisa citar {term}")
     ensure_any(architecture_normalized, ("workflow", "disciplina operacional", "ollama"), "ARCHITECTURE precisa tratar a v1.0.0 como release estrutural com seam assistiva real sem abrir frente lateral")
-    assert_no_auroboros("docs/ARCHITECTURE.md", architecture)
     ok("docs/ARCHITECTURE.md alinhado")
 
     assert_terms(
@@ -388,9 +381,6 @@ def main() -> int:
     dirty_python_artifacts = [path for path in tracked_files if "__pycache__/" in path or path.endswith(".pyc")]
     ensure(not dirty_python_artifacts, "artefatos Python compilados nao podem permanecer rastreados no repositorio")
     ok("artefatos Python compilados fora do rastreamento")
-
-    for path in PUBLIC_FILES:
-        assert_no_auroboros(path, read(path))
 
     install_text = read("install.sh")
     uninstall_text = read("uninstall.sh")

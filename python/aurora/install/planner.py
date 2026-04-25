@@ -34,6 +34,7 @@ from aurora.linux.distrobox import (
     resolve_distrobox_environment,
     resolve_distrobox_target,
 )
+from aurora.linux.host_maintenance import resolve_host_maintenance_target
 from aurora.linux.host_profile import detect_host_profile
 from aurora.linux.host_package import resolve_host_package_target
 from aurora.linux.rpm_ostree import (
@@ -51,6 +52,9 @@ from aurora.semantics.pipeline import has_confirmation_marker
 
 
 def _summary_for_request(request: SemanticRequest) -> str:
+    if request.domain_kind == "host_maintenance" and request.intent == "atualizar":
+        return "Vou atualizar o sistema do host suportado."
+
     if not request.target:
         return "Sem ação aberta."
 
@@ -224,6 +228,8 @@ def _resolve_target(
         return resolve_distrobox_target(request, toolbox_profile, environ=environ)
     if request.execution_surface == "toolbox":
         return resolve_toolbox_target(request, toolbox_profile, environ=environ)
+    if request.domain_kind == "host_maintenance":
+        return resolve_host_maintenance_target(request)
     if request.domain_kind == "user_software":
         return resolve_flatpak_target(request, profile, environ=environ)
     if request.domain_kind == "host_package":
@@ -258,6 +264,10 @@ def _resolved_target(request: SemanticRequest, target_resolution) -> str:
         return resolved_copr_target(request, target_resolution)
     if request.domain_kind == "host_package" and request.requested_source == "aur":
         return resolved_aur_target(request, target_resolution)
+    if request.domain_kind == "host_maintenance":
+        if target_resolution is not None and target_resolution.resolved_target:
+            return target_resolution.resolved_target
+        return request.target
     if target_resolution is not None and target_resolution.resolved_target:
         return target_resolution.resolved_target
     return request.target
@@ -313,7 +323,7 @@ def plan_request(
     rpm_ostree_status = None
     confirmation_supplied = _confirmation_supplied(request, confirmed=confirmed)
 
-    if request.domain_kind in {"host_package", "user_software"}:
+    if request.domain_kind in {"host_package", "host_maintenance", "user_software"}:
         profile = detect_host_profile(environ)
         if request.execution_surface == "rpm_ostree":
             rpm_ostree_status = observe_rpm_ostree_status(environ=environ)

@@ -5,12 +5,13 @@ ALIASES = {
     "buscar": "procurar",
     "busque": "procurar",
     "instale": "instalar",
+    "atualize": "atualizar",
     "remova": "remover",
     "apagar": "remover",
     "apague": "remover",
 }
 
-KNOWN_INTENTS = {"ajuda", "dev", "procurar", "instalar", "remover"}
+KNOWN_INTENTS = {"ajuda", "dev", "procurar", "instalar", "atualizar", "remover"}
 
 
 def canonicalize_intent(token: str) -> str:

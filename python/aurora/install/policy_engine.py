@@ -329,6 +329,119 @@ def _assess_host_package_policy(
     )
 
 
+def _assess_host_maintenance_policy(
+    request: SemanticRequest,
+    profile: HostProfile | None,
+    *,
+    confirmation_supplied: bool = False,
+) -> PolicyAssessment | None:
+    software_criticality = "high"
+    reversal_level = "host_update_review"
+    requires_confirmation = True
+    immutable_host_facts = _immutable_host_facts(profile, selected_surface="block")
+
+    if profile is None:
+        return PolicyAssessment(
+            domain_kind="host_maintenance",
+            source_type="host_maintenance",
+            trust_level="host_operational_change",
+            software_criticality=software_criticality,
+            trust_signals=(),
+            trust_gaps=("host_profile_unavailable",),
+            policy_outcome="block",
+            requires_confirmation=requires_confirmation,
+            confirmation_supplied=confirmation_supplied,
+            reversal_level=reversal_level,
+            reason="o host profile nao esta disponivel para abrir host_maintenance.atualizar.",
+            immutable_host_facts=immutable_host_facts,
+        )
+
+    trust_signals = [
+        "domain:host_maintenance",
+        "source_type:host_maintenance",
+        "execution_surface:host",
+        "host_maintenance_scope:system_update",
+        f"linux_family:{profile.linux_family}",
+        f"mutability:{profile.mutability}",
+        f"support_tier:{profile.support_tier}",
+        f"software_criticality:{software_criticality}",
+    ]
+    _append_immutable_surface_context(trust_signals, profile, selected_surface="block")
+    if profile.package_backends:
+        trust_signals.append(f"observed_backends:{','.join(profile.package_backends)}")
+    if profile.linux_family == "arch":
+        trust_signals.append("arch_host_maintenance_contract:pacman")
+    if profile.observed_third_party_package_tools:
+        observed_tools = ",".join(profile.observed_third_party_package_tools)
+        trust_signals.append(f"observed_third_party_package_tools:{observed_tools}")
+    if confirmation_supplied:
+        trust_signals.append("confirmation:explicit")
+
+    trust_gaps: list[str] = []
+    outcome = "allow"
+    reason = "a atualizacao explicita do sistema foi aceita para o host Arch mutavel nesta abertura."
+
+    if request.status != "CONSISTENT":
+        outcome = "block"
+        trust_gaps.append("request_not_consistent")
+        reason = request.reason
+    elif profile.mutability == "atomic":
+        outcome = "block"
+        trust_gaps.extend(
+            (
+                "host_maintenance_blocked_on_atomic",
+                "immutable_surface_selection_required",
+            )
+        )
+        reason = (
+            "atualizar sistema continua bloqueado em host imutavel. "
+            "esta abertura nao reinterpreta rpm-ostree, flatpak, toolbox ou distrobox como equivalente."
+        )
+    elif profile.linux_family != "arch":
+        outcome = "block"
+        trust_gaps.append("host_maintenance_out_of_scope_equivalent")
+        reason = (
+            "host_maintenance.atualizar ficou fora do recorte equivalente desta rodada para esta familia Linux."
+        )
+
+    if profile.linux_family == "arch" and profile.observed_third_party_package_tools:
+        trust_gaps.append("arch_aur_helpers_observed_out_of_contract")
+
+    if outcome == "allow" and "pacman" not in profile.package_backends:
+        outcome = "block"
+        trust_gaps.append("arch_host_maintenance_backend_not_observed")
+        if profile.observed_third_party_package_tools:
+            reason = (
+                "o contrato de host_maintenance.atualizar continua ancorado em pacman; "
+                "helper AUR observado nao substitui backend oficial nesta rodada."
+            )
+        else:
+            reason = "o backend oficial pacman nao foi observado neste host Arch."
+
+    if not profile.package_backends:
+        trust_gaps.append("no_host_package_backend_observed")
+
+    if outcome == "allow" and not confirmation_supplied:
+        outcome = "require_confirmation"
+        trust_gaps.append("confirmation_missing_for_host_maintenance_update")
+        reason = "a atualizacao do sistema do host exige confirmacao explicita antes da execucao nesta rodada."
+
+    return PolicyAssessment(
+        domain_kind="host_maintenance",
+        source_type="host_maintenance",
+        trust_level="host_operational_change",
+        software_criticality=software_criticality,
+        trust_signals=tuple(trust_signals),
+        trust_gaps=tuple(trust_gaps),
+        policy_outcome=outcome,
+        requires_confirmation=requires_confirmation,
+        confirmation_supplied=confirmation_supplied,
+        reversal_level=reversal_level,
+        reason=reason,
+        immutable_host_facts=immutable_host_facts,
+    )
+
+
 def _mediated_environment_software_criticality(request: SemanticRequest) -> str:
     if request.intent == "procurar":
         return "low"
@@ -1513,6 +1626,12 @@ def assess_policy(
         )
     if request.domain_kind == "host_package" and request.requested_source == "aur":
         return _assess_aur_policy(
+            request,
+            profile,
+            confirmation_supplied=confirmation_supplied,
+        )
+    if request.domain_kind == "host_maintenance":
+        return _assess_host_maintenance_policy(
             request,
             profile,
             confirmation_supplied=confirmation_supplied,

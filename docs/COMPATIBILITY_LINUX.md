@@ -10,6 +10,21 @@
 | OpenSUSE mutável | suportado contido | procurar, instalar, remover |
 | Atomic / imutáveis | decisão explícita por superfície | `flatpak`, `toolbox`, `distrobox`, `rpm-ostree` ou bloqueio |
 
+## Abertura local de `host_maintenance`
+
+| Perfil Linux | Estado | Escopo real |
+| --- | --- | --- |
+| Arch e derivadas mutáveis com `pacman` observado | abertura local suportada | `atualizar sistema` com confirmação explícita |
+| Debian/Ubuntu, Fedora e OpenSUSE mutáveis | fora do recorte equivalente | sem rota executável nesta primeira absorção |
+| Atomic / imutáveis | bloqueado por política | sem equivalência automática para `rpm-ostree`, `flatpak`, `toolbox` ou `distrobox` |
+
+Leitura correta desta frente:
+
+- o recorte público mínimo é `aurora atualizar sistema --confirm`;
+- a rota usa apenas `sudo + pacman`;
+- `paru`, `yay` e qualquer helper AUR observado continuam fora do contrato;
+- `otimizar`, cache, órfãos e bundles de manutenção continuam fora do corte.
+
 ## Frente `AUR` explícita
 
 | Perfil Linux | Estado | Escopo real |

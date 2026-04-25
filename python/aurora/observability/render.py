@@ -95,6 +95,8 @@ def _scope_label(request: Mapping[str, object]) -> str:
     execution_surface = request.get("execution_surface")
     domain_kind = request.get("domain_kind")
     requested_source = request.get("requested_source")
+    if domain_kind == "host_maintenance":
+        return "manutenção do host"
     if execution_surface == "rpm_ostree" and domain_kind == "host_package":
         return "pacote do host via rpm-ostree"
     if execution_surface == "distrobox" and domain_kind == "host_package":

@@ -14,5 +14,6 @@ PYTHONPATH=python:tests python3 tests/audit_local_model_eval_baseline.py
 PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_bootstrap_smoke.py'
 PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_installer_release.py'
 PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_decision_record.py'
+PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_host_maintenance_update.py'
 
 printf "release_gate_iteracao: ok\n"

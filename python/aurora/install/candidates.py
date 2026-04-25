@@ -3,6 +3,7 @@ from __future__ import annotations
 from aurora.contracts.execution import ExecutionRoute
 from aurora.contracts.host import HostProfile
 from aurora.contracts.requests import SemanticRequest
+from aurora.linux.host_maintenance import build_host_maintenance_route
 from aurora.linux.distrobox import build_distrobox_candidate
 from aurora.linux.rpm_ostree import build_rpm_ostree_candidate
 from aurora.install.sources.aur import build_aur_candidate
@@ -60,6 +61,8 @@ def build_route_candidates(
             route = build_aur_candidate(request, profile, target=target)
         else:
             route = build_host_package_candidate(request, profile, target=target)
+    elif request.domain_kind == "host_maintenance":
+        route = build_host_maintenance_route(request.intent, profile)
     elif request.domain_kind == "user_software":
         route = build_flatpak_candidate(request, profile, target=target)
 

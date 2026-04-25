@@ -1,10 +1,10 @@
 🌌 Aurora {version}
-
 Mediação lúcida para Linux, com contrato pequeno e observável. Launchers oficiais: aurora e auro.
 
 Uso rápido:
 - aurora procurar <pacote>
 - aurora instalar <pacote>
+- aurora atualizar sistema --confirm
 - aurora remover <pacote> --confirm
 
 Fontes explícitas:
@@ -15,7 +15,6 @@ Fontes explícitas:
 - aurora instalar <pacote> do copr <owner>/<project> --confirm
 - aurora remover <pacote> do copr <owner>/<project> --confirm
 - aurora instalar <pacote> do ppa <ppa:owner/name> --confirm
-
 Software do usuário:
 - aurora procurar <software> no flatpak
 - aurora instalar <software> no flatpak
@@ -31,7 +30,6 @@ Ambientes e host imutável:
 - aurora remover <pacote> na distrobox <ambiente> --confirm
 - aurora instalar <pacote> no rpm-ostree
 - aurora remover <pacote> no rpm-ostree --confirm
-
 Observabilidade:
 - aurora dev <frase>
 - aurora --help
@@ -39,7 +37,9 @@ Observabilidade:
 
 Leitura correta:
 - pedidos nus continuam em host_package no host;
+- atualizar sistema abre apenas a atualização explícita do host Arch mutável;
 - AUR, COPR, PPA, flatpak, toolbox, distrobox e rpm-ostree só entram por frase marcada;
+- atualizar sistema não usa paru nem abre AUR implícita;
 - toolbox e distrobox exigem ambiente explícito;
 - não existe fallback automático entre host, fontes explícitas e superfícies mediadas/imutáveis;
 - a Aurora continua expondo aurora.decision_record.v1 em aurora dev quando você quer inspeção técnica.

@@ -122,11 +122,33 @@ Ele cobre:
 - bloqueios de push, tag e release;
 - validação no terminal real.
 
+Quando a rodada tocar `host_maintenance.atualizar`, a leitura mínima obrigatória inclui:
+
+- `aurora dev "atualizar sistema"`;
+- `aurora atualizar sistema`;
+- `aurora atualizar sistema --confirm`;
+- conferência explícita de que a rota continua em `sudo + pacman`, sem `paru` e sem AUR implícita.
+
+## Guardrail local de integridade canônica
+
+Quando a rodada toca contexto privado, pointers canônicos, classificação viva/histórica ou coerência curta entre `VERSION` e docs centrais, rodar localmente:
+
+```bash
+python3 tests/audit_canonic_integrity.py
+```
+
+Leitura correta:
+
+- este guardrail detecta quebra objetiva de pointer, marker histórico/transicional ausente e mismatch simples de `VERSION`;
+- ele **não** decide roadmap, promoção de versão, prioridade de backlog nem classificação humana final;
+- ele existe para endurecer canon vivo local, não para virar nova régua pública automática da linha.
+
 ## Leitura correta desta pasta
 
 - `test_*.py` protege o contrato executável já aberto;
 - `audit_public_release.py` protege a coerência pública da release atual;
 - `audit_canonic_line.py` protege a espinha canônica da linha;
+- `audit_canonic_integrity.py` protege pointers e coerência mínima do canon vivo local quando a rodada toca PV/contexto;
 - `audit_decision_record_contract.py` protege `schema`, `stable_ids`, `facts` e `presentation`;
 - `audit_factual_hotspots.py` congela que serializer e renderer saíram do reparse factual principal no corte 3;
 - `audit_factual_baseline.py` congela um baseline factual curto de `aurora dev` e `decision_record`;

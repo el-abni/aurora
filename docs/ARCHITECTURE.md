@@ -5,6 +5,7 @@
 Aurora continua sendo um produto **100% Python** com contratos pequenos e observáveis:
 
 - `host_package` para pacotes oficiais do host em `execution_surface=host`;
+- `host_maintenance` para atualização explícita e contida do sistema do host;
 - `AUR` como fonte explícita de terceiro para pacote do host em Arch;
 - `COPR` como fonte explícita de terceiro para pacote do host em Fedora;
 - `PPA` como fonte explícita de terceiro para pacote do host em Ubuntu;
@@ -150,6 +151,21 @@ Rotas reais:
 - `host_package.instalar`
 - `host_package.remover`
 
+### `host_maintenance`
+
+Rota aberta no checkout atual como abertura local da `v1.1.0`, ainda sem fechamento de release:
+
+- `host_maintenance.atualizar`
+
+Garantias:
+
+- a frase pública mínima é `atualizar sistema`;
+- a frente continua restrita ao host Arch mutável;
+- a rota usa apenas `sudo + pacman`;
+- confirmação explícita é obrigatória antes da execução;
+- `paru`, `yay` e qualquer helper AUR observado continuam fora do contrato desta frente;
+- `otimizar`, bundles de manutenção e equivalência para outros hosts continuam fora do corte.
+
 ### `AUR` explícito
 
 Rotas reais:
@@ -287,6 +303,7 @@ Garantias:
 A `v1.0.0` continua pequena de propósito:
 
 - pedido nu continua em `host_package` no host;
+- `atualizar sistema` não vira alias amplo de manutenção nem passa a misturar AUR;
 - em host imutável, pedido nu bloqueia com `immutable_observed_surfaces` e `immutable_selected_surface=block`;
 - `toolbox` não vira escape hatch implícito para Atomic/imutáveis;
 - `distrobox` também não vira escape hatch implícito para Atomic/imutáveis;

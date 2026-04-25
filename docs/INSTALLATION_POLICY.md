@@ -13,6 +13,10 @@ Na `v1.0.0`, a política operacional da Aurora governa dois domínios, três sup
 - `host_package` explicitamente marcado com `execution_surface=rpm_ostree` e `source_type=rpm_ostree_layering`;
 - `user_software` com `source_type=flatpak_remote`.
 
+No checkout atual, a abertura local da `v1.1.0` também governa um recorte mínimo adicional:
+
+- `host_maintenance` com `source_type=host_maintenance` para `atualizar sistema` no host Arch mutável.
+
 A política existe para explicitar contrato, risco e limite da rota. Ela não existe para simular amplitude.
 
 ## Campos operacionais
@@ -40,6 +44,19 @@ Os campos ativos desta release são:
 - mutação do host em perfil Atomic/imutável continua bloqueada quando a frase não escolhe uma superfície;
 - em host imutável, a política expõe `immutable_observed_surfaces` e `immutable_selected_surface=block` quando a inferência seria frouxa demais;
 - mutações sensíveis pedem confirmação explícita.
+
+### `host_maintenance`
+
+- `host_maintenance` não substitui `host_package`; ele abre apenas a atualização explícita do sistema;
+- `execution_surface=host`;
+- `source_type=host_maintenance`;
+- `trust_level=host_operational_change`;
+- a frente continua restrita ao host Arch mutável com `pacman` observado;
+- a política exige confirmação explícita antes de qualquer execução;
+- a rota usa apenas o backend oficial `sudo + pacman`;
+- `paru`, `yay` e qualquer helper AUR observado continuam apenas como observação fora do contrato;
+- Fedora, Debian/Ubuntu e OpenSUSE mutáveis ficam fora do recorte equivalente nesta primeira absorção;
+- hosts Atomic/imutáveis continuam bloqueados por política e não ganham equivalência automática com `rpm-ostree`, `flatpak`, `toolbox` ou `distrobox`.
 
 ### `AUR` explícito
 

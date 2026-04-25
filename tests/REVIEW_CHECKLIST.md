@@ -23,10 +23,18 @@ Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplic
 - [ ] Nenhuma doc, help ou mensagem pública promete mais do que o runtime realmente faz.
 - [ ] Não ficou deriva de versão entre código, docs, help e changelog.
 
+## Canon vivo local
+
+- [ ] Se a rodada tocou PV/contexto ou roadmap privado, `python3 tests/audit_canonic_integrity.py` passou.
+- [ ] Pointers canônicos centrais agora apontam para arquivos reais.
+- [ ] Material pré-`v1.0.0` ou de abertura da `v1.0.0` que continuou útil foi marcado como histórico/transicional.
+- [ ] A promoção de versão, a classificação final de roadmap e a decisão de canon continuam tratadas como decisão humana de mantenedor/revisor, não do guardrail local.
+
 ## Terminal real
 
 - [ ] Se launchers, instalador ou help mudaram, `aurora --version` e `aurora --help` foram testados no terminal real.
 - [ ] Se runtime real mudou, a superfície tocada foi validada no terminal local real.
+- [ ] Se a rodada tocou `host_maintenance.atualizar`, foram lidos `aurora dev "atualizar sistema"`, `aurora atualizar sistema` e `aurora atualizar sistema --confirm`, com conferência explícita de `sudo + pacman`, sem `paru` e sem AUR implícita.
 - [ ] Para cada superfície real tocada, houve pelo menos um caso feliz e um caso ruim ou de bloqueio honesto.
 - [ ] A validação humana cobriu o que o gate não enxerga: prompt, senha, timing, handoff, ruído visual e sensação da renderização.
 
