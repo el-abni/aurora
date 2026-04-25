@@ -70,6 +70,22 @@ def assert_terms(path: str, *terms: str) -> None:
         ensure(term in text or term in normalized, f"{path} precisa citar {term}")
 
 
+def public_surface_sensitive_markers() -> tuple[str, ...]:
+    private_suffix = "-private"
+    return (
+        "." + "aurora" + private_suffix,
+        "." + "aury" + private_suffix,
+        "/" + "/".join(("home", "abni")),
+        ".".join(("AGENTS", "md")),
+        "Chat" + "y",
+        "Cod" + "dy",
+        "Auro" + "boros",
+        "Bor" + "eal",
+        "brain" + "storms",
+        "person" + "as",
+    )
+
+
 def main() -> int:
     ensure(VERSION == "v1.1.0", "VERSION precisa estar promovido para v1.1.0 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
@@ -121,22 +137,29 @@ def main() -> int:
     ensure(VERSION in readme, "README.md precisa citar a versao publica atual")
     for term in (
         "100% python",
+        "Linux",
+        "aurora ajuda",
+        "auro ajuda",
+        "aurora --version",
+        'aurora dev "procurar firefox"',
         "host_package",
+        "host_maintenance.atualizar",
+        "aurora atualizar sistema --confirm",
+        "sudo + pacman",
+        "sem `paru`",
+        "AUR implícita",
+        "AUR",
+        "COPR",
+        "PPA",
+        "Flatpak",
         "user_software",
         "toolbox",
         "distrobox",
         "rpm-ostree",
-        "ppa:owner/name",
-        "owner/project",
-        "from_repo",
         "--confirm",
-        "--yes",
         "release_gate_canonic_line.sh",
         "WORKFLOW_DE_TESTES_E_RELEASE.md",
         "REVIEW_CHECKLIST.md",
-        "release_gate_iteracao.sh",
-        "release_gate_pre_push.sh",
-        "release_gate_pre_release.sh",
         "tests/README.md",
         "AURORA_INVARIANTS.md",
         "DECISION_RECORD_SCHEMA.md",
@@ -154,22 +177,25 @@ def main() -> int:
         "AURORA_MODEL_MODE",
         "AURORA_LOCAL_MODEL_PROVIDER",
         "fallback deterministico",
-        "autoridade limitada",
-        "host_package.procurar",
-        "host_package.search",
-        "host_maintenance.atualizar",
-        "aurora atualizar sistema --confirm",
-        "sudo + pacman",
-        "sem `paru`",
     ):
         ensure(term in readme or term in readme_normalized, f"README.md precisa citar {term}")
     for term in (
-        "superficie curta de uso",
-        "README/docs",
+        "contrato pequeno",
+        "superficie publica continua pequena",
+        "nao promete entender qualquer frase",
+        "limites honestos",
+        "nao decide policy",
         "aurora --help",
     ):
         ensure(term in readme or term in readme_normalized, f"README.md precisa citar {term}")
-    ensure_any(readme_normalized, ("workflow operacional", "disciplina operacional", "superficie curta de uso", "provider real"), "README.md precisa tratar a v1.1.0 como release coerente de linha e preservar a seam local_model herdada")
+    readme_casefold = readme.casefold()
+    for marker in public_surface_sensitive_markers():
+        ensure(marker.casefold() not in readme_casefold, "README.md nao pode expor marcador publico sensivel")
+    ensure_any(
+        readme_normalized,
+        ("contrato pequeno", "kernel deterministico", "decision_record"),
+        "README.md precisa funcionar como home publica curta e preservar a seam local_model herdada",
+    )
     ensure_any(readme_normalized, ("absorcao funcional i", "host_maintenance.atualizar", "sudo + pacman"), "README.md precisa tratar a v1.1.0 como fechamento formal de host_maintenance.atualizar")
     ok("README.md alinhado")
 

@@ -120,9 +120,6 @@ def assert_readme_spine() -> None:
         "tests/release_gate_canonic_line.sh",
         "docs/WORKFLOW_DE_TESTES_E_RELEASE.md",
         "tests/REVIEW_CHECKLIST.md",
-        "tests/release_gate_iteracao.sh",
-        "tests/release_gate_pre_push.sh",
-        "tests/release_gate_pre_release.sh",
         "tests/README.md",
         "docs/AURORA_INVARIANTS.md",
         "docs/DECISION_RECORD_SCHEMA.md",
@@ -134,7 +131,11 @@ def assert_readme_spine() -> None:
         "presentation",
     ):
         ensure(term in text or term in normalized, f"{path} precisa citar {term}")
-    ensure_any(normalized, ("espinha canonica", "workflow operacional", "disciplina operacional"), f"{path} precisa registrar a espinha e o workflow da linha")
+    ensure_any(
+        normalized,
+        ("contrato pequeno", "kernel deterministico", "superficie publica"),
+        f"{path} precisa funcionar como home publica curta da linha",
+    )
     ok(f"{path} alinhado")
 
 
