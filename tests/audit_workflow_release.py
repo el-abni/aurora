@@ -117,6 +117,7 @@ def main() -> int:
             "tests/audit_observability_canonical_facts.py",
             "tests/audit_local_model_eval_baseline.py",
             "test_bootstrap_smoke.py",
+            "test_conversation_mediation.py",
             "test_installer_release.py",
             "test_decision_record.py",
         ),

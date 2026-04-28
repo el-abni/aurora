@@ -1,4 +1,4 @@
-# Aurora Invariants - v1.1.0
+# Aurora Invariants - v1.2.0
 
 ## Papel
 
@@ -19,6 +19,10 @@ A Aurora só promove frente quando existe contrato explícito, policy, execuçã
 ### Manutenção do host não vira pacote genérico nem AUR implícita
 
 `host_maintenance.atualizar` abre apenas `atualizar sistema` no host Arch mutável com `pacman` observado. `sudo + pacman` é o backend do recorte; helpers AUR, otimização e bundles de manutenção continuam fora.
+
+### Conversação não vira autoridade operacional
+
+Na `v1.2.0`, tópicos e perguntas fechadas orientam o uso, mas não executam backend, não escolhem fonte, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
 
 ### Ferramenta observada não vira suporte
 

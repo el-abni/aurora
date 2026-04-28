@@ -8,10 +8,13 @@ from aurora.app import execute_text
 from aurora.observability.dev_command import render_dev_report
 from aurora.presentation.help_text import render_help
 from aurora.presentation.messages import invalid_command_message, missing_dev_phrase_message
+from aurora.presentation.orientation import render_orientation
+from aurora.semantics.normalize import normalize_token
+from aurora.semantics.orientation import parse_orientation
 from aurora.version import read_version
 
 HELP_TOKENS = {"ajuda", "help", "--help", "-h"}
-VERSION_TOKENS = {"version", "--version", "-v"}
+VERSION_TOKENS = {"versao", "version", "--version", "-v"}
 CONFIRM_TOKENS = {"--confirm", "--yes"}
 
 
@@ -32,7 +35,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(invalid_command_message())
         return 1
 
-    first = args[0].strip().lower()
+    first = normalize_token(args[0])
 
     if first in HELP_TOKENS:
         print(render_help())
@@ -51,4 +54,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     text = " ".join(args).strip()
+    orientation = parse_orientation(text)
+    if orientation is not None:
+        print(render_orientation(orientation))
+        return 0
+
     return execute_text(text, confirmed=confirmed)

@@ -2,52 +2,52 @@
 Mediação lúcida para Linux, com contrato pequeno e observável. Launchers oficiais: aurora e auro.
 
 Uso rápido:
+- aurora ajuda | aurora exemplos | aurora limites | aurora comandos
+- aurora versão | auro versão | aurora --help | aurora --version
+- aurora dev <frase>
 - aurora procurar <pacote>
 - aurora instalar <pacote>
-- aurora atualizar sistema --confirm
 - aurora remover <pacote> --confirm
+- aurora atualizar sistema --confirm
+
+Orientação:
+- aurora fontes
+- aurora modelo local
+- aurora decision record
+- aurora o que você faz
+- aurora como eu uso
+- aurora como instalar firefox?
+- aurora como procurar firefox?
+- aurora como remover firefox?
+- aurora como atualizar sistema?
 
 Fontes explícitas:
 - aurora procurar <pacote> no aur
 - aurora instalar <pacote> no aur --confirm
-- aurora remover <pacote> no aur --confirm
 - aurora procurar <pacote> do copr <owner>/<project>
-- aurora instalar <pacote> do copr <owner>/<project> --confirm
-- aurora remover <pacote> do copr <owner>/<project> --confirm
 - aurora instalar <pacote> do ppa <ppa:owner/name> --confirm
-Software do usuário:
 - aurora procurar <software> no flatpak
-- aurora instalar <software> no flatpak
 - aurora instalar <software> no flatpak <remote>
 - aurora remover <software> no flatpak --confirm
 
 Ambientes e host imutável:
 - aurora procurar <pacote> na toolbox <ambiente>
 - aurora instalar <pacote> na toolbox <ambiente>
-- aurora remover <pacote> na toolbox <ambiente> --confirm
 - aurora procurar <pacote> na distrobox <ambiente>
 - aurora instalar <pacote> na distrobox <ambiente>
-- aurora remover <pacote> na distrobox <ambiente> --confirm
 - aurora instalar <pacote> no rpm-ostree
 - aurora remover <pacote> no rpm-ostree --confirm
-Observabilidade:
-- aurora dev <frase>
-- aurora --help
-- aurora --version
 
 Leitura correta:
+- orientação retorna sem executar backend, escolher fonte, pedir confirmação ou alterar sistema;
 - pedidos nus continuam em host_package no host;
-- atualizar sistema abre apenas a atualização explícita do host Arch mutável;
+- atualizar sistema abre apenas a atualização explícita do host Arch mutável com sudo + pacman;
 - AUR, COPR, PPA, flatpak, toolbox, distrobox e rpm-ostree só entram por frase marcada;
-- atualizar sistema não usa paru nem abre AUR implícita;
-- toolbox e distrobox exigem ambiente explícito;
 - não existe fallback automático entre host, fontes explícitas e superfícies mediadas/imutáveis;
 - a Aurora continua expondo aurora.decision_record.v1 em aurora dev quando você quer inspeção técnica.
 
 Confirmação:
-- use --confirm ou --yes quando a Aurora pedir confirmação explícita;
-- isso também vale quando o marcador entra inline numa frase passada como texto único, inclusive em aurora dev.
-
+- use --confirm ou --yes quando a Aurora pedir confirmação explícita.
 Mais detalhes:
 - README.md para visão geral, exemplos e limites da superfície pública;
 - docs/COMPATIBILITY_LINUX.md para compatibilidade e recortes reais;

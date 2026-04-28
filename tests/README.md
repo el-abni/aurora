@@ -15,9 +15,9 @@ Ela não existe para:
 - justificar abertura de feature nova;
 - substituir leitura humana quando a fronteira ainda é conceitual.
 
-## Três camadas da v1.1.0
+## Três camadas da v1.2.0
 
-A `v1.1.0` preserva três camadas distintas:
+A `v1.2.0` preserva três camadas distintas:
 
 - teste automático para regressão executável;
 - revisão manual para diffs, docs, help, versão e coerência pública;
@@ -55,7 +55,8 @@ Esse gate é a régua corrente da linha porque protege:
 - a espinha canônica da v0.6.3;
 - o schema curto do `decision_record`;
 - a distinção entre canonização de linha e abertura de feature;
-- a disciplina operacional preservada na `v1.1.0`.
+- a disciplina operacional preservada na `v1.2.0`.
+- a orientação determinística da `v1.2.0` sem execução acidental.
 
 ## Gates operacionais por etapa
 
@@ -154,7 +155,8 @@ Leitura correta:
 - `audit_factual_baseline.py` congela um baseline factual curto de `aurora dev` e `decision_record`;
 - `audit_observability_canonical_facts.py` prova que `render` e `decision_record` continuam expondo fatos promovidos mesmo com `trust_signals` esvaziado;
 - `audit_local_model_eval_baseline.py` congela um corpus curto para comparar `model_off` e `model_on` sem deixar o modelo tocar policy, route, execution ou verdade operacional;
-- `audit_workflow_release.py` protege o workflow disciplinado da `v1.1.0`;
+- `audit_workflow_release.py` protege o workflow disciplinado da `v1.2.0`;
+- `test_conversation_mediation.py` protege tópicos e perguntas fechadas da `v1.2.0`;
 - esta base protege auditabilidade e estabilidade de linha, não expansão de produto.
 
 ## Limites deliberados

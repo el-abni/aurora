@@ -1,8 +1,8 @@
-# Aury Heritage Map - Aurora v1.1.0
+# Aury Heritage Map - Aurora v1.2.0
 
 ## Objetivo
 
-Este mapa registra o que a Aurora herdou da Aury, o que foi refatorado e o que não migrou para o contrato público atual da `v1.1.0`.
+Este mapa registra o que a Aurora herdou da Aury, o que foi refatorado e o que não migrou para o contrato público atual da `v1.2.0`.
 
 Leitura canônica de fronteira: `docs/AURY_TO_AURORA_DOSSIER.md`.
 
@@ -13,6 +13,7 @@ Leitura canônica de fronteira: `docs/AURY_TO_AURORA_DOSSIER.md`.
 | Normalização | `python/aury/normalize.py` | herdado com refatoração | vocativos, correções e texto limpo |
 | Tokens sensíveis | `python/aury/sensitive_tokens.py` | herdado com refatoração | paths, files e hosts continuam protegidos sem confundir `owner/project` de COPR, `ppa:owner/name` nem `environment_target` de toolbox ou distrobox |
 | Pipeline semântico mínimo | `python/aury/pipeline.py` | herdado com refatoração | split simples e preparação de frase |
+| Orientação determinística | lição de UX curta e auditável | novo corte próprio da Aurora | tópicos e perguntas fechadas em `semantics/orientation.py` e `presentation/orientation.py`, sem tocar a Aury |
 | Classificação mínima de domínio | partes de `python/aury/analyzer.py` | reescrito no estilo Aurora | `host_package`, `host_maintenance`, `user_software`, fontes explícitas AUR/COPR/PPA e `execution_surface=toolbox`/`execution_surface=distrobox`/`execution_surface=rpm_ostree` sob contrato próprio |
 | Host profile Linux | `python/aury/host.py` | herdado com refatoração | família, mutabilidade, tier, ferramentas observadas e observação contida de toolbox, distrobox e superfícies úteis em host imutável |
 | Roteamento de `host_package` | `python/aury/host.py` | herdado com refatoração | busca, instalação, remoção e probes no host |
@@ -31,7 +32,7 @@ Não entrou no contrato atual:
 - linguagem pública da Aury por inércia;
 - qualquer dependência de runtime no checkout da Aury.
 
-## O que continua fora da v1.1.0
+## O que continua fora da v1.2.0
 
 - `otimizar`, cache, órfãos e bundles amplos de manutenção do host;
 - AUR implícita em `atualizar sistema`;

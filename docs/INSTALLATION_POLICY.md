@@ -1,8 +1,8 @@
-# Installation Policy - Aurora v1.1.0
+# Installation Policy - Aurora v1.2.0
 
 ## Escopo real da política
 
-Na `v1.1.0`, a política operacional da Aurora governa três domínios, três superfícies explícitas fora do host mutável comum e nove leituras reais de rota:
+Na `v1.2.0`, a política operacional da Aurora governa três domínios, três superfícies explícitas fora do host mutável comum e nove leituras reais de rota. A nova orientação conversacional roda antes dessa política e não altera essas rotas:
 
 - `host_package` com `execution_surface=host` e `source_type=host_package_manager`;
 - `host_maintenance` com `execution_surface=host` e `source_type=host_maintenance`;
@@ -172,7 +172,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v1.1.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v1.2.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -234,7 +234,7 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 
 ## O que ainda não está aberto
 
-Continuam fora da `v1.1.0`:
+Continuam fora da `v1.2.0`:
 
 - `otimizar`, cache, órfãos e bundles amplos de manutenção;
 - `paru`, `yay` ou qualquer helper AUR como backend de `host_maintenance`;

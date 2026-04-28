@@ -1,13 +1,13 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v1.1.0-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v1.2.0-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com contrato pequeno, política explícita, execução real e observabilidade própria.
 
-A release pública atual é a `v1.1.0`. Ela fecha `host_maintenance.atualizar` como primeira absorção funcional real: `aurora atualizar sistema --confirm` em host Arch mutável com `pacman` observado, confirmação explícita obrigatória e backend `sudo + pacman`.
+A release pública atual é a `v1.2.0`. Ela adiciona uma camada pequena de conversação/mediação determinística em PT-BR para ajuda e orientação. A absorção `host_maintenance.atualizar` fechada na `v1.1.0` continua igual: `aurora atualizar sistema --confirm` em host Arch mutável com `pacman` observado, confirmação explícita obrigatória e backend `sudo + pacman`.
 
 ## O que é
 
@@ -21,10 +21,19 @@ O centro da linha continua determinístico. O `decision_record` é o contrato ca
 aurora ajuda
 auro ajuda
 aurora --version
+aurora versão
+aurora exemplos
+aurora como instalar firefox?
 aurora dev "procurar firefox"
 ```
 
 `auro` é o launcher curto de `aurora`. Use `aurora dev <frase>` quando quiser ver a decisão antes de confiar numa frase ou numa superfície.
+
+## Conversação e orientação
+
+A `v1.2.0` aceita tópicos fechados como `aurora exemplos`, `aurora limites`, `aurora comandos`, `aurora fontes`, `aurora modelo local`, `aurora decision record`, `aurora o que você faz` e `aurora como eu uso`.
+
+Perguntas fechadas como `aurora como instalar firefox?`, `aurora como procurar firefox?`, `aurora como remover firefox?` e `aurora como atualizar sistema?` retornam orientação e exit 0. Elas não executam backend, não escolhem fonte, não fazem busca real, não pedem confirmação e não alteram o sistema.
 
 ## Exemplos
 
@@ -100,10 +109,11 @@ Texto de ajuda, polimento e renderização não viram contrato. Quando um consum
 
 ## Recorte atual
 
-Na `v1.1.0`, a superfície pública continua pequena:
+Na `v1.2.0`, a superfície pública continua pequena:
 
 - `host_package` para pacotes do host;
 - `host_maintenance.atualizar` para `atualizar sistema` no Arch mutável com `pacman`;
+- orientação determinística de ajuda antes do executor, sem novo domínio operacional;
 - AUR, COPR e PPA apenas quando a frase marca a fonte explicitamente;
 - `user_software` via Flatpak;
 - toolbox e distrobox apenas quando a frase nomeia o ambiente;

@@ -87,9 +87,9 @@ def public_surface_sensitive_markers() -> tuple[str, ...]:
 
 
 def main() -> int:
-    ensure(VERSION == "v1.1.0", "VERSION precisa estar promovido para v1.1.0 no fechamento desta release")
+    ensure(VERSION == "v1.2.0", "VERSION precisa estar promovido para v1.2.0 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v1.1.0")
+    ok("VERSION promovido para v1.2.0")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
@@ -107,7 +107,13 @@ def main() -> int:
         "tests/release_gate_pre_push.sh",
         "tests/release_gate_pre_release.sh",
         "tests/REVIEW_CHECKLIST.md",
+        "tests/test_conversation_mediation.py",
         "tests/audit_workflow_release.py",
+        "conversação/mediação",
+        "orientação determinística",
+        "aurora versão",
+        "aurora exemplos",
+        "aurora como instalar firefox?",
         "local_model",
         "model_off",
         "model_on",
@@ -130,6 +136,7 @@ def main() -> int:
         ensure(term in changelog or term.lower() in changelog_normalized, f"CHANGELOG.md precisa citar {term}")
     ensure_any(changelog_normalized, ("provider real", "ollama", "fallback deterministico"), "CHANGELOG.md precisa preservar a v1.0.0 como base publica honesta da seam local_model")
     ensure_any(changelog_normalized, ("absorcao funcional i", "host_maintenance.atualizar", "aurora atualizar sistema --confirm"), "CHANGELOG.md precisa tratar a v1.1.0 como fechamento formal de host_maintenance.atualizar")
+    ensure_any(changelog_normalized, ("conversacao/mediacao", "orientacao deterministica", "perguntas fechadas"), "CHANGELOG.md precisa tratar a v1.2.0 como conversacao/mediacao estreita")
     ok("CHANGELOG.md alinhado")
 
     readme = read("README.md")
@@ -141,6 +148,9 @@ def main() -> int:
         "aurora ajuda",
         "auro ajuda",
         "aurora --version",
+        "aurora versão",
+        "aurora exemplos",
+        "aurora como instalar firefox?",
         'aurora dev "procurar firefox"',
         "host_package",
         "host_maintenance.atualizar",
@@ -177,6 +187,8 @@ def main() -> int:
         "AURORA_MODEL_MODE",
         "AURORA_LOCAL_MODEL_PROVIDER",
         "fallback deterministico",
+        "conversação/mediação",
+        "orientação determinística",
     ):
         ensure(term in readme or term in readme_normalized, f"README.md precisa citar {term}")
     for term in (
@@ -395,13 +407,18 @@ def main() -> int:
     ensure(len(help_text.splitlines()) <= 55, "resources/help.txt precisa permanecer curto o bastante para ser help de uso")
     for term in (
         "Uso rápido:",
+        "Orientação:",
         "Fontes explícitas:",
-        "Software do usuário:",
         "Ambientes e host imutável:",
-        "Observabilidade:",
         "Leitura correta:",
         "Confirmação:",
         "Mais detalhes:",
+        "aurora exemplos",
+        "aurora limites",
+        "aurora comandos",
+        "aurora versão",
+        "auro versão",
+        "aurora como instalar firefox?",
         "aurora.decision_record.v1",
         "README.md",
         "docs/COMPATIBILITY_LINUX.md",

@@ -1,4 +1,4 @@
-# Review Checklist - Aurora v1.1.0
+# Review Checklist - Aurora v1.2.0
 
 Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplica, a dispensa precisa ser consciente.
 
@@ -8,6 +8,7 @@ Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplic
 - [ ] `docs/ARCHITECTURE.md`, `docs/DECISION_RECORD_SCHEMA.md`, `docs/FACTS_VS_RENDERING.md`, `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` e `tests/README.md` batem com a release atual.
 - [ ] `aurora --version` mostra a versão pública certa.
 - [ ] `aurora --help` reflete a superfície pública real.
+- [ ] `aurora versão`, `auro versão`, tópicos de orientação e perguntas fechadas foram testados sem execução.
 - [ ] Se contrato, payload ou renderização mudaram, `aurora dev "<caso feliz>"` e `aurora dev "<caso ruim>"` foram lidos.
 
 ## Seam `local_model` herdada da v1.0.0
@@ -27,7 +28,7 @@ Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplic
 
 - [ ] Se a rodada tocou PV/contexto ou roadmap privado, `python3 tests/audit_canonic_integrity.py` passou.
 - [ ] Pointers canônicos centrais agora apontam para arquivos reais.
-- [ ] Material pré-`v1.1.0` ou de preparação pós-`v1.0.0` que continuou útil foi marcado como histórico/transicional.
+- [ ] Material pré-`v1.2.0` ou de preparação pós-`v1.0.0` que continuou útil foi marcado como histórico/transicional.
 - [ ] A promoção de versão, a classificação final de roadmap e a decisão de canon continuam tratadas como decisão humana de mantenedor/revisor, não do guardrail local.
 
 ## Terminal real

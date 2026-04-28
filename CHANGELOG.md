@@ -1,5 +1,33 @@
 # Changelog
 
+## 🌌 Aurora v1.2.0
+
+Conversação/mediação I. Esta release adiciona uma camada estreita, determinística e presentation-only para tópicos de ajuda e perguntas explicativas em PT-BR. Ela não abre chat genérico, não cria domínio operacional novo e não altera `aurora.decision_record.v1`.
+
+### Adicionado
+
+- `aurora versão` e `auro versão` passam a ser aliases públicos de `--version`;
+- `aurora exemplos`, `aurora limites`, `aurora comandos`, `aurora fontes`, `aurora modelo local`, `aurora decision record`, `aurora o que você faz` e `aurora como eu uso` retornam orientação determinística com exit 0;
+- perguntas fechadas como `aurora como instalar firefox?`, `aurora como procurar firefox?`, `aurora como remover firefox?` e `aurora como atualizar sistema?` orientam próximos passos sem executar backend, escolher fonte, fazer busca real, pedir confirmação ou alterar sistema;
+- `python/aurora/semantics/orientation.py` e `python/aurora/presentation/orientation.py` separam reconhecimento fechado e renderização pública sem contaminar o parser operacional;
+- `tests/test_conversation_mediation.py` cobre a nova superfície de mediação, preserva comandos operacionais existentes, `model_off` default e o schema `aurora.decision_record.v1`.
+
+### Alterado
+
+- `VERSION`, `README.md`, `resources/help.txt`, docs centrais, checklist, auditoria pública e changelog passam a refletir a `v1.2.0` como release atual;
+- `tests/release_gate_iteracao.sh` passa a incluir a regressão curta da conversação/mediação;
+- a disciplina de `docs/WORKFLOW_DE_TESTES_E_RELEASE.md`, `tests/REVIEW_CHECKLIST.md`, `tests/release_gate_canonic_line.sh`, `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh`, `tests/release_gate_pre_release.sh` e `tests/audit_workflow_release.py` continua preservando `stable_ids`, `facts` e `presentation`;
+- a absorção `host_maintenance.atualizar` da `v1.1.0` permanece inalterada: `aurora atualizar sistema --confirm`, host Arch mutável com `pacman` observado, confirmação explícita obrigatória, execução real via `sudo + pacman`, sem `paru` e sem AUR implícita;
+- `local_model` segue como seam herdada da `v1.0.0`: `model_off` íntegro por default, `model_on` opt-in com `ollama`, `qwen2.5:3b-instruct`, provider real, fallback determinístico e autoridade limitada.
+
+### Continua fora da v1.2.0
+
+- source discovery transversal, source clarification multi-fonte real e escolha automática de fonte;
+- AUR implícita, COPR/PPA sem coordenada, toolbox/distrobox sem ambiente explícito e rpm-ostree como fallback;
+- chat genérico, parser amplo, mídia, indexação local, desktop adapter, catálogo amplo de apps e agentes externos no runtime;
+- mudança na Aury, mudança de schema do decision record, comando destrutivo novo, refatoração ampla ou expansão lateral fora do recorte fechado;
+- a rodada interna pós-`v1.0.0` de saneamento canônico e hardening basal permanece registrada apenas como preparação da linha.
+
 ## 🌌 Aurora v1.1.0
 
 Fechamento formal da absorção funcional I com `host_maintenance.atualizar`. Esta release promove o recorte mínimo já implementado e validado: `aurora atualizar sistema --confirm` em host Arch mutável com `pacman` observado, confirmação explícita obrigatória e execução real via `sudo + pacman`.
@@ -27,7 +55,7 @@ A rodada interna pós-`v1.0.0` de saneamento canônico e hardening basal fica re
 - Debian/Ubuntu, Fedora e OpenSUSE como suporte real equivalente para `host_maintenance.atualizar` nesta primeira absorção;
 - equivalência automática entre `host_maintenance` e `rpm-ostree`, `flatpak`, `toolbox` ou `distrobox`;
 - conversação, mediação ampla e qualquer frente genérica de chat;
-- Personas operacionais e frentes futuras correlatas fora deste produto;
+- frentes operacionais privadas de identidade e mediação fora deste produto;
 - refatoração ampla ou expansão lateral fora do recorte fechado.
 
 ## 🌌 Aurora v1.0.0
