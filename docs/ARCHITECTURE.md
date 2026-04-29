@@ -1,4 +1,4 @@
-# Architecture - Aurora v1.2.0
+# Architecture - Aurora v1.3.0
 
 ## Tese curta
 
@@ -18,7 +18,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 
 ## Espinha canônica da linha
 
-A `v1.2.0` adiciona conversação/mediação I como orientação determinística antes do executor operacional. Ela herda da `v1.1.0` o fechamento de `host_maintenance.atualizar`, preserva a espinha canônica fechada na `v0.6.3`, mantém a disciplina operacional fechada na `v0.6.4` e herda da `v1.0.0` a seam assistiva `local_model` com provider real canônico apenas em `aurora dev` / `decision_record`, sem tocar no kernel determinístico:
+A `v1.3.0` adiciona clarificação controlada de fonte/superfície antes do executor operacional. Ela preserva a conversação/mediação I da `v1.2.0`, herda da `v1.1.0` o fechamento de `host_maintenance.atualizar`, preserva a espinha canônica fechada na `v0.6.3`, mantém a disciplina operacional fechada na `v0.6.4` e herda da `v1.0.0` a seam assistiva `local_model` com provider real canônico apenas em `aurora dev` / `decision_record`, sem tocar no kernel determinístico:
 
 - `tests/release_gate_canonic_line.sh` como régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` preservado como gate histórico da release `v0.6.2`;
@@ -31,9 +31,9 @@ A `v1.2.0` adiciona conversação/mediação I como orientação determinística
 
 Essa espinha reaproveita uma lição já aprendida pela Aurora: a linha endurece melhor com contrato pequeno, docs auditáveis e gate curto do que com feature nova. Ela também evita um choque já conhecido com o patrimônio do repo: Fish e stage pública não entram como centro do gate da Aurora.
 
-## Disciplina operacional da v1.2.0
+## Disciplina operacional da v1.3.0
 
-A `v1.2.0` preserva o workflow formalizado em volta dessa espinha:
+A `v1.3.0` preserva o workflow formalizado em volta dessa espinha:
 
 - `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` define as três camadas de validação;
 - `tests/REVIEW_CHECKLIST.md` fixa a revisão humana curta;
@@ -46,25 +46,28 @@ A `v1.2.0` preserva o workflow formalizado em volta dessa espinha:
 ## Fluxo principal
 
 1. `cli.py` recebe o comando público.
-2. `semantics/orientation.py` reconhece tópicos e perguntas explicativas fechadas, sem probing e sem backend.
-3. `presentation/orientation.py` renderiza a orientação pública curta quando a entrada é apenas explicativa.
-4. `semantics/` normaliza a frase operacional restante e classifica a intenção mínima.
-5. `linux/host_profile.py` detecta família, mutabilidade, distro, ferramentas observadas, toolboxes observadas e distroboxes observadas no host.
-6. `install/domain_classifier.py` decide entre default de `host_package`, fontes explícitas `AUR`, `COPR`, `PPA`, `user_software` via `flatpak`, `execution_surface=toolbox`, `execution_surface=distrobox` e `execution_surface=rpm_ostree`.
-7. `linux/toolbox.py` e `linux/distrobox.py` resolvem o ambiente mediado quando a frase marca a superfície e observam a família Linux e o backend dentro desse ambiente.
-8. `linux/rpm_ostree.py` observa `rpm-ostree status --json` quando a frase marca a superfície imutável do host.
-9. `install/policy_engine.py` produz o juízo de política.
-10. `install/candidates.py` e `install/route_selector.py` escolhem a rota executável.
-11. `install/execution_handoff.py` executa, faz probes e mantém visível se a ação ocorre no host mutável, no host imutável via `rpm-ostree`, dentro da toolbox ou dentro da distrobox.
-12. `contracts/decision_record_schema.py` e `contracts/stable_ids.py` fixam o schema versionado e os IDs mínimos estáveis do `decision_record`.
-13. `observability/` registra `facts`, preserva compatibilidade por espelhos legados e renderiza a camada pública.
-14. `local_model/` pluga por cima de `schema + stable_ids + facts + presentation` no caminho de `aurora dev` / `decision_record`, em `model_off` por default, com provider canônico `ollama`, fallback determinístico e autoridade limitada.
+2. `semantics/source_clarification.py` reconhece clarificação fechada de fonte/superfície e bloqueios de escolha automática, sem probing e sem backend.
+3. `presentation/source_clarification.py` renderiza sintaxe explícita ou bloqueio pré-executor sem gerar `decision_record`.
+4. `semantics/orientation.py` reconhece tópicos e perguntas explicativas fechadas, sem probing e sem backend.
+5. `presentation/orientation.py` renderiza a orientação pública curta quando a entrada é apenas explicativa.
+6. `semantics/` normaliza a frase operacional restante e classifica a intenção mínima.
+7. `linux/host_profile.py` detecta família, mutabilidade, distro, ferramentas observadas, toolboxes observadas e distroboxes observadas no host.
+8. `install/domain_classifier.py` decide entre default de `host_package`, fontes explícitas `AUR`, `COPR`, `PPA`, `user_software` via `flatpak`, `execution_surface=toolbox`, `execution_surface=distrobox` e `execution_surface=rpm_ostree`.
+9. `linux/toolbox.py` e `linux/distrobox.py` resolvem o ambiente mediado quando a frase marca a superfície e observam a família Linux e o backend dentro desse ambiente.
+10. `linux/rpm_ostree.py` observa `rpm-ostree status --json` quando a frase marca a superfície imutável do host.
+11. `install/policy_engine.py` produz o juízo de política.
+12. `install/candidates.py` e `install/route_selector.py` escolhem a rota executável.
+13. `install/execution_handoff.py` executa, faz probes e mantém visível se a ação ocorre no host mutável, no host imutável via `rpm-ostree`, dentro da toolbox ou dentro da distrobox.
+14. `contracts/decision_record_schema.py` e `contracts/stable_ids.py` fixam o schema versionado e os IDs mínimos estáveis do `decision_record`.
+15. `observability/` registra `facts`, preserva compatibilidade por espelhos legados e renderiza a camada pública.
+16. `local_model/` pluga por cima de `schema + stable_ids + facts + presentation` no caminho de `aurora dev` / `decision_record`, em `model_off` por default, com provider canônico `ollama`, fallback determinístico e autoridade limitada.
 
 ## Módulos principais
 
 ### `semantics/`
 
 - normalização;
+- clarificação controlada de fonte/superfície em `source_clarification.py`;
 - orientação determinística fechada;
 - proteção de tokens sensíveis;
 - split simples de ações;
@@ -111,6 +114,7 @@ A `v1.2.0` preserva o workflow formalizado em volta dessa espinha:
 ### `presentation/`
 
 - help;
+- clarificação pública de fonte/superfície em `source_clarification.py`;
 - orientação pública de tópicos e perguntas fechadas;
 - help curto de uso, com detalhes longos deslocados para README/docs quando o assunto pede compatibilidade, política ou workflow;
 - mensagens de bloqueio;
@@ -132,7 +136,7 @@ A `v1.2.0` preserva o workflow formalizado em volta dessa espinha:
 
 ## Decision Record Canônico
 
-Na `v1.2.0`, o `decision_record` continua com uma leitura canônica curta:
+Na `v1.3.0`, o `decision_record` continua com uma leitura canônica curta:
 
 - `schema.schema_id=aurora.decision_record.v1`;
 - `stable_ids.action_id`, `stable_ids.route_id` e `stable_ids.event_id` como IDs mínimos estáveis;
@@ -145,7 +149,7 @@ Compatibilidade:
 - `host_package.search` continua apenas como `route_name` legado;
 - o ID canônico da rota de busca do host passa a ser `host_package.procurar`.
 
-## Rotas abertas na v1.2.0
+## Rotas abertas na v1.3.0
 
 ### `host_package`
 
@@ -304,9 +308,10 @@ Garantias:
 
 ## Fronteiras deliberadas
 
-A `v1.2.0` continua pequena de propósito:
+A `v1.3.0` continua pequena de propósito:
 
 - pedido nu continua em `host_package` no host;
+- `source_clarification` ensina sintaxe explícita e bloqueia escolha automática, mas não abre `source_discovery`;
 - tópicos de orientação não passam pelo executor e não criam rota operacional;
 - `atualizar sistema` não vira alias amplo de manutenção nem passa a misturar AUR;
 - em host imutável, pedido nu bloqueia com `immutable_observed_surfaces` e `immutable_selected_surface=block`;

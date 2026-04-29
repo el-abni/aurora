@@ -1,4 +1,4 @@
-# Decision Record Schema - Aurora v1.2.0
+# Decision Record Schema - Aurora v1.3.0
 
 ## Papel
 
@@ -63,7 +63,7 @@ Detalhe importante desta release:
 
 - o payload antigo continua espelhado no topo por compatibilidade;
 - o contrato novo a ser consumido daqui em diante é `schema + stable_ids + facts + presentation`.
-- a `v1.2.0` não entrega schema novo nem motor novo; ela adiciona orientação determinística fora do `decision_record`, herda da `v1.0.0` a seam limitada em `facts.local_model` com provider real canônico e preserva `host_maintenance.atualizar` sem relaxar o contrato central.
+- a `v1.3.0` não entrega schema novo nem motor novo; ela adiciona `source_clarification` determinística fora do `decision_record`, preserva a orientação da `v1.2.0`, herda da `v1.0.0` a seam limitada em `facts.local_model` com provider real canônico e preserva `host_maintenance.atualizar` sem relaxar o contrato central.
 
 ## Seam local do modelo
 

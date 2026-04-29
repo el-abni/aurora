@@ -1,4 +1,4 @@
-# Aurora Invariants - v1.2.0
+# Aurora Invariants - v1.3.0
 
 ## Papel
 
@@ -20,9 +20,13 @@ A Aurora só promove frente quando existe contrato explícito, policy, execuçã
 
 `host_maintenance.atualizar` abre apenas `atualizar sistema` no host Arch mutável com `pacman` observado. `sudo + pacman` é o backend do recorte; helpers AUR, otimização e bundles de manutenção continuam fora.
 
-### Conversação não vira autoridade operacional
+### Conversação e clarificação não viram autoridade operacional
 
-Na `v1.2.0`, tópicos e perguntas fechadas orientam o uso, mas não executam backend, não escolhem fonte, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
+Na `v1.3.0`, tópicos, perguntas fechadas e clarificação controlada de fonte/superfície orientam o uso, mas não executam backend, não buscam em tudo, não escolhem fonte, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
+
+### Clarificação controlada não é descoberta de fonte
+
+`source_clarification` ensina sintaxe explícita e bloqueia pedidos como `instalar firefox onde for melhor`. Ela não abre `source_discovery`, não recomenda melhor fonte, não adiciona remote, não cria ambiente e não faz fallback entre superfícies.
 
 ### Ferramenta observada não vira suporte
 

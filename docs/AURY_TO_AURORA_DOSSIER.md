@@ -1,13 +1,13 @@
-# Aury to Aurora Dossier - Aurora v1.2.0
+# Aury to Aurora Dossier - Aurora v1.3.0
 
 ## Leitura canônica
 
 - `Aury` é a raiz operacional.
 - `Aurora` é a camada de decisão e mediação.
 
-Essa leitura é patrimônio estrutural da linha também na `v1.2.0`.
+Essa leitura é patrimônio estrutural da linha também na `v1.3.0`.
 
-## O que a Aurora herda na v1.2.0
+## O que a Aurora herda na v1.3.0
 
 - disciplina de normalização e proteção de tokens;
 - leitura mínima de host Linux e probes operacionais;
@@ -15,6 +15,7 @@ Essa leitura é patrimônio estrutural da linha também na `v1.2.0`.
 - lição de que contrato pequeno e explícito endurece melhor do que amplitude implícita.
 - leitura de que manutenção do host só entra quando policy, execução real, observabilidade e confirmação explícita estão fechadas.
 - lição de que orientação pública precisa ser curta, testável e subordinada ao kernel.
+- lição de que clarificação de fonte/superfície precisa ensinar sintaxe explícita sem virar descoberta, escolha automática ou fallback.
 
 Isso reaproveita aprendizado real da Aury sem copiar mecanicamente sua superfície.
 

@@ -9,8 +9,10 @@ from aurora.observability.dev_command import render_dev_report
 from aurora.presentation.help_text import render_help
 from aurora.presentation.messages import invalid_command_message, missing_dev_phrase_message
 from aurora.presentation.orientation import render_orientation
+from aurora.presentation.source_clarification import render_source_clarification
 from aurora.semantics.normalize import normalize_token
 from aurora.semantics.orientation import parse_orientation
+from aurora.semantics.source_clarification import parse_source_clarification
 from aurora.version import read_version
 
 HELP_TOKENS = {"ajuda", "help", "--help", "-h"}
@@ -54,6 +56,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     text = " ".join(args).strip()
+    source_clarification = parse_source_clarification(text)
+    if source_clarification is not None:
+        print(render_source_clarification(source_clarification))
+        return 1 if source_clarification.blocking else 0
+
     orientation = parse_orientation(text)
     if orientation is not None:
         print(render_orientation(orientation))

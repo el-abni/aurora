@@ -54,6 +54,8 @@ def assert_workflow_doc() -> None:
         "aurora --version",
         "aurora --help",
         "aurora dev",
+        "aurora explicar fontes",
+        "aurora instalar firefox onde for melhor",
     ):
         ensure(term in text or term in normalized, f"{path} precisa citar {term}")
     ok(f"{path} alinhado")
@@ -118,6 +120,7 @@ def main() -> int:
             "tests/audit_local_model_eval_baseline.py",
             "test_bootstrap_smoke.py",
             "test_conversation_mediation.py",
+            "test_source_clarification.py",
             "test_installer_release.py",
             "test_decision_record.py",
         ),

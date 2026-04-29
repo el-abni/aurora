@@ -1,8 +1,8 @@
-# Installation Policy - Aurora v1.2.0
+# Installation Policy - Aurora v1.3.0
 
 ## Escopo real da política
 
-Na `v1.2.0`, a política operacional da Aurora governa três domínios, três superfícies explícitas fora do host mutável comum e nove leituras reais de rota. A nova orientação conversacional roda antes dessa política e não altera essas rotas:
+Na `v1.3.0`, a política operacional da Aurora governa três domínios, três superfícies explícitas fora do host mutável comum e nove leituras reais de rota. A orientação conversacional e a clarificação controlada de fonte/superfície rodam antes dessa política e não alteram essas rotas:
 
 - `host_package` com `execution_surface=host` e `source_type=host_package_manager`;
 - `host_maintenance` com `execution_surface=host` e `source_type=host_maintenance`;
@@ -14,7 +14,7 @@ Na `v1.2.0`, a política operacional da Aurora governa três domínios, três su
 - `host_package` explicitamente marcado com `execution_surface=rpm_ostree` e `source_type=rpm_ostree_layering`;
 - `user_software` com `source_type=flatpak_remote`.
 
-O recorte de `host_maintenance` é mínimo e formalmente fechado nesta release: apenas `atualizar sistema` no host Arch mutável com `pacman` observado.
+O recorte de `host_maintenance` permanece mínimo e foi formalmente fechado na `v1.1.0`: apenas `atualizar sistema` no host Arch mutável com `pacman` observado.
 
 A política existe para explicitar contrato, risco e limite da rota. Ela não existe para simular amplitude.
 
@@ -172,7 +172,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v1.2.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v1.3.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -234,7 +234,7 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 
 ## O que ainda não está aberto
 
-Continuam fora da `v1.2.0`:
+Continuam fora da `v1.3.0`:
 
 - `otimizar`, cache, órfãos e bundles amplos de manutenção;
 - `paru`, `yay` ou qualquer helper AUR como backend de `host_maintenance`;
@@ -243,6 +243,8 @@ Continuam fora da `v1.2.0`:
 - fallback automático do host para `toolbox`;
 - fallback automático do host para `distrobox`;
 - fallback automático do host para `rpm-ostree`;
+- escolha automática da melhor fonte ou melhor superfície;
+- `source_discovery` transversal e busca em múltiplas fontes;
 - default implícito de toolbox, autoseleção e descoberta mágica de ambiente;
 - default implícito de distrobox, autoseleção e descoberta mágica de ambiente;
 - criação automática de toolbox, criação automática de distrobox e administração ampla de lifecycle;

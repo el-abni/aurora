@@ -87,9 +87,9 @@ def public_surface_sensitive_markers() -> tuple[str, ...]:
 
 
 def main() -> int:
-    ensure(VERSION == "v1.2.0", "VERSION precisa estar promovido para v1.2.0 no fechamento desta release")
+    ensure(VERSION == "v1.3.0", "VERSION precisa estar promovido para v1.3.0 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v1.2.0")
+    ok("VERSION promovido para v1.3.0")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
@@ -107,8 +107,15 @@ def main() -> int:
         "tests/release_gate_pre_push.sh",
         "tests/release_gate_pre_release.sh",
         "tests/REVIEW_CHECKLIST.md",
+        "tests/test_source_clarification.py",
         "tests/test_conversation_mediation.py",
         "tests/audit_workflow_release.py",
+        "clarificacao controlada",
+        "source_clarification",
+        "source_discovery",
+        "aurora explicar fontes",
+        "aurora onde instalar firefox?",
+        "aurora instalar firefox onde for melhor",
         "conversação/mediação",
         "orientação determinística",
         "aurora versão",
@@ -137,6 +144,7 @@ def main() -> int:
     ensure_any(changelog_normalized, ("provider real", "ollama", "fallback deterministico"), "CHANGELOG.md precisa preservar a v1.0.0 como base publica honesta da seam local_model")
     ensure_any(changelog_normalized, ("absorcao funcional i", "host_maintenance.atualizar", "aurora atualizar sistema --confirm"), "CHANGELOG.md precisa tratar a v1.1.0 como fechamento formal de host_maintenance.atualizar")
     ensure_any(changelog_normalized, ("conversacao/mediacao", "orientacao deterministica", "perguntas fechadas"), "CHANGELOG.md precisa tratar a v1.2.0 como conversacao/mediacao estreita")
+    ensure_any(changelog_normalized, ("clarificacao controlada", "source_clarification", "source_discovery"), "CHANGELOG.md precisa tratar a v1.3.0 como clarificacao controlada de fonte/superficie")
     ok("CHANGELOG.md alinhado")
 
     readme = read("README.md")
@@ -151,6 +159,9 @@ def main() -> int:
         "aurora versão",
         "aurora exemplos",
         "aurora como instalar firefox?",
+        "aurora explicar fontes",
+        "aurora onde instalar firefox?",
+        "aurora instalar firefox onde for melhor",
         'aurora dev "procurar firefox"',
         "host_package",
         "host_maintenance.atualizar",
@@ -187,6 +198,8 @@ def main() -> int:
         "AURORA_MODEL_MODE",
         "AURORA_LOCAL_MODEL_PROVIDER",
         "fallback deterministico",
+        "clarificacao controlada",
+        "source_discovery",
         "conversação/mediação",
         "orientação determinística",
     ):
@@ -209,6 +222,7 @@ def main() -> int:
         "README.md precisa funcionar como home publica curta e preservar a seam local_model herdada",
     )
     ensure_any(readme_normalized, ("absorcao funcional i", "host_maintenance.atualizar", "sudo + pacman"), "README.md precisa tratar a v1.1.0 como fechamento formal de host_maintenance.atualizar")
+    ensure_any(readme_normalized, ("clarificacao controlada", "source_discovery", "melhor fonte"), "README.md precisa tratar a v1.3.0 como clarificacao controlada sem discovery")
     ok("README.md alinhado")
 
     architecture = read("docs/ARCHITECTURE.md")
@@ -228,6 +242,8 @@ def main() -> int:
         "FACTS_VS_RENDERING.md",
         "AURY_TO_AURORA_DOSSIER.md",
         "tests/audit_decision_record_contract.py",
+        "source_clarification.py",
+        "source_discovery",
         "local_model/",
         "model_off",
         "model_on",
@@ -252,6 +268,7 @@ def main() -> int:
         ensure(term in architecture or term in architecture_normalized, f"docs/ARCHITECTURE.md precisa citar {term}")
     ensure_any(architecture_normalized, ("workflow", "disciplina operacional", "ollama"), "ARCHITECTURE precisa preservar a seam assistiva real herdada sem abrir frente lateral")
     ensure_any(architecture_normalized, ("host_maintenance.atualizar", "absorcao funcional i", "sudo + pacman"), "ARCHITECTURE precisa tratar a v1.1.0 como fechamento formal de host_maintenance.atualizar")
+    ensure_any(architecture_normalized, ("source_clarification", "clarificacao controlada", "source_discovery"), "ARCHITECTURE precisa registrar a clarificacao controlada da v1.3.0")
     ok("docs/ARCHITECTURE.md alinhado")
 
     assert_terms(
@@ -287,6 +304,7 @@ def main() -> int:
         "PPA",
         "pending deployment",
         "status --json",
+        "clarificacao controlada",
         "host_maintenance",
         "atualizar sistema",
         "sudo + pacman",
@@ -308,6 +326,8 @@ def main() -> int:
         "distrobox_requested_environment",
         "host_maintenance",
         "requires_confirmation",
+        "source_discovery",
+        "melhor fonte",
     )
     ok("docs/INSTALLATION_POLICY.md alinhado")
 
@@ -334,6 +354,8 @@ def main() -> int:
         "100% python",
         "fish",
         "stage publica",
+        "source_discovery",
+        "melhor fonte",
     )
     ok("docs/AURORA_INVARIANTS.md alinhado")
 
@@ -358,6 +380,7 @@ def main() -> int:
         "host_maintenance.atualizar",
         "atualizar",
         "payload antigo",
+        "source_clarification",
     ):
         ensure(term in schema_doc or term in schema_normalized, f"docs/DECISION_RECORD_SCHEMA.md precisa citar {term}")
     ok("docs/DECISION_RECORD_SCHEMA.md alinhado")
@@ -380,6 +403,8 @@ def main() -> int:
         "refactor ornamental",
         "terminal real",
         "host_maintenance.atualizar",
+        "source_clarification.py",
+        "source_discovery",
     ):
         ensure(term in facts_doc or term in facts_normalized, f"docs/FACTS_VS_RENDERING.md precisa citar {term}")
     ok("docs/FACTS_VS_RENDERING.md alinhado")
@@ -429,6 +454,9 @@ def main() -> int:
         "na toolbox <ambiente>",
         "na distrobox <ambiente>",
         "rpm-ostree",
+        "aurora explicar fontes",
+        "aurora onde instalar firefox?",
+        "aurora instalar firefox onde for melhor",
         "--confirm",
         "--yes",
     ):

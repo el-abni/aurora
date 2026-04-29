@@ -1,5 +1,40 @@
 # Changelog
 
+## 🌌 Aurora v1.3.0
+
+Clarificação controlada de fonte/superfície. Esta release adiciona uma camada determinística antes do executor para orientar sintaxe explícita e bloquear pedidos de escolha automática. Ela não abre `source_discovery`, não escolhe melhor fonte, não executa backend e não altera `aurora.decision_record.v1`.
+
+### Adicionado
+
+- `aurora explicar fontes`, `aurora explicar superfícies`, `aurora como escolher fonte para firefox?`, `aurora qual fonte usar para firefox?` e `aurora onde instalar firefox?` orientam como marcar fonte ou superfície explicitamente, com exit 0;
+- orientações fechadas para `aurora como instalar firefox no flatpak?`, `aurora como instalar firefox no aur?`, `aurora como instalar pacote na toolbox devbox?`, `aurora como instalar pacote na distrobox devbox?` e `aurora como instalar pacote no rpm-ostree?`;
+- comparações curtas `aurora diferença entre host e flatpak` e `aurora diferença entre aur e pacote do host`;
+- bloqueio pré-executor para frases como `aurora instalar firefox onde for melhor`, `aurora instalar firefox na melhor fonte` e `aurora instalar firefox na melhor superfície`, sem chamar backend nem gerar `decision_record`;
+- `python/aurora/semantics/source_clarification.py` e `python/aurora/presentation/source_clarification.py` como módulos pequenos separados da orientação genérica da `v1.2.0`;
+- `tests/test_source_clarification.py` cobrindo orientação, bloqueio, preservação de comandos operacionais existentes, `model_off` default e `aurora.decision_record.v1`.
+
+### Alterado
+
+- `VERSION`, `README.md`, `resources/help.txt`, docs centrais, checklist, auditoria pública e changelog passam a refletir a `v1.3.0` como release atual;
+- `python/aurora/cli.py` despacha `source_clarification` antes de `parse_orientation` e antes de `execute_text`;
+- `tests/release_gate_iteracao.sh` passa a incluir a regressão curta de `source_clarification`.
+- a disciplina de `docs/WORKFLOW_DE_TESTES_E_RELEASE.md`, `tests/REVIEW_CHECKLIST.md`, `tests/release_gate_canonic_line.sh`, `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh`, `tests/release_gate_pre_release.sh` e `tests/audit_workflow_release.py` continua preservando `stable_ids`, `facts` e `presentation`.
+
+### Preservado
+
+- `aurora.decision_record.v1`, `stable_ids`, `facts` e `presentation` permanecem sem mudança de schema;
+- `model_off` continua default, `model_on` continua opt-in e `local_model` segue assistivo/observável, sem autoridade sobre policy, suporte, bloqueio, confirmação, rota, execução ou verdade operacional;
+- pedido nu continua em `host_package` no host;
+- `host_maintenance.atualizar` da `v1.1.0` permanece restrito a `aurora atualizar sistema --confirm` em host Arch mutável com `sudo + pacman`, sem `paru` e sem AUR implícita;
+- a conversação/mediação da `v1.2.0` continua fechada, deterministicamente antes do executor e sem domínio operacional novo.
+
+### Continua fora da v1.3.0
+
+- `source_discovery`, busca em múltiplas fontes, recomendação de melhor fonte e escolha automática de fonte/superfície;
+- fallback automático entre host, AUR, COPR, PPA, Flatpak, toolbox, distrobox e rpm-ostree;
+- criação de ambiente, add automático de remote, lifecycle amplo de repositório ou administração ampla de superfícies;
+- Personas, KDE, Discord, mídia, indexação, LinuxToys, yt-dlp, agentes no runtime e qualquer mudança na Aury.
+
 ## 🌌 Aurora v1.2.0
 
 Conversação/mediação I. Esta release adiciona uma camada estreita, determinística e presentation-only para tópicos de ajuda e perguntas explicativas em PT-BR. Ela não abre chat genérico, não cria domínio operacional novo e não altera `aurora.decision_record.v1`.

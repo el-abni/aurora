@@ -1,13 +1,13 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v1.2.0-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v1.3.0-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com contrato pequeno, política explícita, execução real e observabilidade própria.
 
-A release pública atual é a `v1.2.0`. Ela adiciona uma camada pequena de conversação/mediação determinística em PT-BR para ajuda e orientação. A absorção `host_maintenance.atualizar` fechada na `v1.1.0` continua igual: `aurora atualizar sistema --confirm` em host Arch mutável com `pacman` observado, confirmação explícita obrigatória e backend `sudo + pacman`.
+A release pública atual é a `v1.3.0`. Ela adiciona clarificação controlada de fonte/superfície antes do executor: a Aurora ensina sintaxe explícita e bloqueia pedidos de escolha automática, sem buscar em tudo, recomendar melhor fonte ou executar backend. A conversação/mediação da `v1.2.0` e a absorção `host_maintenance.atualizar` da `v1.1.0` continuam preservadas.
 
 ## O que é
 
@@ -24,6 +24,8 @@ aurora --version
 aurora versão
 aurora exemplos
 aurora como instalar firefox?
+aurora explicar fontes
+aurora onde instalar firefox?
 aurora dev "procurar firefox"
 ```
 
@@ -31,9 +33,11 @@ aurora dev "procurar firefox"
 
 ## Conversação e orientação
 
-A `v1.2.0` aceita tópicos fechados como `aurora exemplos`, `aurora limites`, `aurora comandos`, `aurora fontes`, `aurora modelo local`, `aurora decision record`, `aurora o que você faz` e `aurora como eu uso`.
+A `v1.3.0` aceita tópicos fechados como `aurora exemplos`, `aurora limites`, `aurora comandos`, `aurora fontes`, `aurora explicar fontes`, `aurora explicar superfícies`, `aurora modelo local`, `aurora decision record`, `aurora o que você faz` e `aurora como eu uso`.
 
 Perguntas fechadas como `aurora como instalar firefox?`, `aurora como procurar firefox?`, `aurora como remover firefox?` e `aurora como atualizar sistema?` retornam orientação e exit 0. Elas não executam backend, não escolhem fonte, não fazem busca real, não pedem confirmação e não alteram o sistema.
+
+Perguntas de fonte/superfície como `aurora como escolher fonte para firefox?`, `aurora qual fonte usar para firefox?`, `aurora onde instalar firefox?`, `aurora como instalar firefox no flatpak?` e `aurora como instalar firefox no aur?` ensinam a escrever a frase marcada. Pedidos como `aurora instalar firefox onde for melhor` bloqueiam antes do executor: a Aurora não escolhe a melhor fonte e o pedido nu continua em `host_package`.
 
 ## Exemplos
 
@@ -109,11 +113,12 @@ Texto de ajuda, polimento e renderização não viram contrato. Quando um consum
 
 ## Recorte atual
 
-Na `v1.2.0`, a superfície pública continua pequena:
+Na `v1.3.0`, a superfície pública continua pequena:
 
 - `host_package` para pacotes do host;
 - `host_maintenance.atualizar` para `atualizar sistema` no Arch mutável com `pacman`;
 - orientação determinística de ajuda antes do executor, sem novo domínio operacional;
+- clarificação controlada de fonte/superfície antes do executor, sem `source_discovery`;
 - AUR, COPR e PPA apenas quando a frase marca a fonte explicitamente;
 - `user_software` via Flatpak;
 - toolbox e distrobox apenas quando a frase nomeia o ambiente;
@@ -126,6 +131,7 @@ Limites honestos:
 - sem AUR implícita em `atualizar sistema`;
 - sem equivalência multi-distro para `host_maintenance.atualizar` nesta primeira absorção;
 - sem fallback automático do host para toolbox, distrobox, rpm-ostree, Flatpak ou AUR;
+- sem escolha automática de melhor fonte ou melhor superfície;
 - sem default implícito de toolbox ou distrobox;
 - sem criação ou lifecycle amplo de ambientes;
 - sem autoridade do modelo local sobre policy, suporte, bloqueio, confirmação, rota, execução ou resultado.

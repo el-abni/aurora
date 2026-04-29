@@ -13,6 +13,7 @@ PYTHONPATH=python:tests python3 tests/audit_observability_canonical_facts.py
 PYTHONPATH=python:tests python3 tests/audit_local_model_eval_baseline.py
 PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_bootstrap_smoke.py'
 PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_conversation_mediation.py'
+PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_source_clarification.py'
 PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_installer_release.py'
 PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_decision_record.py'
 PYTHONPATH=python:tests python3 -m unittest discover -s tests -p 'test_host_maintenance_update.py'

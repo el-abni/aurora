@@ -11,15 +11,15 @@ Uso rápido:
 - aurora atualizar sistema --confirm
 
 Orientação:
-- aurora fontes
-- aurora modelo local
-- aurora decision record
-- aurora o que você faz
-- aurora como eu uso
+- aurora fontes | aurora explicar fontes | aurora explicar superfícies
+- aurora modelo local | aurora decision record
+- aurora o que você faz | aurora como eu uso
 - aurora como instalar firefox?
-- aurora como procurar firefox?
-- aurora como remover firefox?
-- aurora como atualizar sistema?
+- aurora onde instalar firefox? | aurora qual fonte usar para firefox?
+- aurora como instalar firefox no flatpak?
+- aurora como instalar firefox no aur?
+- aurora como instalar pacote na toolbox devbox? | aurora como instalar pacote na distrobox devbox?
+- aurora instalar firefox onde for melhor
 
 Fontes explícitas:
 - aurora procurar <pacote> no aur
@@ -39,11 +39,11 @@ Ambientes e host imutável:
 - aurora remover <pacote> no rpm-ostree --confirm
 
 Leitura correta:
-- orientação retorna sem executar backend, escolher fonte, pedir confirmação ou alterar sistema;
+- orientação e clarificação retornam sem executar backend, escolher fonte, pedir confirmação ou alterar sistema;
 - pedidos nus continuam em host_package no host;
 - atualizar sistema abre apenas a atualização explícita do host Arch mutável com sudo + pacman;
 - AUR, COPR, PPA, flatpak, toolbox, distrobox e rpm-ostree só entram por frase marcada;
-- não existe fallback automático entre host, fontes explícitas e superfícies mediadas/imutáveis;
+- não existe busca em tudo, escolha de melhor fonte nem fallback automático entre superfícies;
 - a Aurora continua expondo aurora.decision_record.v1 em aurora dev quando você quer inspeção técnica.
 
 Confirmação:

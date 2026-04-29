@@ -1,8 +1,8 @@
-# Aury Heritage Map - Aurora v1.2.0
+# Aury Heritage Map - Aurora v1.3.0
 
 ## Objetivo
 
-Este mapa registra o que a Aurora herdou da Aury, o que foi refatorado e o que não migrou para o contrato público atual da `v1.2.0`.
+Este mapa registra o que a Aurora herdou da Aury, o que foi refatorado e o que não migrou para o contrato público atual da `v1.3.0`.
 
 Leitura canônica de fronteira: `docs/AURY_TO_AURORA_DOSSIER.md`.
 
@@ -13,7 +13,8 @@ Leitura canônica de fronteira: `docs/AURY_TO_AURORA_DOSSIER.md`.
 | Normalização | `python/aury/normalize.py` | herdado com refatoração | vocativos, correções e texto limpo |
 | Tokens sensíveis | `python/aury/sensitive_tokens.py` | herdado com refatoração | paths, files e hosts continuam protegidos sem confundir `owner/project` de COPR, `ppa:owner/name` nem `environment_target` de toolbox ou distrobox |
 | Pipeline semântico mínimo | `python/aury/pipeline.py` | herdado com refatoração | split simples e preparação de frase |
-| Orientação determinística | lição de UX curta e auditável | novo corte próprio da Aurora | tópicos e perguntas fechadas em `semantics/orientation.py` e `presentation/orientation.py`, sem tocar a Aury |
+| Orientação determinística | lição de UX curta e auditável | corte próprio da Aurora | tópicos e perguntas fechadas em `semantics/orientation.py` e `presentation/orientation.py`, sem tocar a Aury |
+| Clarificação controlada | lição de UX curta e auditável | corte próprio da Aurora | fonte/superfície em `semantics/source_clarification.py` e `presentation/source_clarification.py`, sem `source_discovery` e sem tocar a Aury |
 | Classificação mínima de domínio | partes de `python/aury/analyzer.py` | reescrito no estilo Aurora | `host_package`, `host_maintenance`, `user_software`, fontes explícitas AUR/COPR/PPA e `execution_surface=toolbox`/`execution_surface=distrobox`/`execution_surface=rpm_ostree` sob contrato próprio |
 | Host profile Linux | `python/aury/host.py` | herdado com refatoração | família, mutabilidade, tier, ferramentas observadas e observação contida de toolbox, distrobox e superfícies úteis em host imutável |
 | Roteamento de `host_package` | `python/aury/host.py` | herdado com refatoração | busca, instalação, remoção e probes no host |
@@ -32,7 +33,7 @@ Não entrou no contrato atual:
 - linguagem pública da Aury por inércia;
 - qualquer dependência de runtime no checkout da Aury.
 
-## O que continua fora da v1.2.0
+## O que continua fora da v1.3.0
 
 - `otimizar`, cache, órfãos e bundles amplos de manutenção do host;
 - AUR implícita em `atualizar sistema`;
@@ -52,6 +53,7 @@ Não entrou no contrato atual:
 - AppImage e GitHub Releases;
 - `ujust`;
 - suporte genérico a hosts imutáveis além do corte explícito `flatpak`/`toolbox`/`distrobox`/`rpm-ostree`;
+- `source_discovery`, escolha automática de melhor fonte e fallback entre superfícies;
 - qualquer expansão pública além de `host_package`, AUR explícito, COPR explícito, PPA explícito, `user_software` via `flatpak`, `toolbox` explícita, `distrobox` explícita e `rpm-ostree` explícito.
 
 ## Regra de proveniência

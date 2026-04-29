@@ -1,4 +1,4 @@
-# Compatibilidade Linux - Aurora v1.2.0
+# Compatibilidade Linux - Aurora v1.3.0
 
 ## Matriz atual de `host_package`
 
@@ -9,6 +9,8 @@
 | Fedora mutável | suportado agora | procurar, instalar, remover |
 | OpenSUSE mutável | suportado contido | procurar, instalar, remover |
 | Atomic / imutáveis | decisão explícita por superfície | `flatpak`, `toolbox`, `distrobox`, `rpm-ostree` ou bloqueio |
+
+A clarificação controlada da `v1.3.0` só ensina a marcar fonte/superfície. Ela não amplia compatibilidade, não busca em múltiplas fontes, não escolhe melhor fonte e não executa backend.
 
 ## Frente `host_maintenance` explícita
 
@@ -35,7 +37,7 @@ Leitura correta desta frente:
 | Demais famílias Linux | fora do recorte | sem rota executável |
 | Atomic / imutáveis | bloqueado por política | sem mutação via AUR |
 
-Leitura correta desta frente na `v1.2.0`:
+Leitura correta desta frente na `v1.3.0`:
 
 - `aur.instalar` continua interativo quando o helper precisa assumir o terminal;
 - a Aurora avisa o handoff e deixa explícito que o helper pode pedir Enter, seleção, revisão de build ou senha;
@@ -63,7 +65,7 @@ Leitura correta desta frente na `v1.2.0`:
 
 ## `user_software` via `flatpak`
 
-Na `v1.2.0`, `flatpak` continua sendo a frente explícita de software do usuário.
+Na `v1.3.0`, `flatpak` continua sendo a frente explícita de software do usuário.
 
 Leitura correta desta frente:
 
@@ -79,7 +81,7 @@ Leitura correta desta frente:
 
 ## Frente `toolbox` explícita
 
-Na `v1.2.0`, `toolbox` entra como superfície operacional mediada, não como fonte.
+Na `v1.3.0`, `toolbox` entra como superfície operacional mediada, não como fonte.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
@@ -103,7 +105,7 @@ Leitura correta desta frente:
 
 ## Frente `distrobox` explícita
 
-Na `v1.2.0`, `distrobox` entra como segunda superfície operacional mediada, não como fonte.
+Na `v1.3.0`, `distrobox` entra como segunda superfície operacional mediada, não como fonte.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
@@ -127,7 +129,7 @@ Leitura correta desta frente:
 
 ## Frente `rpm-ostree` explícito
 
-Na `v1.2.0`, `rpm-ostree` entra como superfície explícita de host imutável.
+Na `v1.3.0`, `rpm-ostree` entra como superfície explícita de host imutável.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
