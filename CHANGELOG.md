@@ -33,7 +33,6 @@ Clarificação controlada de fonte/superfície. Esta release adiciona uma camada
 - `source_discovery`, busca em múltiplas fontes, recomendação de melhor fonte e escolha automática de fonte/superfície;
 - fallback automático entre host, AUR, COPR, PPA, Flatpak, toolbox, distrobox e rpm-ostree;
 - criação de ambiente, add automático de remote, lifecycle amplo de repositório ou administração ampla de superfícies;
-- Personas, KDE, Discord, mídia, indexação, LinuxToys, yt-dlp, agentes no runtime e qualquer mudança na Aury.
 
 ## 🌌 Aurora v1.2.0
 
