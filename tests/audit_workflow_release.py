@@ -56,6 +56,8 @@ def assert_workflow_doc() -> None:
         "aurora dev",
         "aurora explicar fontes",
         "aurora instalar firefox onde for melhor",
+        "aurora explicar remote flatpak",
+        "aurora qual melhor remote flatpak para firefox?",
     ):
         ensure(term in text or term in normalized, f"{path} precisa citar {term}")
     ok(f"{path} alinhado")
@@ -81,6 +83,8 @@ def assert_review_checklist() -> None:
         "aurora dev",
         "caso feliz",
         "caso ruim",
+        "aurora explicar remote flatpak",
+        "aurora procurar firefox em todos os remotes flatpak",
         "model_off",
         "model_on",
         "ollama",

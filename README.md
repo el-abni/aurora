@@ -1,13 +1,13 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v1.3.0-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v1.4.0-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com contrato pequeno, política explícita, execução real e observabilidade própria.
 
-A release pública atual é a `v1.3.0`. Ela adiciona clarificação controlada de fonte/superfície antes do executor: a Aurora ensina sintaxe explícita e bloqueia pedidos de escolha automática, sem buscar em tudo, recomendar melhor fonte ou executar backend. A conversação/mediação da `v1.2.0` e a absorção `host_maintenance.atualizar` da `v1.1.0` continuam preservadas.
+A release pública atual é a `v1.4.0`. Ela adiciona orientação determinística sobre remote Flatpak explícito: a Aurora explica remote default observado vs remote explícito, orienta `no flatpak flathub` e bloqueia pedidos de melhor remote, `remote-add` e busca em todos os remotes. A clarificação controlada de fonte/superfície da `v1.3.0`, a conversação/mediação da `v1.2.0` e a absorção `host_maintenance.atualizar` da `v1.1.0` continuam preservadas.
 
 ## O que é
 
@@ -25,6 +25,7 @@ aurora versão
 aurora exemplos
 aurora como instalar firefox?
 aurora explicar fontes
+aurora explicar remote flatpak
 aurora onde instalar firefox?
 aurora dev "procurar firefox"
 ```
@@ -33,11 +34,13 @@ aurora dev "procurar firefox"
 
 ## Conversação e orientação
 
-A `v1.3.0` aceita tópicos fechados como `aurora exemplos`, `aurora limites`, `aurora comandos`, `aurora fontes`, `aurora explicar fontes`, `aurora explicar superfícies`, `aurora modelo local`, `aurora decision record`, `aurora o que você faz` e `aurora como eu uso`.
+A `v1.4.0` aceita tópicos fechados como `aurora exemplos`, `aurora limites`, `aurora comandos`, `aurora fontes`, `aurora explicar fontes`, `aurora explicar superfícies`, `aurora explicar remote flatpak`, `aurora modelo local`, `aurora decision record`, `aurora o que você faz` e `aurora como eu uso`.
 
 Perguntas fechadas como `aurora como instalar firefox?`, `aurora como procurar firefox?`, `aurora como remover firefox?` e `aurora como atualizar sistema?` retornam orientação e exit 0. Elas não executam backend, não escolhem fonte, não fazem busca real, não pedem confirmação e não alteram o sistema.
 
 Perguntas de fonte/superfície como `aurora como escolher fonte para firefox?`, `aurora qual fonte usar para firefox?`, `aurora onde instalar firefox?`, `aurora como instalar firefox no flatpak?` e `aurora como instalar firefox no aur?` ensinam a escrever a frase marcada. Pedidos como `aurora instalar firefox onde for melhor` bloqueiam antes do executor: a Aurora não escolhe a melhor fonte e o pedido nu continua em `host_package`.
+
+Perguntas de remote Flatpak como `aurora como escolher remote flatpak?`, `aurora como instalar firefox no flatpak flathub?` e `aurora como procurar firefox no flatpak flathub?` ensinam a escrever o remote explicitamente. Pedidos como `aurora qual melhor remote flatpak para firefox?`, `aurora adicionar remote flatpak flathub` e `aurora procurar firefox em todos os remotes flatpak` bloqueiam antes do executor.
 
 ## Exemplos
 
@@ -73,6 +76,8 @@ Software do usuário, ambientes e host imutável explícito:
 ```bash
 aurora procurar firefox no flatpak
 aurora instalar firefox no flatpak
+aurora procurar firefox no flatpak flathub
+aurora instalar firefox no flatpak flathub
 aurora procurar ripgrep na toolbox devbox
 aurora procurar ripgrep na distrobox devbox
 aurora instalar htop no rpm-ostree
@@ -113,12 +118,13 @@ Texto de ajuda, polimento e renderização não viram contrato. Quando um consum
 
 ## Recorte atual
 
-Na `v1.3.0`, a superfície pública continua pequena:
+Na `v1.4.0`, a superfície pública continua pequena:
 
 - `host_package` para pacotes do host;
 - `host_maintenance.atualizar` para `atualizar sistema` no Arch mutável com `pacman`;
 - orientação determinística de ajuda antes do executor, sem novo domínio operacional;
 - clarificação controlada de fonte/superfície antes do executor, sem `source_discovery`;
+- orientação de remote Flatpak explícito antes do executor, sem `remote-add`, sem busca em todos os remotes e sem escolha de melhor remote;
 - AUR, COPR e PPA apenas quando a frase marca a fonte explicitamente;
 - `user_software` via Flatpak;
 - toolbox e distrobox apenas quando a frase nomeia o ambiente;

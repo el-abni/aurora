@@ -22,7 +22,36 @@ class SourceClarificationTests(unittest.TestCase):
             (["como", "escolher", "fonte", "para", "firefox?"], ("marque a fonte", "instalar firefox")),
             (["qual", "fonte", "usar", "para", "firefox?"], ("marque a fonte", "não busca em tudo")),
             (["onde", "instalar", "firefox?"], ("onde instalar", "no flatpak")),
-            (["como", "instalar", "firefox", "no", "flatpak?"], ("instalação Flatpak", "remote observado")),
+            (
+                ["explicar", "remote", "flatpak"],
+                ("Remote Flatpak", "remote default observado", "não adiciona remote"),
+            ),
+            (
+                ["explicar", "remotes", "flatpak"],
+                ("Remote Flatpak", "não procura em todos os remotes", "não escolhe o melhor remote"),
+            ),
+            (
+                ["como", "escolher", "remote", "flatpak?"],
+                ("remote Flatpak", "no flatpak flathub", "não escolhe o melhor remote"),
+            ),
+            (
+                ["qual", "remote", "flatpak", "usar", "para", "firefox?"],
+                ("Para usar remote Flatpak para 'firefox'", "procurar firefox no flatpak flathub"),
+            ),
+            (["onde", "entra", "o", "flathub?"], ("Remote Flatpak", "flathub", "não faz remote-add")),
+            (["flatpak", "usa", "flathub?"], ("Remote Flatpak", "remote default observado", "flathub")),
+            (
+                ["como", "instalar", "firefox", "no", "flatpak?"],
+                ("instalação Flatpak", "remote default observado"),
+            ),
+            (
+                ["como", "instalar", "firefox", "no", "flatpak", "flathub?"],
+                ("instalar 'firefox'", "remote explícito", "instalar firefox no flatpak flathub"),
+            ),
+            (
+                ["como", "procurar", "firefox", "no", "flatpak", "flathub?"],
+                ("procurar 'firefox'", "remote explícito", "procurar firefox no flatpak flathub"),
+            ),
             (["como", "instalar", "firefox", "no", "aur?"], ("instalação AUR", "no aur --confirm")),
             (
                 ["como", "instalar", "pacote", "na", "toolbox", "devbox?"],
@@ -54,6 +83,34 @@ class SourceClarificationTests(unittest.TestCase):
                 for expected in expected_fragments:
                     self.assertIn(expected, rendered)
                 self.assertIn("não", rendered)
+
+    def test_flatpak_remote_boundaries_block_before_executor(self) -> None:
+        cases = (
+            (
+                ["qual", "melhor", "remote", "flatpak", "para", "firefox?"],
+                ("Não escolho o melhor remote Flatpak para 'firefox'", "no flatpak flathub"),
+            ),
+            (
+                ["adicionar", "remote", "flatpak", "flathub"],
+                ("Adicionar remote Flatpak 'flathub' está fora", "remotes já observados"),
+            ),
+            (
+                ["procurar", "firefox", "em", "todos", "os", "remotes", "flatpak"],
+                ("Não procuro em todos os remotes Flatpak para 'firefox'", "default observado"),
+            ),
+        )
+        for args, expected_fragments in cases:
+            with self.subTest(args=args):
+                stdout = io.StringIO()
+                with mock.patch("aurora.cli.execute_text") as execute_text:
+                    with redirect_stdout(stdout):
+                        exit_code = cli.main(args)
+                rendered = stdout.getvalue()
+                self.assertEqual(exit_code, 1)
+                execute_text.assert_not_called()
+                for expected in expected_fragments:
+                    self.assertIn(expected, rendered)
+                self.assertIn("não executou backend", rendered)
 
     def test_automatic_source_choice_blocks_before_executor(self) -> None:
         cases = (

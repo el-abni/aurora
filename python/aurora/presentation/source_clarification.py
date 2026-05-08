@@ -33,6 +33,13 @@ def _no_discovery_clause() -> str:
     )
 
 
+def _flatpak_remote_limits() -> str:
+    return (
+        "A Aurora não adiciona remote automaticamente, não procura em todos os remotes, "
+        "não escolhe o melhor remote e não faz fallback entre remotes."
+    )
+
+
 def _inspect_clause(target: str) -> str:
     if not target:
         return "Use aurora dev \"<frase>\" para inspecionar uma frase operacional antes de executar."
@@ -51,12 +58,34 @@ def _explain_surfaces() -> str:
     )
 
 
+def _explain_flatpak_remote() -> str:
+    return _info(
+        "Remote Flatpak é a origem Flatpak observável usada para procurar ou instalar software de usuário.\n"
+        "Sem remote explícito, procurar/instalar no Flatpak usa o remote default observado 'flathub' quando ele existe no host.\n"
+        "Com remote explícito, escreva o nome no pedido, por exemplo: aurora dev \"instalar firefox no flatpak flathub\".\n"
+        "Se o remote explícito não estiver observado, a Aurora bloqueia e registra o gap; ela não faz remote-add.\n"
+        f"{_flatpak_remote_limits()}"
+    )
+
+
 def _choose_source(target: str) -> str:
     return _info(
         f"Para escolher como pedir '{target}', marque a fonte ou superfície na frase.\n"
         f"{_syntax_block()}\n"
         f"{_inspect_clause(target)}\n"
         f"{_no_discovery_clause()}"
+    )
+
+
+def _choose_flatpak_remote(target: str) -> str:
+    subject = f" para '{target}'" if target else ""
+    example_target = target or "firefox"
+    return _info(
+        f"Para usar remote Flatpak{subject}, escreva o remote explicitamente quando você já souber qual usar.\n"
+        f"- aurora dev \"procurar {example_target} no flatpak flathub\"\n"
+        f"- aurora dev \"instalar {example_target} no flatpak flathub\"\n"
+        "Sem remote explícito, procurar/instalar no Flatpak usa o default observado 'flathub', se observado.\n"
+        f"{_flatpak_remote_limits()}"
     )
 
 
@@ -73,9 +102,21 @@ def _install_flatpak(target: str) -> str:
     return _info(
         f"Para orientar instalação Flatpak de '{target}', use marcador explícito:\n"
         f"- aurora dev \"instalar {target} no flatpak\"\n"
+        f"- aurora dev \"instalar {target} no flatpak flathub\"\n"
         f"- aurora instalar {target} no flatpak\n"
-        "Flatpak usa remote observado; a Aurora não adiciona remote automaticamente.\n"
-        f"{_no_discovery_clause()}"
+        "Sem remote explícito, a Aurora usa o remote default observado 'flathub' para instalar, se ele estiver observado.\n"
+        "Com remote explícito, o nome precisa estar observado no host; a Aurora não adiciona remote automaticamente.\n"
+        f"{_flatpak_remote_limits()}"
+    )
+
+
+def _flatpak_remote_action(action: str, target: str, remote: str) -> str:
+    return _info(
+        f"Para {action} '{target}' no Flatpak usando remote explícito, mantenha o remote na frase:\n"
+        f"- aurora dev \"{action} {target} no flatpak {remote}\"\n"
+        f"- aurora {action} {target} no flatpak {remote}\n"
+        "Esse remote precisa estar observado no host. Se não estiver, a Aurora bloqueia e registra o gap.\n"
+        f"{_flatpak_remote_limits()}"
     )
 
 
@@ -144,17 +185,52 @@ def _block_automatic_source_choice(target: str) -> str:
     )
 
 
+def _block_flatpak_remote_choice(target: str) -> str:
+    subject = f" para '{target}'" if target else ""
+    return _failure(
+        f"Não escolho o melhor remote Flatpak{subject}. "
+        "Escreva o remote explicitamente se você já souber qual usar, por exemplo 'no flatpak flathub'. "
+        f"{_flatpak_remote_limits()} Esta mensagem não executou backend nem gerou decision record."
+    )
+
+
+def _block_flatpak_remote_add(remote: str) -> str:
+    suffix = f" '{remote}'" if remote else ""
+    return _failure(
+        f"Adicionar remote Flatpak{suffix} está fora do recorte atual. "
+        "A Aurora só usa remotes já observados pelo host em pedidos Flatpak explícitos. "
+        f"{_flatpak_remote_limits()} Esta mensagem não executou backend nem gerou decision record."
+    )
+
+
+def _block_flatpak_remote_all(target: str) -> str:
+    subject = f" para '{target}'" if target else ""
+    return _failure(
+        f"Não procuro em todos os remotes Flatpak{subject}. "
+        "Use um remote selecionado pela frase ou o default observado quando nenhum remote explícito for informado. "
+        f"{_flatpak_remote_limits()} Esta mensagem não executou backend nem gerou decision record."
+    )
+
+
 def render_source_clarification(request: SourceClarificationRequest) -> str:
     if request.kind == SourceClarificationKind.EXPLAIN_SOURCES:
         return _explain_sources()
     if request.kind == SourceClarificationKind.EXPLAIN_SURFACES:
         return _explain_surfaces()
+    if request.kind == SourceClarificationKind.EXPLAIN_FLATPAK_REMOTE:
+        return _explain_flatpak_remote()
     if request.kind == SourceClarificationKind.CHOOSE_SOURCE:
         return _choose_source(request.target)
+    if request.kind == SourceClarificationKind.CHOOSE_FLATPAK_REMOTE:
+        return _choose_flatpak_remote(request.target)
     if request.kind == SourceClarificationKind.WHERE_INSTALL:
         return _where_install(request.target)
     if request.kind == SourceClarificationKind.INSTALL_FLATPAK:
         return _install_flatpak(request.target)
+    if request.kind == SourceClarificationKind.INSTALL_FLATPAK_REMOTE:
+        return _flatpak_remote_action("instalar", request.target, request.remote)
+    if request.kind == SourceClarificationKind.SEARCH_FLATPAK_REMOTE:
+        return _flatpak_remote_action("procurar", request.target, request.remote)
     if request.kind == SourceClarificationKind.INSTALL_AUR:
         return _install_aur(request.target)
     if request.kind == SourceClarificationKind.INSTALL_TOOLBOX:
@@ -169,4 +245,10 @@ def render_source_clarification(request: SourceClarificationRequest) -> str:
         return _compare_aur_host()
     if request.kind == SourceClarificationKind.BLOCK_AUTOMATIC_SOURCE_CHOICE:
         return _block_automatic_source_choice(request.target)
+    if request.kind == SourceClarificationKind.BLOCK_FLATPAK_REMOTE_CHOICE:
+        return _block_flatpak_remote_choice(request.target)
+    if request.kind == SourceClarificationKind.BLOCK_FLATPAK_REMOTE_ADD:
+        return _block_flatpak_remote_add(request.remote)
+    if request.kind == SourceClarificationKind.BLOCK_FLATPAK_REMOTE_ALL:
+        return _block_flatpak_remote_all(request.target)
     raise ValueError(f"Unsupported source clarification kind: {request.kind.value}")

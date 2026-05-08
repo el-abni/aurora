@@ -1,8 +1,8 @@
-# Installation Policy - Aurora v1.3.0
+# Installation Policy - Aurora v1.4.0
 
 ## Escopo real da política
 
-Na `v1.3.0`, a política operacional da Aurora governa três domínios, três superfícies explícitas fora do host mutável comum e nove leituras reais de rota. A orientação conversacional e a clarificação controlada de fonte/superfície rodam antes dessa política e não alteram essas rotas:
+Na `v1.4.0`, a política operacional da Aurora governa três domínios, três superfícies explícitas fora do host mutável comum e nove leituras reais de rota. A orientação conversacional, a clarificação controlada de fonte/superfície e a orientação de remote Flatpak rodam antes dessa política e não alteram essas rotas:
 
 - `host_package` com `execution_surface=host` e `source_type=host_package_manager`;
 - `host_maintenance` com `execution_surface=host` e `source_type=host_maintenance`;
@@ -110,6 +110,7 @@ Os campos ativos desta release são:
 - `flatpak.instalar` bloqueia cedo quando o remote default ou explícito não está observado;
 - `flatpak.remover` usa escopo explícito de usuário e exige confirmação real quando a remoção vai acontecer.
 - em host imutável, a política deixa explícito `immutable_selected_surface=flatpak`.
+- a orientação de remote Flatpak não muda policy: não há `remote-add`, busca em todos os remotes, melhor remote nem fallback.
 
 ### `toolbox` explícita
 
@@ -172,7 +173,7 @@ Pode resultar, no mínimo, em:
 
 Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
 
-Na `v1.3.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
+Na `v1.4.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
 ### `software_criticality`
 
@@ -234,7 +235,7 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 
 ## O que ainda não está aberto
 
-Continuam fora da `v1.3.0`:
+Continuam fora da `v1.4.0`:
 
 - `otimizar`, cache, órfãos e bundles amplos de manutenção;
 - `paru`, `yay` ou qualquer helper AUR como backend de `host_maintenance`;

@@ -1,5 +1,38 @@
 # Changelog
 
+## 🌌 Aurora v1.4.0
+
+Remote Flatpak explícito. Esta release promove orientação determinística sobre remote Flatpak e endurece testes do comportamento que o kernel já sustentava. Ela não abre `source_discovery`, não adiciona remote, não busca em todos os remotes, não escolhe melhor remote, não faz fallback e não altera `aurora.decision_record.v1`.
+
+### Adicionado
+
+- orientação fechada para `aurora explicar remote flatpak`, `aurora explicar remotes flatpak`, `aurora como escolher remote flatpak?`, `aurora qual remote flatpak usar para firefox?`, `aurora onde entra o flathub?` e `aurora flatpak usa flathub?`;
+- orientação para remote explícito em `aurora como instalar firefox no flatpak flathub?` e `aurora como procurar firefox no flatpak flathub?`;
+- distinção pública entre remote default observado e remote explícito observado, sem transformar `flathub` em recomendação universal;
+- bloqueios pré-executor para melhor remote, `remote-add` e procurar em todos os remotes Flatpak, sem chamar backend nem gerar `decision_record`.
+
+### Alterado
+
+- `VERSION`, `README.md`, `resources/help.txt`, docs centrais, checklist, auditoria pública e changelog passam a refletir a `v1.4.0` como release atual;
+- `tests/test_source_clarification.py` cobre as novas orientações e bloqueios de remote Flatpak antes do executor;
+- `tests/test_user_software_flatpak.py` endurece cobertura de remote default observado, remote explícito observado, remote explícito não observado e ausência de remotes observados.
+- a disciplina de `docs/WORKFLOW_DE_TESTES_E_RELEASE.md`, `tests/REVIEW_CHECKLIST.md`, `tests/release_gate_canonic_line.sh`, `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh`, `tests/release_gate_pre_release.sh` e `tests/audit_workflow_release.py` continua preservando `stable_ids`, `facts` e `presentation`.
+
+### Preservado
+
+- `aurora.decision_record.v1`, `stable_ids`, `facts` e `presentation` permanecem sem mudança de schema;
+- `model_off` continua default, `model_on` continua opt-in e `local_model` segue assistivo/observável, sem autoridade sobre policy, suporte, bloqueio, confirmação, rota, execução ou verdade operacional;
+- pedido nu continua em `host_package` no host;
+- a clarificação controlada de fonte/superfície da `v1.3.0`, a conversação/mediação da `v1.2.0`, `host_maintenance.atualizar` da `v1.1.0` e a seam `local_model` da `v1.0.0` continuam preservadas;
+- `flatpak_effective_remote`, `flatpak_remote_origin` e `flatpak_observed_remotes` seguem fatos operacionais observáveis, não contrato textual novo.
+
+### Continua fora da v1.4.0
+
+- `flatpak remote-add`, add automático de remote e administração ampla de remotes Flatpak;
+- `source_discovery`, busca em todos os remotes, recomendação ou escolha automática de melhor remote;
+- fallback automático entre remotes ou entre host, AUR, COPR, PPA, Flatpak, toolbox, distrobox e rpm-ostree;
+- novo schema de `decision_record`, autoridade nova para `local_model`, Personas, KDE, mídia, indexação, agentes no runtime e qualquer mudança na Aury.
+
 ## 🌌 Aurora v1.3.0
 
 Clarificação controlada de fonte/superfície. Esta release adiciona uma camada determinística antes do executor para orientar sintaxe explícita e bloquear pedidos de escolha automática. Ela não abre `source_discovery`, não escolhe melhor fonte, não executa backend e não altera `aurora.decision_record.v1`.

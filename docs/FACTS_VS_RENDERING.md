@@ -1,4 +1,4 @@
-# Facts vs Rendering - Aurora v1.3.0
+# Facts vs Rendering - Aurora v1.4.0
 
 ## Papel
 
@@ -50,13 +50,14 @@ Sem essa fronteira, o `decision_record` voltaria a misturar contrato com voz e r
 
 ## Recorte desta linha
 
-Na `v1.3.0`, o corte continua propositalmente pequeno:
+Na `v1.4.0`, o corte continua propositalmente pequeno:
 
 - `facts` concentra o estado operacional;
 - `presentation` concentra a voz;
 - o payload legado continua espelhado no topo por compatibilidade;
 - conversação/mediação de ajuda vive em `presentation/orientation.py`, antes do executor, e não vira fato operacional;
 - clarificação controlada de fonte/superfície vive em `presentation/source_clarification.py`, antes do executor, e não vira fato operacional, `source_discovery` nem contrato de recomendação;
+- orientação de remote Flatpak também vive em `presentation/source_clarification.py`, antes do executor, e não vira contrato de `remote-add`, busca em todos os remotes, escolha de melhor remote ou fallback;
 - `host_maintenance.atualizar` aparece como fato de request, policy, route e execution, não como frase solta de ajuda;
 - a revisão humana ainda lê a renderização no terminal real sem transformar voz em truth layer;
 - a presença pública pode ganhar marcador discreto e voz mais composta sem contaminar o `decision_record` técnico;

@@ -127,6 +127,104 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             self.assertIn("flatpak_remote_origin:   default", rendered)
             self.assertIn("observations:", rendered)
 
+    def test_flatpak_planning_uses_observed_default_remote_for_search_and_install(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("org.mozilla.Firefox|Firefox|flathub",),
+                name="Ubuntu",
+            )
+            search_payload = decision_record_to_dict(plan_text("procurar firefox no flatpak", environ=env))
+            install_payload = decision_record_to_dict(plan_text("instalar firefox no flatpak", environ=env))
+
+        for payload, route_name in (
+            (search_payload, "flatpak.procurar"),
+            (install_payload, "flatpak.instalar"),
+        ):
+            with self.subTest(route_name=route_name):
+                self.assertEqual(payload["schema"]["schema_id"], "aurora.decision_record.v1")
+                self.assertEqual(payload["facts"]["local_model"]["mode"], "model_off")
+                self.assertEqual(payload["policy"]["policy_outcome"], "allow")
+                self.assertEqual(payload["policy"]["flatpak_effective_remote"], "flathub")
+                self.assertEqual(payload["policy"]["flatpak_remote_origin"], "default")
+                self.assertEqual(payload["policy"]["flatpak_observed_remotes"], "flathub")
+                self.assertEqual(payload["execution_route"]["route_name"], route_name)
+                self.assertIn("flathub", payload["execution_route"]["command"])
+
+    def test_flatpak_planning_uses_observed_explicit_remote_for_search_and_install(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("org.mozilla.Firefox|Firefox|flathub-beta",),
+                remotes=("flathub", "flathub-beta"),
+                name="Ubuntu",
+            )
+            search_payload = decision_record_to_dict(
+                plan_text("procurar firefox no flatpak flathub-beta", environ=env)
+            )
+            install_payload = decision_record_to_dict(
+                plan_text("instalar firefox no flatpak flathub-beta", environ=env)
+            )
+
+        for payload, route_name in (
+            (search_payload, "flatpak.procurar"),
+            (install_payload, "flatpak.instalar"),
+        ):
+            with self.subTest(route_name=route_name):
+                self.assertEqual(payload["request"]["source_coordinate"], "flathub-beta")
+                self.assertEqual(payload["policy"]["policy_outcome"], "allow")
+                self.assertEqual(payload["policy"]["flatpak_effective_remote"], "flathub-beta")
+                self.assertEqual(payload["policy"]["flatpak_remote_origin"], "explicit")
+                self.assertEqual(payload["policy"]["flatpak_observed_remotes"], "flathub,flathub-beta")
+                self.assertEqual(payload["execution_route"]["route_name"], route_name)
+                self.assertIn("flathub-beta", payload["execution_route"]["command"])
+
+    def test_flatpak_planning_blocks_default_remote_when_it_is_not_observed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("org.mozilla.Firefox|Firefox|flathub-beta",),
+                remotes=("flathub-beta",),
+                name="Ubuntu",
+            )
+            payload = decision_record_to_dict(plan_text("instalar firefox no flatpak", environ=env))
+
+        self.assertEqual(payload["policy"]["policy_outcome"], "block")
+        self.assertEqual(payload["policy"]["flatpak_effective_remote"], "flathub")
+        self.assertEqual(payload["policy"]["flatpak_remote_origin"], "default")
+        self.assertIn("flatpak_selected_remote_not_observed", payload["policy"]["trust_gaps"])
+        self.assertIn("flatpak_remote_auto_add_not_supported", payload["policy"]["trust_gaps"])
+        self.assertNotIn("execution_route", payload)
+
+    def test_flatpak_planning_blocks_when_no_remotes_are_observed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                remotes=(),
+                name="Ubuntu",
+            )
+            payload = decision_record_to_dict(plan_text("procurar firefox no flatpak", environ=env))
+
+        self.assertEqual(payload["policy"]["policy_outcome"], "block")
+        self.assertEqual(payload["policy"]["flatpak_effective_remote"], "flathub")
+        self.assertEqual(payload["policy"]["flatpak_remote_origin"], "default")
+        self.assertIn("flatpak_remotes_not_observed", payload["policy"]["trust_gaps"])
+        self.assertIn("flatpak_search_within_selected_remote_only", payload["policy"]["trust_gaps"])
+        self.assertEqual(payload["execution_route"]["route_name"], "flatpak.procurar")
+        self.assertIn("flathub", payload["execution_route"]["command"])
+
     def test_atomic_flatpak_dev_record_marks_surface_selection(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -269,6 +367,22 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             self.assertEqual(payload["execution_route"]["flatpak_effective_remote"], "flathub-beta")
             self.assertEqual(payload["execution_route"]["command"][-2], "flathub-beta")
 
+    def test_flatpak_install_executes_with_explicit_remote_when_observed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("org.mozilla.Firefox|Firefox|flathub-beta",),
+                remotes=("flathub", "flathub-beta"),
+                name="Ubuntu",
+            )
+            proc = run_module("instalar", "firefox", "no", "flatpak", "flathub-beta", env=env)
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("está instalado", proc.stdout)
+            self.assertIn("org.mozilla.Firefox", state_file.read_text(encoding="utf-8"))
+
     def test_flatpak_install_executes_with_pre_and_post_probe(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -381,7 +495,10 @@ class UserSoftwareFlatpakTests(unittest.TestCase):
             )
             self.assertEqual(payload["policy"]["policy_outcome"], "block")
             self.assertIn("flatpak_selected_remote_not_observed", payload["policy"]["trust_gaps"])
+            self.assertIn("flatpak_remote_auto_add_not_supported", payload["policy"]["trust_gaps"])
             self.assertEqual(payload["policy"]["flatpak_effective_remote"], "flathub-beta")
+            self.assertEqual(payload["policy"]["flatpak_remote_origin"], "explicit")
+            self.assertNotIn("execution_route", payload)
 
     def test_flatpak_remove_noops_when_app_is_already_absent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

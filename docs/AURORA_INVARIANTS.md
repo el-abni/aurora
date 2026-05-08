@@ -1,4 +1,4 @@
-# Aurora Invariants - v1.3.0
+# Aurora Invariants - v1.4.0
 
 ## Papel
 
@@ -22,11 +22,11 @@ A Aurora só promove frente quando existe contrato explícito, policy, execuçã
 
 ### Conversação e clarificação não viram autoridade operacional
 
-Na `v1.3.0`, tópicos, perguntas fechadas e clarificação controlada de fonte/superfície orientam o uso, mas não executam backend, não buscam em tudo, não escolhem fonte, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
+Na `v1.4.0`, tópicos, perguntas fechadas, clarificação controlada de fonte/superfície e orientação de remote Flatpak orientam o uso, mas não executam backend, não buscam em tudo, não escolhem fonte ou remote, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
 
 ### Clarificação controlada não é descoberta de fonte
 
-`source_clarification` ensina sintaxe explícita e bloqueia pedidos como `instalar firefox onde for melhor`. Ela não abre `source_discovery`, não recomenda melhor fonte, não adiciona remote, não cria ambiente e não faz fallback entre superfícies.
+`source_clarification` ensina sintaxe explícita e bloqueia pedidos como `instalar firefox onde for melhor`. Ela também ensina remote Flatpak default observado vs explícito e bloqueia melhor remote, remote-add e busca em todos os remotes. Ela não abre `source_discovery`, não recomenda melhor fonte, não adiciona remote, não cria ambiente e não faz fallback entre superfícies ou remotes.
 
 ### Ferramenta observada não vira suporte
 

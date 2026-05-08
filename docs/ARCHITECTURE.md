@@ -1,4 +1,4 @@
-# Architecture - Aurora v1.3.0
+# Architecture - Aurora v1.4.0
 
 ## Tese curta
 
@@ -18,7 +18,7 @@ Ela não depende de Fish como centro do runtime, não trata ferramenta observada
 
 ## Espinha canônica da linha
 
-A `v1.3.0` adiciona clarificação controlada de fonte/superfície antes do executor operacional. Ela preserva a conversação/mediação I da `v1.2.0`, herda da `v1.1.0` o fechamento de `host_maintenance.atualizar`, preserva a espinha canônica fechada na `v0.6.3`, mantém a disciplina operacional fechada na `v0.6.4` e herda da `v1.0.0` a seam assistiva `local_model` com provider real canônico apenas em `aurora dev` / `decision_record`, sem tocar no kernel determinístico:
+A `v1.4.0` adiciona orientação determinística sobre remote Flatpak explícito antes do executor operacional. Ela preserva a clarificação controlada de fonte/superfície da `v1.3.0`, a conversação/mediação I da `v1.2.0`, herda da `v1.1.0` o fechamento de `host_maintenance.atualizar`, preserva a espinha canônica fechada na `v0.6.3`, mantém a disciplina operacional fechada na `v0.6.4` e herda da `v1.0.0` a seam assistiva `local_model` com provider real canônico apenas em `aurora dev` / `decision_record`, sem tocar no kernel determinístico:
 
 - `tests/release_gate_canonic_line.sh` como régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` preservado como gate histórico da release `v0.6.2`;
@@ -31,9 +31,9 @@ A `v1.3.0` adiciona clarificação controlada de fonte/superfície antes do exec
 
 Essa espinha reaproveita uma lição já aprendida pela Aurora: a linha endurece melhor com contrato pequeno, docs auditáveis e gate curto do que com feature nova. Ela também evita um choque já conhecido com o patrimônio do repo: Fish e stage pública não entram como centro do gate da Aurora.
 
-## Disciplina operacional da v1.3.0
+## Disciplina operacional da v1.4.0
 
-A `v1.3.0` preserva o workflow formalizado em volta dessa espinha:
+A `v1.4.0` preserva o workflow formalizado em volta dessa espinha:
 
 - `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` define as três camadas de validação;
 - `tests/REVIEW_CHECKLIST.md` fixa a revisão humana curta;
@@ -46,7 +46,7 @@ A `v1.3.0` preserva o workflow formalizado em volta dessa espinha:
 ## Fluxo principal
 
 1. `cli.py` recebe o comando público.
-2. `semantics/source_clarification.py` reconhece clarificação fechada de fonte/superfície e bloqueios de escolha automática, sem probing e sem backend.
+2. `semantics/source_clarification.py` reconhece clarificação fechada de fonte/superfície, orientação de remote Flatpak explícito e bloqueios de escolha automática, sem probing e sem backend.
 3. `presentation/source_clarification.py` renderiza sintaxe explícita ou bloqueio pré-executor sem gerar `decision_record`.
 4. `semantics/orientation.py` reconhece tópicos e perguntas explicativas fechadas, sem probing e sem backend.
 5. `presentation/orientation.py` renderiza a orientação pública curta quando a entrada é apenas explicativa.
@@ -67,7 +67,7 @@ A `v1.3.0` preserva o workflow formalizado em volta dessa espinha:
 ### `semantics/`
 
 - normalização;
-- clarificação controlada de fonte/superfície em `source_clarification.py`;
+- clarificação controlada de fonte/superfície e remote Flatpak explícito em `source_clarification.py`;
 - orientação determinística fechada;
 - proteção de tokens sensíveis;
 - split simples de ações;
@@ -114,7 +114,7 @@ A `v1.3.0` preserva o workflow formalizado em volta dessa espinha:
 ### `presentation/`
 
 - help;
-- clarificação pública de fonte/superfície em `source_clarification.py`;
+- clarificação pública de fonte/superfície e remote Flatpak em `source_clarification.py`;
 - orientação pública de tópicos e perguntas fechadas;
 - help curto de uso, com detalhes longos deslocados para README/docs quando o assunto pede compatibilidade, política ou workflow;
 - mensagens de bloqueio;
@@ -136,7 +136,7 @@ A `v1.3.0` preserva o workflow formalizado em volta dessa espinha:
 
 ## Decision Record Canônico
 
-Na `v1.3.0`, o `decision_record` continua com uma leitura canônica curta:
+Na `v1.4.0`, o `decision_record` continua com uma leitura canônica curta:
 
 - `schema.schema_id=aurora.decision_record.v1`;
 - `stable_ids.action_id`, `stable_ids.route_id` e `stable_ids.event_id` como IDs mínimos estáveis;
@@ -149,7 +149,7 @@ Compatibilidade:
 - `host_package.search` continua apenas como `route_name` legado;
 - o ID canônico da rota de busca do host passa a ser `host_package.procurar`.
 
-## Rotas abertas na v1.3.0
+## Rotas abertas na v1.4.0
 
 ### `host_package`
 
@@ -242,6 +242,7 @@ Garantias:
 - `flatpak.procurar` e `flatpak.instalar` assumem `flathub` apenas quando nenhum remote é informado;
 - `flatpak` aceita remote explícito somente quando esse remote já é observável via `flatpak remotes`;
 - `flatpak.procurar` usa `flatpak remote-ls` filtrado localmente para respeitar o remote selecionado;
+- a orientação pública explica remote default observado vs remote explícito, mas não adiciona remote, não busca em todos os remotes e não escolhe melhor remote;
 - `flatpak.remover` usa remote explícito apenas como restrição de `origin`, sem default implícito para remoção;
 - `flatpak.remover` exige confirmação explícita quando a remoção realmente precisa acontecer.
 
@@ -308,10 +309,11 @@ Garantias:
 
 ## Fronteiras deliberadas
 
-A `v1.3.0` continua pequena de propósito:
+A `v1.4.0` continua pequena de propósito:
 
 - pedido nu continua em `host_package` no host;
 - `source_clarification` ensina sintaxe explícita e bloqueia escolha automática, mas não abre `source_discovery`;
+- `source_clarification` ensina remote Flatpak explícito e bloqueia melhor remote, remote-add e busca em todos os remotes antes do executor;
 - tópicos de orientação não passam pelo executor e não criam rota operacional;
 - `atualizar sistema` não vira alias amplo de manutenção nem passa a misturar AUR;
 - em host imutável, pedido nu bloqueia com `immutable_observed_surfaces` e `immutable_selected_surface=block`;

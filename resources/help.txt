@@ -1,6 +1,5 @@
 🌌 Aurora {version}
 Mediação lúcida para Linux, com contrato pequeno e observável. Launchers oficiais: aurora e auro.
-
 Uso rápido:
 - aurora ajuda | aurora exemplos | aurora limites | aurora comandos
 - aurora versão | auro versão | aurora --help | aurora --version
@@ -9,14 +8,14 @@ Uso rápido:
 - aurora instalar <pacote>
 - aurora remover <pacote> --confirm
 - aurora atualizar sistema --confirm
-
 Orientação:
 - aurora fontes | aurora explicar fontes | aurora explicar superfícies
 - aurora modelo local | aurora decision record
 - aurora o que você faz | aurora como eu uso
 - aurora como instalar firefox?
 - aurora onde instalar firefox? | aurora qual fonte usar para firefox?
-- aurora como instalar firefox no flatpak?
+- aurora explicar remote flatpak | aurora como escolher remote flatpak?
+- aurora como instalar firefox no flatpak flathub? | aurora como procurar firefox no flatpak flathub?
 - aurora como instalar firefox no aur?
 - aurora como instalar pacote na toolbox devbox? | aurora como instalar pacote na distrobox devbox?
 - aurora instalar firefox onde for melhor
@@ -43,6 +42,7 @@ Leitura correta:
 - pedidos nus continuam em host_package no host;
 - atualizar sistema abre apenas a atualização explícita do host Arch mutável com sudo + pacman;
 - AUR, COPR, PPA, flatpak, toolbox, distrobox e rpm-ostree só entram por frase marcada;
+- flatpak usa remote default observado ou remote explícito observado; não há remote-add, busca em todos os remotes nem escolha de melhor remote;
 - não existe busca em tudo, escolha de melhor fonte nem fallback automático entre superfícies;
 - a Aurora continua expondo aurora.decision_record.v1 em aurora dev quando você quer inspeção técnica.
 

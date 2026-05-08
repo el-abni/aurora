@@ -87,14 +87,28 @@ def public_surface_sensitive_markers() -> tuple[str, ...]:
 
 
 def main() -> int:
-    ensure(VERSION == "v1.3.0", "VERSION precisa estar promovido para v1.3.0 no fechamento desta release")
+    ensure(VERSION == "v1.4.0", "VERSION precisa estar promovido para v1.4.0 no fechamento desta release")
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v1.3.0")
+    ok("VERSION promovido para v1.4.0")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
     ensure(f"## 🌌 Aurora {VERSION}" in changelog, f"CHANGELOG.md precisa abrir a release publica {VERSION}")
-    for preserved in ("v0.7.0", "v0.6.5", "v0.6.4", "v0.6.3", "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.1", "v0.5.0"):
+    for preserved in (
+        "v1.3.0",
+        "v1.2.0",
+        "v1.1.0",
+        "v1.0.0",
+        "v0.7.0",
+        "v0.6.5",
+        "v0.6.4",
+        "v0.6.3",
+        "v0.6.2",
+        "v0.6.1",
+        "v0.6.0",
+        "v0.5.1",
+        "v0.5.0",
+    ):
         ensure(f"## 🌌 Aurora {preserved}" in changelog, f"CHANGELOG.md precisa preservar a release publica {preserved}")
     for term in (
         "resources/help.txt",
@@ -108,8 +122,15 @@ def main() -> int:
         "tests/release_gate_pre_release.sh",
         "tests/REVIEW_CHECKLIST.md",
         "tests/test_source_clarification.py",
+        "tests/test_user_software_flatpak.py",
         "tests/test_conversation_mediation.py",
         "tests/audit_workflow_release.py",
+        "Remote Flatpak explícito",
+        "remote default observado",
+        "remote explícito",
+        "melhor remote",
+        "remote-add",
+        "todos os remotes",
         "clarificacao controlada",
         "source_clarification",
         "source_discovery",
@@ -145,6 +166,7 @@ def main() -> int:
     ensure_any(changelog_normalized, ("absorcao funcional i", "host_maintenance.atualizar", "aurora atualizar sistema --confirm"), "CHANGELOG.md precisa tratar a v1.1.0 como fechamento formal de host_maintenance.atualizar")
     ensure_any(changelog_normalized, ("conversacao/mediacao", "orientacao deterministica", "perguntas fechadas"), "CHANGELOG.md precisa tratar a v1.2.0 como conversacao/mediacao estreita")
     ensure_any(changelog_normalized, ("clarificacao controlada", "source_clarification", "source_discovery"), "CHANGELOG.md precisa tratar a v1.3.0 como clarificacao controlada de fonte/superficie")
+    ensure_any(changelog_normalized, ("remote flatpak explicito", "melhor remote", "remote-add"), "CHANGELOG.md precisa tratar a v1.4.0 como remote Flatpak explicito sem discovery")
     ok("CHANGELOG.md alinhado")
 
     readme = read("README.md")
@@ -160,6 +182,14 @@ def main() -> int:
         "aurora exemplos",
         "aurora como instalar firefox?",
         "aurora explicar fontes",
+        "aurora explicar remote flatpak",
+        "aurora como escolher remote flatpak?",
+        "aurora como instalar firefox no flatpak flathub?",
+        "aurora como procurar firefox no flatpak flathub?",
+        "remote default observado",
+        "remote explícito",
+        "remote-add",
+        "todos os remotes",
         "aurora onde instalar firefox?",
         "aurora instalar firefox onde for melhor",
         'aurora dev "procurar firefox"',
@@ -223,6 +253,7 @@ def main() -> int:
     )
     ensure_any(readme_normalized, ("absorcao funcional i", "host_maintenance.atualizar", "sudo + pacman"), "README.md precisa tratar a v1.1.0 como fechamento formal de host_maintenance.atualizar")
     ensure_any(readme_normalized, ("clarificacao controlada", "source_discovery", "melhor fonte"), "README.md precisa tratar a v1.3.0 como clarificacao controlada sem discovery")
+    ensure_any(readme_normalized, ("remote flatpak explicito", "remote default observado", "remote-add"), "README.md precisa tratar a v1.4.0 como remote Flatpak explicito sem add automatico")
     ok("README.md alinhado")
 
     architecture = read("docs/ARCHITECTURE.md")
@@ -243,6 +274,9 @@ def main() -> int:
         "AURY_TO_AURORA_DOSSIER.md",
         "tests/audit_decision_record_contract.py",
         "source_clarification.py",
+        "remote Flatpak",
+        "remote-add",
+        "todos os remotes",
         "source_discovery",
         "local_model/",
         "model_off",
@@ -269,6 +303,7 @@ def main() -> int:
     ensure_any(architecture_normalized, ("workflow", "disciplina operacional", "ollama"), "ARCHITECTURE precisa preservar a seam assistiva real herdada sem abrir frente lateral")
     ensure_any(architecture_normalized, ("host_maintenance.atualizar", "absorcao funcional i", "sudo + pacman"), "ARCHITECTURE precisa tratar a v1.1.0 como fechamento formal de host_maintenance.atualizar")
     ensure_any(architecture_normalized, ("source_clarification", "clarificacao controlada", "source_discovery"), "ARCHITECTURE precisa registrar a clarificacao controlada da v1.3.0")
+    ensure_any(architecture_normalized, ("remote flatpak", "remote-add", "todos os remotes"), "ARCHITECTURE precisa registrar a orientacao de remote Flatpak da v1.4.0")
     ok("docs/ARCHITECTURE.md alinhado")
 
     assert_terms(
@@ -289,6 +324,8 @@ def main() -> int:
         "push",
         "tag",
         "release",
+        "aurora explicar remote flatpak",
+        "aurora qual melhor remote flatpak para firefox?",
     )
     ok("docs/WORKFLOW_DE_TESTES_E_RELEASE.md alinhado")
 
@@ -305,6 +342,8 @@ def main() -> int:
         "pending deployment",
         "status --json",
         "clarificacao controlada",
+        "remote Flatpak",
+        "remote-add",
         "host_maintenance",
         "atualizar sistema",
         "sudo + pacman",
@@ -328,6 +367,8 @@ def main() -> int:
         "requires_confirmation",
         "source_discovery",
         "melhor fonte",
+        "melhor remote",
+        "todos os remotes",
     )
     ok("docs/INSTALLATION_POLICY.md alinhado")
 
@@ -356,6 +397,8 @@ def main() -> int:
         "stage publica",
         "source_discovery",
         "melhor fonte",
+        "melhor remote",
+        "todos os remotes",
     )
     ok("docs/AURORA_INVARIANTS.md alinhado")
 
@@ -381,6 +424,7 @@ def main() -> int:
         "atualizar",
         "payload antigo",
         "source_clarification",
+        "remote Flatpak",
     ):
         ensure(term in schema_doc or term in schema_normalized, f"docs/DECISION_RECORD_SCHEMA.md precisa citar {term}")
     ok("docs/DECISION_RECORD_SCHEMA.md alinhado")
@@ -404,6 +448,8 @@ def main() -> int:
         "terminal real",
         "host_maintenance.atualizar",
         "source_clarification.py",
+        "remote Flatpak",
+        "remote-add",
         "source_discovery",
     ):
         ensure(term in facts_doc or term in facts_normalized, f"docs/FACTS_VS_RENDERING.md precisa citar {term}")
@@ -444,6 +490,11 @@ def main() -> int:
         "aurora versão",
         "auro versão",
         "aurora como instalar firefox?",
+        "aurora explicar remote flatpak",
+        "aurora como escolher remote flatpak?",
+        "aurora como instalar firefox no flatpak flathub?",
+        "aurora como procurar firefox no flatpak flathub?",
+        "remote-add",
         "aurora.decision_record.v1",
         "README.md",
         "docs/COMPATIBILITY_LINUX.md",

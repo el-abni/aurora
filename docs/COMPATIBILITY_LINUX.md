@@ -1,4 +1,4 @@
-# Compatibilidade Linux - Aurora v1.3.0
+# Compatibilidade Linux - Aurora v1.4.0
 
 ## Matriz atual de `host_package`
 
@@ -10,7 +10,7 @@
 | OpenSUSE mutável | suportado contido | procurar, instalar, remover |
 | Atomic / imutáveis | decisão explícita por superfície | `flatpak`, `toolbox`, `distrobox`, `rpm-ostree` ou bloqueio |
 
-A clarificação controlada da `v1.3.0` só ensina a marcar fonte/superfície. Ela não amplia compatibilidade, não busca em múltiplas fontes, não escolhe melhor fonte e não executa backend.
+A clarificação controlada preservada na `v1.4.0` só ensina a marcar fonte/superfície, e a orientação nova ensina remote Flatpak explícito. Ela não amplia compatibilidade, não busca em múltiplas fontes ou remotes, não escolhe melhor fonte/remote e não executa backend.
 
 ## Frente `host_maintenance` explícita
 
@@ -37,7 +37,7 @@ Leitura correta desta frente:
 | Demais famílias Linux | fora do recorte | sem rota executável |
 | Atomic / imutáveis | bloqueado por política | sem mutação via AUR |
 
-Leitura correta desta frente na `v1.3.0`:
+Leitura correta desta frente na `v1.4.0`:
 
 - `aur.instalar` continua interativo quando o helper precisa assumir o terminal;
 - a Aurora avisa o handoff e deixa explícito que o helper pode pedir Enter, seleção, revisão de build ou senha;
@@ -65,7 +65,7 @@ Leitura correta desta frente na `v1.3.0`:
 
 ## `user_software` via `flatpak`
 
-Na `v1.3.0`, `flatpak` continua sendo a frente explícita de software do usuário.
+Na `v1.4.0`, `flatpak` continua sendo a frente explícita de software do usuário.
 
 Leitura correta desta frente:
 
@@ -76,12 +76,13 @@ Leitura correta desta frente:
 - cobre `procurar`, `instalar` e `remover`;
 - preserva `flathub` como default em `procurar` e `instalar` quando nenhum remote é informado;
 - aceita remote explícito apenas quando esse remote já é observável via `flatpak remotes`;
+- orienta `no flatpak flathub` sem fazer `flatpak remote-add`, sem procurar em todos os remotes e sem escolher melhor remote;
 - `remover` só usa remote explícito como restrição de `origin`, sem default implícito;
 - exige confirmação explícita para remoção real.
 
 ## Frente `toolbox` explícita
 
-Na `v1.3.0`, `toolbox` entra como superfície operacional mediada, não como fonte.
+Na `v1.4.0`, `toolbox` entra como superfície operacional mediada, não como fonte.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
@@ -105,7 +106,7 @@ Leitura correta desta frente:
 
 ## Frente `distrobox` explícita
 
-Na `v1.3.0`, `distrobox` entra como segunda superfície operacional mediada, não como fonte.
+Na `v1.4.0`, `distrobox` entra como segunda superfície operacional mediada, não como fonte.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |
@@ -129,7 +130,7 @@ Leitura correta desta frente:
 
 ## Frente `rpm-ostree` explícito
 
-Na `v1.3.0`, `rpm-ostree` entra como superfície explícita de host imutável.
+Na `v1.4.0`, `rpm-ostree` entra como superfície explícita de host imutável.
 
 | Perfil observado | Estado | Escopo real |
 | --- | --- | --- |

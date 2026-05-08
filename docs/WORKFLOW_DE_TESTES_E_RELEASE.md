@@ -1,8 +1,8 @@
-# Workflow de Testes e Release - Aurora v1.3.0
+# Workflow de Testes e Release - Aurora v1.4.0
 
 ## Papel
 
-Este documento formaliza a disciplina operacional preservada pela `v1.3.0`.
+Este documento formaliza a disciplina operacional preservada pela `v1.4.0`.
 
 Ele não abre domínio novo, não cria framework de CI e não substitui leitura do código. Ele existe para separar claramente:
 
@@ -122,7 +122,7 @@ Nunca devem subir por gate automático sozinho:
 - mudanças em handoff interativo, prompts, senha, `toolbox`, `distrobox`, `rpm-ostree` ou AUR;
 - qualquer alteração cuja honestidade só apareça no terminal real.
 
-## Leitura correta da v1.3.0
+## Leitura correta da v1.4.0
 
 - `tests/release_gate_canonic_line.sh` continua sendo a régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` continua como gate histórico;
@@ -133,13 +133,15 @@ Nunca devem subir por gate automático sozinho:
 - a rodada interna pós-`v1.0.0` de saneamento canônico/hardening basal foi preparação de linha, não release pública retroativa;
 - a `v1.1.0` preserva disciplina de subida e fecha formalmente `host_maintenance.atualizar` sem abrir manutenção ampla do host;
 - a `v1.2.0` adicionou orientação determinística antes do executor, sem abrir domínio operacional novo;
-- a `v1.3.0` adiciona clarificação controlada de fonte/superfície antes do executor, sem `source_discovery`, escolha automática, fallback ou backend.
+- a `v1.3.0` adiciona clarificação controlada de fonte/superfície antes do executor, sem `source_discovery`, escolha automática, fallback ou backend;
+- a `v1.4.0` adiciona orientação de remote Flatpak explícito e bloqueia melhor remote, remote-add e busca em todos os remotes antes do executor.
 
-## Checklist curta da v1.3.0
+## Checklist curta da v1.4.0
 
 Para este corte, a revisão curta precisa confirmar:
 
 - `aurora explicar fontes`, `aurora explicar superfícies`, `aurora onde instalar firefox?` e bloqueios como `aurora instalar firefox onde for melhor` retornam sem execução;
+- `aurora explicar remote flatpak`, `aurora como instalar firefox no flatpak flathub?` e bloqueios como `aurora qual melhor remote flatpak para firefox?` retornam sem execução;
 - `aurora versão`, `auro versão`, tópicos de orientação e perguntas fechadas retornam exit 0 sem execução;
 - `model_off` continua íntegro por default em `aurora dev`;
 - `model_on` só entra quando configurado, com `ollama` como provider canônico atual;
