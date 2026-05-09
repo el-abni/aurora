@@ -1,4 +1,4 @@
-# Review Checklist - Aurora v1.4.0
+# Review Checklist - Aurora v1.4.1 local
 
 Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplica, a dispensa precisa ser consciente.
 
@@ -28,7 +28,7 @@ Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplic
 
 ## Canon vivo local
 
-- [ ] Se a rodada tocou PV/contexto ou roadmap privado, `python3 tests/audit_canonic_integrity.py` passou.
+- [ ] Se a rodada tocou PV/contexto ou roadmap privado, a conferência de canon vivo foi revisão manual/privada registrada no relatório da rodada; não há script público rastreado para isso nesta linha.
 - [ ] Pointers canônicos centrais agora apontam para arquivos reais.
 - [ ] Material pré-`v1.2.0` ou de preparação pós-`v1.0.0` que continuou útil foi marcado como histórico/transicional.
 - [ ] A promoção de versão, a classificação final de roadmap e a decisão de canon continuam tratadas como decisão humana de mantenedor/revisor, não do guardrail local.

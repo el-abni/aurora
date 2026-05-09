@@ -8,6 +8,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+LOCAL_CORRECTIVE_VERSION = "v1.4.1"
+PUBLIC_RELEASE_VERSION = "v1.4.0" if VERSION == LOCAL_CORRECTIVE_VERSION else VERSION
+SUPPORTED_CURRENT_VERSIONS = {"v1.4.0", LOCAL_CORRECTIVE_VERSION}
 PUBLIC_FILES = (
     "README.md",
     "CHANGELOG.md",
@@ -87,14 +90,31 @@ def public_surface_sensitive_markers() -> tuple[str, ...]:
 
 
 def main() -> int:
-    ensure(VERSION == "v1.4.0", "VERSION precisa estar promovido para v1.4.0 no fechamento desta release")
+    ensure(
+        VERSION in SUPPORTED_CURRENT_VERSIONS,
+        "VERSION precisa estar em v1.4.0 publico ou v1.4.1 local corretivo nesta linha",
+    )
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
-    ok("VERSION promovido para v1.4.0")
+    ok(f"VERSION alinhado para {VERSION}")
 
     changelog = read("CHANGELOG.md")
     changelog_normalized = normalize(changelog)
-    ensure(f"## 🌌 Aurora {VERSION}" in changelog, f"CHANGELOG.md precisa abrir a release publica {VERSION}")
+    ensure(f"## 🌌 Aurora {VERSION}" in changelog, f"CHANGELOG.md precisa abrir o marco atual {VERSION}")
+    if VERSION == LOCAL_CORRECTIVE_VERSION:
+        for term in (
+            "marco local corretivo",
+            "não publicado como release pública normal",
+            "python3 tests/audit_canonic_integrity.py",
+            "não altera runtime",
+            "não inicia a `v1.5.0`",
+            "release pública normal mais recente continua sendo a `v1.4.0`",
+        ):
+            ensure(
+                term in changelog or normalize(term) in changelog_normalized,
+                f"CHANGELOG.md precisa registrar {term} no marco local v1.4.1",
+            )
     for preserved in (
+        *((PUBLIC_RELEASE_VERSION,) if VERSION == LOCAL_CORRECTIVE_VERSION else ()),
         "v1.3.0",
         "v1.2.0",
         "v1.1.0",
@@ -171,7 +191,7 @@ def main() -> int:
 
     readme = read("README.md")
     readme_normalized = normalize(readme)
-    ensure(VERSION in readme, "README.md precisa citar a versao publica atual")
+    ensure(PUBLIC_RELEASE_VERSION in readme, "README.md precisa citar a release publica atual")
     for term in (
         "100% python",
         "Linux",
@@ -331,7 +351,7 @@ def main() -> int:
 
     assert_terms(
         "docs/COMPATIBILITY_LINUX.md",
-        VERSION,
+        PUBLIC_RELEASE_VERSION,
         "toolbox",
         "distrobox",
         "rpm-ostree",
@@ -352,7 +372,7 @@ def main() -> int:
 
     assert_terms(
         "docs/INSTALLATION_POLICY.md",
-        VERSION,
+        PUBLIC_RELEASE_VERSION,
         "domain_kind",
         "source_type",
         "execution_surface",
@@ -374,7 +394,7 @@ def main() -> int:
 
     assert_terms(
         "docs/AURY_HERITAGE_MAP.md",
-        VERSION,
+        PUBLIC_RELEASE_VERSION,
         "aury",
         "herdado",
         "host_package",
@@ -385,7 +405,7 @@ def main() -> int:
 
     assert_terms(
         "docs/AURORA_INVARIANTS.md",
-        VERSION,
+        PUBLIC_RELEASE_VERSION,
         "contrato pequeno",
         "auditavel",
         "superficie explicita",
@@ -405,7 +425,7 @@ def main() -> int:
     schema_doc = read("docs/DECISION_RECORD_SCHEMA.md")
     schema_normalized = normalize(schema_doc)
     for term in (
-        VERSION,
+        PUBLIC_RELEASE_VERSION,
         "aurora.decision_record.v1",
         "stable_ids.action_id",
         "stable_ids.route_id",
@@ -432,7 +452,7 @@ def main() -> int:
     facts_doc = read("docs/FACTS_VS_RENDERING.md")
     facts_normalized = normalize(facts_doc)
     for term in (
-        VERSION,
+        PUBLIC_RELEASE_VERSION,
         "messages.py",
         "text_polish.py",
         "facts",
@@ -458,7 +478,7 @@ def main() -> int:
     dossier = read("docs/AURY_TO_AURORA_DOSSIER.md")
     dossier_normalized = normalize(dossier)
     for term in (
-        VERSION,
+        PUBLIC_RELEASE_VERSION,
         "aury",
         "aurora",
         "raiz operacional",

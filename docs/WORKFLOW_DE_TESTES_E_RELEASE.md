@@ -1,8 +1,10 @@
-# Workflow de Testes e Release - Aurora v1.4.0
+# Workflow de Testes e Release - Aurora v1.4.1 local
 
 ## Papel
 
-Este documento formaliza a disciplina operacional preservada pela `v1.4.0`.
+Este documento formaliza a disciplina operacional preservada pela `v1.4.1` local.
+
+A `v1.4.1` é um marco local corretivo de workflow/docs de testes, não uma release pública normal. A release pública normal mais recente continua sendo a `v1.4.0`; a próxima publicação normal planejada fica para `v1.5.0`, em rodada posterior.
 
 Ele não abre domínio novo, não cria framework de CI e não substitui leitura do código. Ele existe para separar claramente:
 

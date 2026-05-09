@@ -15,9 +15,9 @@ Ela não existe para:
 - justificar abertura de feature nova;
 - substituir leitura humana quando a fronteira ainda é conceitual.
 
-## Três camadas da v1.4.0
+## Três camadas da v1.4.1 local
 
-A `v1.4.0` preserva três camadas distintas:
+A `v1.4.1` é um marco local corretivo de workflow. Ela preserva as três camadas da `v1.4.0` e não muda runtime:
 
 - teste automático para regressão executável;
 - revisão manual para diffs, docs, help, versão e coerência pública;
@@ -132,26 +132,22 @@ Quando a rodada tocar `host_maintenance.atualizar`, a leitura mínima obrigatór
 - `aurora atualizar sistema --confirm`;
 - conferência explícita de que a rota continua em `sudo + pacman`, sem `paru` e sem AUR implícita.
 
-## Guardrail local de integridade canônica
+## Revisão local de integridade canônica
 
-Quando a rodada toca contexto privado, pointers canônicos, classificação viva/histórica ou coerência curta entre `VERSION` e docs centrais, rodar localmente:
-
-```bash
-python3 tests/audit_canonic_integrity.py
-```
+Quando a rodada toca contexto privado, pointers canônicos, classificação viva/histórica ou coerência curta entre `VERSION` e docs centrais, a validação é revisão manual/privada registrada no relatório da rodada. Não há script público rastreado para esse canon vivo local nesta linha.
 
 Leitura correta:
 
-- este guardrail detecta quebra objetiva de pointer, marker histórico/transicional ausente e mismatch simples de `VERSION`;
-- ele **não** decide roadmap, promoção de versão, prioridade de backlog nem classificação humana final;
-- ele existe para endurecer canon vivo local, não para virar nova régua pública automática da linha.
+- essa revisão não decide roadmap, promoção de versão, prioridade de backlog nem classificação humana final;
+- material privado antigo continua histórico, não roadmap vivo automático;
+- se um guardrail executável público for necessário no futuro, ele precisa de plano próprio e não deve depender de `.aurora-private`.
 
 ## Leitura correta desta pasta
 
 - `test_*.py` protege o contrato executável já aberto;
 - `audit_public_release.py` protege a coerência pública da release atual;
 - `audit_canonic_line.py` protege a espinha canônica da linha;
-- `audit_canonic_integrity.py` protege pointers e coerência mínima do canon vivo local quando a rodada toca PV/contexto;
+- a revisão manual/privada de canon vivo local protege pointers e coerência mínima quando a rodada toca PV/contexto, sem prometer script público inexistente;
 - `audit_decision_record_contract.py` protege `schema`, `stable_ids`, `facts` e `presentation`;
 - `audit_factual_hotspots.py` congela que serializer e renderer saíram do reparse factual principal no corte 3;
 - `audit_factual_baseline.py` congela um baseline factual curto de `aurora dev` e `decision_record`;

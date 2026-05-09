@@ -1,5 +1,23 @@
 # Changelog
 
+## 🌌 Aurora v1.4.1
+
+Marco local corretivo, não publicado como release pública normal. Este corte alinha a documentação de workflow de testes aos scripts realmente presentes no repositório. Ele não abre feature, não inicia a `v1.5.0` e não altera runtime.
+
+### Corrigido
+
+- remove a referência pública executável a `python3 tests/audit_canonic_integrity.py`, auditor que não existe no checkout atual;
+- substitui essa expectativa por revisão manual/privada de canon vivo quando uma rodada tocar PV, contexto privado ou roadmap;
+- ajusta `docs/WORKFLOW_DE_TESTES_E_RELEASE.md`, `tests/README.md`, `tests/REVIEW_CHECKLIST.md` e os auditores públicos da linha para reconhecer este marco local sem prometer novo auditor público.
+
+### Preservado
+
+- sem mudança de runtime, parser, policy, routes, execution, Remote Flatpak, `local_model` ou superfície operacional;
+- `aurora.decision_record.v1`, `stable_ids`, `facts` e `presentation` permanecem sem mudança de schema;
+- a espinha de workflow segue validada por `tests/release_gate_canonic_line.sh`, `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh`, `tests/release_gate_pre_release.sh`, `tests/audit_workflow_release.py`, `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` e `tests/REVIEW_CHECKLIST.md`;
+- `model_off` continua default, `model_on` continua opt-in e sem autoridade sobre policy, suporte, bloqueio, confirmação, rota, execução ou verdade operacional;
+- a release pública normal mais recente continua sendo a `v1.4.0`; a próxima publicação normal planejada fica para `v1.5.0`, em rodada posterior.
+
 ## 🌌 Aurora v1.4.0
 
 Remote Flatpak explícito. Esta release promove orientação determinística sobre remote Flatpak e endurece testes do comportamento que o kernel já sustentava. Ela não abre `source_discovery`, não adiciona remote, não busca em todos os remotes, não escolhe melhor remote, não faz fallback e não altera `aurora.decision_record.v1`.

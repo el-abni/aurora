@@ -7,6 +7,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+LOCAL_CORRECTIVE_VERSION = "v1.4.1"
+PUBLIC_RELEASE_VERSION = "v1.4.0" if VERSION == LOCAL_CORRECTIVE_VERSION else VERSION
 
 
 def fail(message: str) -> None:
@@ -39,7 +41,7 @@ def ensure_any(text: str, options: tuple[str, ...], message: str) -> None:
 
 def current_changelog_section(changelog: str) -> str:
     marker = f"## 🌌 Aurora {VERSION}"
-    ensure(marker in changelog, f"CHANGELOG.md precisa abrir a release publica {VERSION}")
+    ensure(marker in changelog, f"CHANGELOG.md precisa abrir o marco atual {VERSION}")
     return changelog.partition(marker)[2].partition("\n## ")[0]
 
 
@@ -47,7 +49,7 @@ def assert_invariants_state() -> None:
     path = "docs/AURORA_INVARIANTS.md"
     text = read(path)
     normalized = normalize(text)
-    ensure(VERSION in text, f"{path} precisa refletir a release publica atual")
+    ensure(PUBLIC_RELEASE_VERSION in text, f"{path} precisa refletir a release publica atual")
     ensure("contrato pequeno" in normalized and "auditavel" in normalized, f"{path} precisa registrar contrato pequeno e auditavel")
     ensure("superficie explicita" in normalized and "fallback magico" in normalized, f"{path} precisa registrar superficie explicita contra fallback magico")
     ensure("ferramenta observada" in normalized and "nao vira suporte" in normalized, f"{path} precisa registrar que ferramenta observada nao vira suporte")
