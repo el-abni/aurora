@@ -1,19 +1,21 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v1.4.0-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v1.5.0-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com contrato pequeno, política explícita, execução real e observabilidade própria.
 
-A release pública atual é a `v1.4.0`. Ela adiciona orientação determinística sobre remote Flatpak explícito: a Aurora explica remote default observado vs remote explícito, orienta `no flatpak flathub` e bloqueia pedidos de melhor remote, `remote-add` e busca em todos os remotes. A clarificação controlada de fonte/superfície da `v1.3.0`, a conversação/mediação da `v1.2.0` e a absorção `host_maintenance.atualizar` da `v1.1.0` continuam preservadas.
+A release pública atual é a `v1.5.0`. Ela melhora perfis internos de apresentação, clareza pública e leitura de bloqueios sem mudar o runtime operacional. O recorte `Remote Flatpak explícito` da `v1.4.0` continua preservado: a Aurora explica remote default observado vs remote explícito, orienta `no flatpak flathub` e bloqueia pedidos de melhor remote, `remote-add` e busca em todos os remotes. A clarificação controlada de fonte/superfície da `v1.3.0`, a conversação/mediação da `v1.2.0` e a absorção `host_maintenance.atualizar` da `v1.1.0` continuam preservadas.
 
 ## O que é
 
 A Aurora recebe uma frase curta em português, enquadra a ação, observa o host ou a superfície explicitamente pedida, aplica política e então executa, bloqueia ou mostra uma leitura técnica. Ela não é um chat genérico e não promete entender qualquer frase.
 
 O centro da linha continua determinístico. O `decision_record` é o contrato canônico de inspeção, e a seam `local_model` continua apenas assistiva e observável quando habilitada por opt-in.
+
+Na `v1.5.0`, perfis de apresentação são camada de renderização: podem deixar a resposta mais direta, explicativa ou guiada, mas não mudam `facts`, `policy`, bloqueio, confirmação, rota, execução nem `aurora.decision_record.v1`.
 
 ## Uso rápido
 
@@ -34,7 +36,7 @@ aurora dev "procurar firefox"
 
 ## Conversação e orientação
 
-A `v1.4.0` aceita tópicos fechados como `aurora exemplos`, `aurora limites`, `aurora comandos`, `aurora fontes`, `aurora explicar fontes`, `aurora explicar superfícies`, `aurora explicar remote flatpak`, `aurora modelo local`, `aurora decision record`, `aurora o que você faz` e `aurora como eu uso`.
+A `v1.5.0` aceita tópicos fechados como `aurora exemplos`, `aurora limites`, `aurora comandos`, `aurora fontes`, `aurora explicar fontes`, `aurora explicar superfícies`, `aurora explicar remote flatpak`, `aurora modelo local`, `aurora decision record`, `aurora o que você faz` e `aurora como eu uso`.
 
 Perguntas fechadas como `aurora como instalar firefox?`, `aurora como procurar firefox?`, `aurora como remover firefox?` e `aurora como atualizar sistema?` retornam orientação e exit 0. Elas não executam backend, não escolhem fonte, não fazem busca real, não pedem confirmação e não alteram o sistema.
 
@@ -118,13 +120,14 @@ Texto de ajuda, polimento e renderização não viram contrato. Quando um consum
 
 ## Recorte atual
 
-Na `v1.4.0`, a superfície pública continua pequena:
+Na `v1.5.0`, a superfície pública continua pequena:
 
 - `host_package` para pacotes do host;
 - `host_maintenance.atualizar` para `atualizar sistema` no Arch mutável com `pacman`;
 - orientação determinística de ajuda antes do executor, sem novo domínio operacional;
 - clarificação controlada de fonte/superfície antes do executor, sem `source_discovery`;
 - orientação de remote Flatpak explícito antes do executor, sem `remote-add`, sem busca em todos os remotes e sem escolha de melhor remote;
+- perfis internos de apresentação como renderização pública, sem mudar contrato operacional;
 - AUR, COPR e PPA apenas quando a frase marca a fonte explicitamente;
 - `user_software` via Flatpak;
 - toolbox e distrobox apenas quando a frase nomeia o ambiente;

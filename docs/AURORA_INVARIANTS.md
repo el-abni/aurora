@@ -1,4 +1,4 @@
-# Aurora Invariants - v1.4.0
+# Aurora Invariants - v1.5.0
 
 ## Papel
 
@@ -22,7 +22,7 @@ A Aurora só promove frente quando existe contrato explícito, policy, execuçã
 
 ### Conversação e clarificação não viram autoridade operacional
 
-Na `v1.4.0`, tópicos, perguntas fechadas, clarificação controlada de fonte/superfície e orientação de remote Flatpak orientam o uso, mas não executam backend, não buscam em tudo, não escolhem fonte ou remote, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
+Na `v1.5.0`, tópicos, perguntas fechadas, clarificação controlada de fonte/superfície, orientação de remote Flatpak e perfis internos de apresentação orientam o uso, mas não executam backend, não buscam em tudo, não escolhem fonte ou remote, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
 
 ### Clarificação controlada não é descoberta de fonte
 
@@ -55,6 +55,12 @@ Compatibilidade pode sobreviver por espelhos e bridges pequenas, mas a Aurora n�
 ### Modelo local so entra como camada assistiva sobre kernel deterministico
 
 Desde a `v1.0.0`, o modelo local opera sobre `schema`, `stable_ids`, `facts` e `presentation` ja fechados. Ele pode clarificar, resumir, explicar e desambiguar candidatos ja estruturados, mas nao pode decidir policy, suporte, bloqueio, confirmacao, rota, execucao nem verdade operacional.
+
+### Perfil de apresentação não é modo operacional
+
+`direct`, `explanatory` e `beginner` modulam somente texto público. Eles não entram em parser, policy, route, execution, facts, `local_model`, Remote Flatpak, confirmação ou schema do `decision_record`.
+
+Eles também não reabrem `source_discovery`, melhor fonte, melhor remote, busca em todos os remotes, `remote-add` ou fallback.
 
 ### Gate automatizado não substitui revisão humana nem terminal real
 

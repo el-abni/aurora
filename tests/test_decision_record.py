@@ -9,6 +9,9 @@ from aurora.install.execution_handoff import perform_execution
 from aurora.install.planner import plan_text
 from aurora.observability.decision_record import decision_record_to_dict
 from aurora.observability.dev_command import render_dev_report
+from aurora.presentation.profile import PresentationProfile
+from aurora.presentation.source_clarification import render_source_clarification
+from aurora.semantics.source_clarification import SourceClarificationKind, SourceClarificationRequest
 from support import (
     setup_aur_testbed,
     setup_flatpak_testbed,
@@ -258,6 +261,34 @@ class DecisionRecordTests(unittest.TestCase):
             self.assertIn("canonicalized:           true", rendered)
             self.assertIn("flatpak_effective_remote: flathub", rendered)
             self.assertIn("flatpak_remote_origin:   default", rendered)
+
+    def test_presentation_profiles_do_not_change_decision_record_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_flatpak_testbed(
+                root,
+                distro_id="ubuntu",
+                distro_like="debian",
+                repo_apps=("org.mozilla.firefox|Firefox|flathub",),
+                name="Ubuntu",
+            )
+            before = decision_record_to_dict(plan_text("instalar firefox no flatpak", environ=env))
+
+            request = SourceClarificationRequest(
+                kind=SourceClarificationKind.CHOOSE_FLATPAK_REMOTE,
+                target="firefox",
+            )
+            for profile in PresentationProfile:
+                rendered = render_source_clarification(request, profile=profile)
+                self.assertIn("remote Flatpak", rendered)
+
+            after = decision_record_to_dict(plan_text("instalar firefox no flatpak", environ=env))
+
+        self.assertEqual(after, before)
+        self.assertEqual(after["schema"]["schema_id"], "aurora.decision_record.v1")
+        self.assertEqual(after["policy"]["source_type"], "flatpak_remote")
+        self.assertEqual(after["policy"]["flatpak_effective_remote"], "flathub")
+        self.assertEqual(after["facts"]["local_model"]["mode"], "model_off")
 
     def test_decision_record_marks_normalized_query_resolution_for_hyphenated_name(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

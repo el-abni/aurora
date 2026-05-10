@@ -1,5 +1,5 @@
 🌌 Aurora {version}
-Mediação lúcida para Linux, com contrato pequeno e observável. Launchers oficiais: aurora e auro.
+Mediação lúcida para Linux, com contrato pequeno, observável e apresentação pública mais clara. Launchers oficiais: aurora e auro.
 Uso rápido:
 - aurora ajuda | aurora exemplos | aurora limites | aurora comandos
 - aurora versão | auro versão | aurora --help | aurora --version
@@ -38,7 +38,7 @@ Ambientes e host imutável:
 - aurora remover <pacote> no rpm-ostree --confirm
 
 Leitura correta:
-- orientação e clarificação retornam sem executar backend, escolher fonte, pedir confirmação ou alterar sistema;
+- orientação, clarificação e perfis de apresentação retornam sem mudar facts, policy, route, execution ou decision_record;
 - pedidos nus continuam em host_package no host;
 - atualizar sistema abre apenas a atualização explícita do host Arch mutável com sudo + pacman;
 - AUR, COPR, PPA, flatpak, toolbox, distrobox e rpm-ostree só entram por frase marcada;

@@ -1,5 +1,37 @@
 # Changelog
 
+## 🌌 Aurora v1.5.0
+
+Perfis de apresentação e clareza pública. Esta é a próxima release pública normal futura da linha: melhora a voz pública e a leitura de bloqueios sem adicionar capacidade operacional nova.
+
+### Adicionado
+
+- `python/aurora/presentation/profile.py` com perfis internos de renderização `direct`, `explanatory` e `beginner`;
+- renderização perfilada para mensagens públicas selecionadas de clarificação de fonte/remote Flatpak, mantendo bloqueios, limites e exemplos derivados dos mesmos fatos;
+- testes focais para provar que os perfis mudam apenas apresentação e não alteram `aurora.decision_record.v1`, `stable_ids`, `facts`, `policy`, rota, execução ou `local_model`.
+
+### Alterado
+
+- mensagens públicas de bloqueio e orientação de remote Flatpak reduzem repetição por composição comum de limites, sem remover a honestidade do bloqueio;
+- `resources/help.txt`, `README.md`, `docs/FACTS_VS_RENDERING.md`, `docs/AURORA_INVARIANTS.md`, `docs/WORKFLOW_DE_TESTES_E_RELEASE.md`, `tests/README.md` e `tests/REVIEW_CHECKLIST.md` passam a registrar a `v1.5.0` como corte de presentation/render;
+- `tests/release_gate_canonic_line.sh`, `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh`, `tests/release_gate_pre_release.sh` e `tests/audit_workflow_release.py` continuam sendo a disciplina operacional da linha.
+
+### Preservado
+
+- sem mudança de runtime operacional, parser, policy, routes, execution, facts operacionais, observability técnica ou schema do `decision_record`;
+- `aurora.decision_record.v1`, `stable_ids`, `facts` e `presentation` permanecem como contrato parseável;
+- `aurora dev` segue técnico, sem indicador de fala e sem perfil público;
+- `model_off` continua default, `model_on` continua opt-in e `local_model` segue assistivo/observável, sem autoridade sobre policy, suporte, bloqueio, confirmação, rota, execução ou verdade operacional;
+- Remote Flatpak explícito preserva remote default observado vs remote explícito observado e continua bloqueando melhor remote, `remote-add` e todos os remotes.
+
+### Continua fora da v1.5.0
+
+- `source_discovery`, fallback automático, melhor fonte, melhor remote, busca transversal e busca em todos os remotes;
+- `flatpak remote-add`, add automático de remote e administração ampla de remotes Flatpak;
+- sem flag pública nova para seleção de perfil;
+- `local_index/open_target`, desktop/KDE adapter, mídia, LinuxToys, Personas, agentes no runtime, novo schema de `decision_record` e qualquer mudança na Aury;
+- autoridade operacional nova para `local_model`.
+
 ## 🌌 Aurora v1.4.1
 
 Marco local corretivo, não publicado como release pública normal. Este corte alinha a documentação de workflow de testes aos scripts realmente presentes no repositório. Ele não abre feature, não inicia a `v1.5.0` e não altera runtime.

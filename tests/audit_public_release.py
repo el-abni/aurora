@@ -9,8 +9,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 LOCAL_CORRECTIVE_VERSION = "v1.4.1"
+PRESENTATION_RELEASE_VERSION = "v1.5.0"
 PUBLIC_RELEASE_VERSION = "v1.4.0" if VERSION == LOCAL_CORRECTIVE_VERSION else VERSION
-SUPPORTED_CURRENT_VERSIONS = {"v1.4.0", LOCAL_CORRECTIVE_VERSION}
+OPERATIONAL_BASE_VERSION = "v1.4.0" if VERSION == PRESENTATION_RELEASE_VERSION else PUBLIC_RELEASE_VERSION
+SUPPORTED_CURRENT_VERSIONS = {"v1.4.0", LOCAL_CORRECTIVE_VERSION, PRESENTATION_RELEASE_VERSION}
 PUBLIC_FILES = (
     "README.md",
     "CHANGELOG.md",
@@ -92,7 +94,7 @@ def public_surface_sensitive_markers() -> tuple[str, ...]:
 def main() -> int:
     ensure(
         VERSION in SUPPORTED_CURRENT_VERSIONS,
-        "VERSION precisa estar em v1.4.0 publico ou v1.4.1 local corretivo nesta linha",
+        "VERSION precisa estar em v1.4.0 publico, v1.4.1 local corretivo ou v1.5.0 presentation nesta linha",
     )
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
     ok(f"VERSION alinhado para {VERSION}")
@@ -113,22 +115,60 @@ def main() -> int:
                 term in changelog or normalize(term) in changelog_normalized,
                 f"CHANGELOG.md precisa registrar {term} no marco local v1.4.1",
             )
-    for preserved in (
-        *((PUBLIC_RELEASE_VERSION,) if VERSION == LOCAL_CORRECTIVE_VERSION else ()),
-        "v1.3.0",
-        "v1.2.0",
-        "v1.1.0",
-        "v1.0.0",
-        "v0.7.0",
-        "v0.6.5",
-        "v0.6.4",
-        "v0.6.3",
-        "v0.6.2",
-        "v0.6.1",
-        "v0.6.0",
-        "v0.5.1",
-        "v0.5.0",
-    ):
+    if VERSION == PRESENTATION_RELEASE_VERSION:
+        for term in (
+            "Perfis de apresentação",
+            "clareza pública",
+            "sem mudança de runtime operacional",
+            "sem mudança de runtime operacional, parser, policy, routes, execution, facts operacionais",
+            "aurora.decision_record.v1",
+            "sem flag pública",
+            "source_discovery",
+            "fallback automático",
+            "melhor remote",
+            "remote-add",
+            "local_model",
+        ):
+            ensure(
+                term in changelog or normalize(term) in changelog_normalized,
+                f"CHANGELOG.md precisa registrar {term} na v1.5.0",
+            )
+    if VERSION == LOCAL_CORRECTIVE_VERSION:
+        preserved_versions = (
+            PUBLIC_RELEASE_VERSION,
+            "v1.3.0",
+            "v1.2.0",
+            "v1.1.0",
+            "v1.0.0",
+            "v0.7.0",
+            "v0.6.5",
+            "v0.6.4",
+            "v0.6.3",
+            "v0.6.2",
+            "v0.6.1",
+            "v0.6.0",
+            "v0.5.1",
+            "v0.5.0",
+        )
+    else:
+        preserved_versions = (
+            "v1.4.1",
+            "v1.4.0",
+            "v1.3.0",
+            "v1.2.0",
+            "v1.1.0",
+            "v1.0.0",
+            "v0.7.0",
+            "v0.6.5",
+            "v0.6.4",
+            "v0.6.3",
+            "v0.6.2",
+            "v0.6.1",
+            "v0.6.0",
+            "v0.5.1",
+            "v0.5.0",
+        )
+    for preserved in preserved_versions:
         ensure(f"## 🌌 Aurora {preserved}" in changelog, f"CHANGELOG.md precisa preservar a release publica {preserved}")
     for term in (
         "resources/help.txt",
@@ -351,7 +391,7 @@ def main() -> int:
 
     assert_terms(
         "docs/COMPATIBILITY_LINUX.md",
-        PUBLIC_RELEASE_VERSION,
+        OPERATIONAL_BASE_VERSION,
         "toolbox",
         "distrobox",
         "rpm-ostree",
@@ -372,7 +412,7 @@ def main() -> int:
 
     assert_terms(
         "docs/INSTALLATION_POLICY.md",
-        PUBLIC_RELEASE_VERSION,
+        OPERATIONAL_BASE_VERSION,
         "domain_kind",
         "source_type",
         "execution_surface",
@@ -394,7 +434,7 @@ def main() -> int:
 
     assert_terms(
         "docs/AURY_HERITAGE_MAP.md",
-        PUBLIC_RELEASE_VERSION,
+        OPERATIONAL_BASE_VERSION,
         "aury",
         "herdado",
         "host_package",
@@ -425,7 +465,7 @@ def main() -> int:
     schema_doc = read("docs/DECISION_RECORD_SCHEMA.md")
     schema_normalized = normalize(schema_doc)
     for term in (
-        PUBLIC_RELEASE_VERSION,
+        OPERATIONAL_BASE_VERSION,
         "aurora.decision_record.v1",
         "stable_ids.action_id",
         "stable_ids.route_id",
@@ -478,7 +518,7 @@ def main() -> int:
     dossier = read("docs/AURY_TO_AURORA_DOSSIER.md")
     dossier_normalized = normalize(dossier)
     for term in (
-        PUBLIC_RELEASE_VERSION,
+        OPERATIONAL_BASE_VERSION,
         "aury",
         "aurora",
         "raiz operacional",

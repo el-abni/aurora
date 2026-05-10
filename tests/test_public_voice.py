@@ -13,6 +13,11 @@ from aurora.presentation.messages import (
     mutation_success_message,
     search_results_message,
 )
+from aurora.presentation.profile import PresentationProfile, normalize_profile
+from aurora.presentation.orientation import render_orientation
+from aurora.presentation.source_clarification import render_source_clarification
+from aurora.semantics.orientation import QUESTION_INSTALL, OrientationRequest
+from aurora.semantics.source_clarification import SourceClarificationKind, SourceClarificationRequest
 from support import setup_host_package_testbed
 
 
@@ -63,6 +68,45 @@ class PublicVoiceTests(unittest.TestCase):
             self.assertIn("Aurora decision record", rendered)
             self.assertIn("summary:                 Vou procurar o pacote do host 'firefox'.", rendered)
             self.assertNotIn("🌌 ", rendered)
+
+    def test_presentation_profiles_are_rendering_only_for_public_guidance(self) -> None:
+        request = SourceClarificationRequest(
+            kind=SourceClarificationKind.BLOCK_FLATPAK_REMOTE_CHOICE,
+            target="firefox",
+            blocking=True,
+        )
+
+        direct = render_source_clarification(request, profile=PresentationProfile.DIRECT)
+        explanatory = render_source_clarification(request)
+        beginner = render_source_clarification(request, profile=PresentationProfile.BEGINNER)
+
+        for rendered in (direct, explanatory, beginner):
+            self.assertIn("Não escolho o melhor remote Flatpak para 'firefox'", rendered)
+            self.assertIn("não escolhe o melhor remote", rendered)
+            self.assertIn("não faz fallback entre remotes", rendered)
+            self.assertIn("não executou backend", rendered)
+            self.assertIn("decision record", rendered)
+
+        self.assertIn("Limites:", direct)
+        self.assertIn("Limites preservados:", explanatory)
+        self.assertIn("Caminho seguro:", beginner)
+        self.assertIn("O que a Aurora não faz nesta resposta:", beginner)
+
+    def test_invalid_presentation_profile_is_explicit_error(self) -> None:
+        with self.assertRaises(ValueError):
+            normalize_profile("operacional")
+
+    def test_orientation_profile_keeps_guidance_and_limits_visible(self) -> None:
+        request = OrientationRequest(topic=QUESTION_INSTALL, target="firefox")
+
+        rendered = render_orientation(request, profile=PresentationProfile.BEGINNER)
+
+        self.assertIn("Para instalar 'firefox'", rendered)
+        self.assertIn("Caminho seguro:", rendered)
+        self.assertIn("aurora dev \"instalar firefox\"", rendered)
+        self.assertIn("aurora instalar firefox", rendered)
+        self.assertIn("não executei backend", rendered)
+        self.assertIn("não alterei o sistema", rendered)
 
 
 if __name__ == "__main__":

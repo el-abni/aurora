@@ -2,8 +2,13 @@
 from __future__ import annotations
 
 import tempfile
+import sys
 from dataclasses import replace
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "python"))
+sys.path.insert(0, str(ROOT / "tests"))
 
 from aurora.install.planner import plan_text
 from aurora.observability.decision_record import decision_record_to_dict

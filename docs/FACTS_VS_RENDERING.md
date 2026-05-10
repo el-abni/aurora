@@ -1,4 +1,4 @@
-# Facts vs Rendering - Aurora v1.4.0
+# Facts vs Rendering - Aurora v1.5.0
 
 ## Papel
 
@@ -24,6 +24,7 @@ Essas decisões vivem em `facts`.
 - acabamento textual;
 - títulos, labels e ordem de leitura;
 - polimento de texto público;
+- perfis internos de apresentação (`direct`, `explanatory`, `beginner`);
 - modulação curta de presença e tom;
 - marcador discreto de fala na primeira linha da mensagem pública principal;
 - resumo público derivado do estado já decidido.
@@ -43,6 +44,7 @@ Quando existir `facts.local_model`, ele continua sendo camada assistiva e audita
 - execução;
 - verdade observada pelo probe;
 - `fallback_reason` e `output_text` da seam em nome de polimento, “voz” ou conveniência de renderização.
+- perfil de apresentação em nome de modo operacional, política, rota ou suporte.
 
 ## Choque evitado
 
@@ -50,10 +52,11 @@ Sem essa fronteira, o `decision_record` voltaria a misturar contrato com voz e r
 
 ## Recorte desta linha
 
-Na `v1.4.0`, o corte continua propositalmente pequeno:
+Na `v1.5.0`, o corte continua propositalmente pequeno:
 
 - `facts` concentra o estado operacional;
 - `presentation` concentra a voz;
+- perfis de apresentação ficam em `python/aurora/presentation/profile.py` como renderização interna, sem flag pública nova nesta rodada;
 - o payload legado continua espelhado no topo por compatibilidade;
 - conversação/mediação de ajuda vive em `presentation/orientation.py`, antes do executor, e não vira fato operacional;
 - clarificação controlada de fonte/superfície vive em `presentation/source_clarification.py`, antes do executor, e não vira fato operacional, `source_discovery` nem contrato de recomendação;

@@ -1,10 +1,29 @@
 from __future__ import annotations
 
+from aurora.presentation.profile import ProfileInput, render_profiled_response
 from aurora.presentation.text_polish import apply_speech_indicator
 from aurora.semantics.source_clarification import (
     SourceClarificationKind,
     SourceClarificationRequest,
 )
+
+_SOURCE_LIMITS = (
+    "não executa backend",
+    "não busca em tudo",
+    "não escolhe a melhor fonte",
+    "não cria ambiente",
+    "não adiciona remote",
+    "não faz fallback entre superfícies",
+)
+
+_FLATPAK_REMOTE_LIMITS = (
+    "não adiciona remote automaticamente",
+    "não procura em todos os remotes",
+    "não escolhe o melhor remote",
+    "não faz fallback entre remotes",
+)
+
+_NO_DECISION_RECORD_NOTE = "Esta mensagem não executou backend nem gerou decision record."
 
 
 def _info(text: str) -> str:
@@ -27,17 +46,11 @@ def _syntax_block() -> str:
 
 
 def _no_discovery_clause() -> str:
-    return (
-        "Esta orientação não executa backend, não busca em tudo, não escolhe a melhor fonte, "
-        "não cria ambiente, não adiciona remote e não faz fallback entre superfícies."
-    )
+    return "Esta orientação " + "; ".join(_SOURCE_LIMITS) + "."
 
 
 def _flatpak_remote_limits() -> str:
-    return (
-        "A Aurora não adiciona remote automaticamente, não procura em todos os remotes, "
-        "não escolhe o melhor remote e não faz fallback entre remotes."
-    )
+    return "A Aurora " + "; ".join(_FLATPAK_REMOTE_LIMITS) + "."
 
 
 def _inspect_clause(target: str) -> str:
@@ -77,15 +90,20 @@ def _choose_source(target: str) -> str:
     )
 
 
-def _choose_flatpak_remote(target: str) -> str:
+def _choose_flatpak_remote(target: str, *, profile: ProfileInput = None) -> str:
     subject = f" para '{target}'" if target else ""
     example_target = target or "firefox"
     return _info(
-        f"Para usar remote Flatpak{subject}, escreva o remote explicitamente quando você já souber qual usar.\n"
-        f"- aurora dev \"procurar {example_target} no flatpak flathub\"\n"
-        f"- aurora dev \"instalar {example_target} no flatpak flathub\"\n"
-        "Sem remote explícito, procurar/instalar no Flatpak usa o default observado 'flathub', se observado.\n"
-        f"{_flatpak_remote_limits()}"
+        render_profiled_response(
+            f"Para usar remote Flatpak{subject}, escreva o remote explicitamente quando você já souber qual usar.",
+            steps=(
+                f"aurora dev \"procurar {example_target} no flatpak flathub\"",
+                f"aurora dev \"instalar {example_target} no flatpak flathub\"",
+                "sem remote explícito, procurar/instalar no Flatpak usa o default observado 'flathub', se observado",
+            ),
+            limits=_FLATPAK_REMOTE_LIMITS,
+            profile=profile,
+        )
     )
 
 
@@ -98,25 +116,35 @@ def _where_install(target: str) -> str:
     )
 
 
-def _install_flatpak(target: str) -> str:
+def _install_flatpak(target: str, *, profile: ProfileInput = None) -> str:
     return _info(
-        f"Para orientar instalação Flatpak de '{target}', use marcador explícito:\n"
-        f"- aurora dev \"instalar {target} no flatpak\"\n"
-        f"- aurora dev \"instalar {target} no flatpak flathub\"\n"
-        f"- aurora instalar {target} no flatpak\n"
-        "Sem remote explícito, a Aurora usa o remote default observado 'flathub' para instalar, se ele estiver observado.\n"
-        "Com remote explícito, o nome precisa estar observado no host; a Aurora não adiciona remote automaticamente.\n"
-        f"{_flatpak_remote_limits()}"
+        render_profiled_response(
+            f"Para orientar instalação Flatpak de '{target}', use marcador explícito.",
+            steps=(
+                f"aurora dev \"instalar {target} no flatpak\"",
+                f"aurora dev \"instalar {target} no flatpak flathub\"",
+                f"aurora instalar {target} no flatpak",
+                "sem remote explícito, a Aurora usa o remote default observado 'flathub' para instalar, se ele estiver observado",
+                "com remote explícito, o nome precisa estar observado no host",
+            ),
+            limits=_FLATPAK_REMOTE_LIMITS,
+            profile=profile,
+        )
     )
 
 
-def _flatpak_remote_action(action: str, target: str, remote: str) -> str:
+def _flatpak_remote_action(action: str, target: str, remote: str, *, profile: ProfileInput = None) -> str:
     return _info(
-        f"Para {action} '{target}' no Flatpak usando remote explícito, mantenha o remote na frase:\n"
-        f"- aurora dev \"{action} {target} no flatpak {remote}\"\n"
-        f"- aurora {action} {target} no flatpak {remote}\n"
-        "Esse remote precisa estar observado no host. Se não estiver, a Aurora bloqueia e registra o gap.\n"
-        f"{_flatpak_remote_limits()}"
+        render_profiled_response(
+            f"Para {action} '{target}' no Flatpak usando remote explícito, mantenha o remote na frase.",
+            steps=(
+                f"aurora dev \"{action} {target} no flatpak {remote}\"",
+                f"aurora {action} {target} no flatpak {remote}",
+                "esse remote precisa estar observado no host; se não estiver, a Aurora bloqueia e registra o gap",
+            ),
+            limits=_FLATPAK_REMOTE_LIMITS,
+            profile=profile,
+        )
     )
 
 
@@ -176,43 +204,65 @@ def _compare_aur_host() -> str:
     )
 
 
-def _block_automatic_source_choice(target: str) -> str:
+def _block_automatic_source_choice(target: str, *, profile: ProfileInput = None) -> str:
     return _failure(
-        f"Não escolho fonte ou superfície automaticamente para '{target}'. "
-        "Refaça com marcador explícito: 'no aur', 'no flatpak', 'do copr owner/project', "
-        "'do ppa ppa:owner/name', 'na toolbox <ambiente>', 'na distrobox <ambiente>' ou 'no rpm-ostree'. "
-        "Pedido nu continua no pacote do host. Esta mensagem não executou backend nem gerou decision record."
+        render_profiled_response(
+            f"Não escolho fonte ou superfície automaticamente para '{target}'.",
+            steps=(
+                "refaça com marcador explícito: 'no aur', 'no flatpak', 'do copr owner/project', 'do ppa ppa:owner/name', 'na toolbox <ambiente>', 'na distrobox <ambiente>' ou 'no rpm-ostree'",
+                "pedido nu continua no pacote do host",
+            ),
+            limits=_SOURCE_LIMITS,
+            note=_NO_DECISION_RECORD_NOTE,
+            profile=profile,
+        )
     )
 
 
-def _block_flatpak_remote_choice(target: str) -> str:
+def _block_flatpak_remote_choice(target: str, *, profile: ProfileInput = None) -> str:
     subject = f" para '{target}'" if target else ""
     return _failure(
-        f"Não escolho o melhor remote Flatpak{subject}. "
-        "Escreva o remote explicitamente se você já souber qual usar, por exemplo 'no flatpak flathub'. "
-        f"{_flatpak_remote_limits()} Esta mensagem não executou backend nem gerou decision record."
+        render_profiled_response(
+            f"Não escolho o melhor remote Flatpak{subject}.",
+            steps=("escreva o remote explicitamente se você já souber qual usar, por exemplo 'no flatpak flathub'",),
+            limits=_FLATPAK_REMOTE_LIMITS,
+            note=_NO_DECISION_RECORD_NOTE,
+            profile=profile,
+        )
     )
 
 
-def _block_flatpak_remote_add(remote: str) -> str:
+def _block_flatpak_remote_add(remote: str, *, profile: ProfileInput = None) -> str:
     suffix = f" '{remote}'" if remote else ""
     return _failure(
-        f"Adicionar remote Flatpak{suffix} está fora do recorte atual. "
-        "A Aurora só usa remotes já observados pelo host em pedidos Flatpak explícitos. "
-        f"{_flatpak_remote_limits()} Esta mensagem não executou backend nem gerou decision record."
+        render_profiled_response(
+            f"Adicionar remote Flatpak{suffix} está fora do recorte atual.",
+            steps=("a Aurora só usa remotes já observados pelo host em pedidos Flatpak explícitos",),
+            limits=_FLATPAK_REMOTE_LIMITS,
+            note=_NO_DECISION_RECORD_NOTE,
+            profile=profile,
+        )
     )
 
 
-def _block_flatpak_remote_all(target: str) -> str:
+def _block_flatpak_remote_all(target: str, *, profile: ProfileInput = None) -> str:
     subject = f" para '{target}'" if target else ""
     return _failure(
-        f"Não procuro em todos os remotes Flatpak{subject}. "
-        "Use um remote selecionado pela frase ou o default observado quando nenhum remote explícito for informado. "
-        f"{_flatpak_remote_limits()} Esta mensagem não executou backend nem gerou decision record."
+        render_profiled_response(
+            f"Não procuro em todos os remotes Flatpak{subject}.",
+            steps=("use um remote selecionado pela frase ou o default observado quando nenhum remote explícito for informado",),
+            limits=_FLATPAK_REMOTE_LIMITS,
+            note=_NO_DECISION_RECORD_NOTE,
+            profile=profile,
+        )
     )
 
 
-def render_source_clarification(request: SourceClarificationRequest) -> str:
+def render_source_clarification(
+    request: SourceClarificationRequest,
+    *,
+    profile: ProfileInput = None,
+) -> str:
     if request.kind == SourceClarificationKind.EXPLAIN_SOURCES:
         return _explain_sources()
     if request.kind == SourceClarificationKind.EXPLAIN_SURFACES:
@@ -222,15 +272,15 @@ def render_source_clarification(request: SourceClarificationRequest) -> str:
     if request.kind == SourceClarificationKind.CHOOSE_SOURCE:
         return _choose_source(request.target)
     if request.kind == SourceClarificationKind.CHOOSE_FLATPAK_REMOTE:
-        return _choose_flatpak_remote(request.target)
+        return _choose_flatpak_remote(request.target, profile=profile)
     if request.kind == SourceClarificationKind.WHERE_INSTALL:
         return _where_install(request.target)
     if request.kind == SourceClarificationKind.INSTALL_FLATPAK:
-        return _install_flatpak(request.target)
+        return _install_flatpak(request.target, profile=profile)
     if request.kind == SourceClarificationKind.INSTALL_FLATPAK_REMOTE:
-        return _flatpak_remote_action("instalar", request.target, request.remote)
+        return _flatpak_remote_action("instalar", request.target, request.remote, profile=profile)
     if request.kind == SourceClarificationKind.SEARCH_FLATPAK_REMOTE:
-        return _flatpak_remote_action("procurar", request.target, request.remote)
+        return _flatpak_remote_action("procurar", request.target, request.remote, profile=profile)
     if request.kind == SourceClarificationKind.INSTALL_AUR:
         return _install_aur(request.target)
     if request.kind == SourceClarificationKind.INSTALL_TOOLBOX:
@@ -244,11 +294,11 @@ def render_source_clarification(request: SourceClarificationRequest) -> str:
     if request.kind == SourceClarificationKind.COMPARE_AUR_HOST:
         return _compare_aur_host()
     if request.kind == SourceClarificationKind.BLOCK_AUTOMATIC_SOURCE_CHOICE:
-        return _block_automatic_source_choice(request.target)
+        return _block_automatic_source_choice(request.target, profile=profile)
     if request.kind == SourceClarificationKind.BLOCK_FLATPAK_REMOTE_CHOICE:
-        return _block_flatpak_remote_choice(request.target)
+        return _block_flatpak_remote_choice(request.target, profile=profile)
     if request.kind == SourceClarificationKind.BLOCK_FLATPAK_REMOTE_ADD:
-        return _block_flatpak_remote_add(request.remote)
+        return _block_flatpak_remote_add(request.remote, profile=profile)
     if request.kind == SourceClarificationKind.BLOCK_FLATPAK_REMOTE_ALL:
-        return _block_flatpak_remote_all(request.target)
+        return _block_flatpak_remote_all(request.target, profile=profile)
     raise ValueError(f"Unsupported source clarification kind: {request.kind.value}")

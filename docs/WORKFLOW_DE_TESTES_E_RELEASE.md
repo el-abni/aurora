@@ -1,10 +1,10 @@
-# Workflow de Testes e Release - Aurora v1.4.1 local
+# Workflow de Testes e Release - Aurora v1.5.0
 
 ## Papel
 
-Este documento formaliza a disciplina operacional preservada pela `v1.4.1` local.
+Este documento formaliza a disciplina operacional preservada pela `v1.5.0`.
 
-A `v1.4.1` é um marco local corretivo de workflow/docs de testes, não uma release pública normal. A release pública normal mais recente continua sendo a `v1.4.0`; a próxima publicação normal planejada fica para `v1.5.0`, em rodada posterior.
+A `v1.5.0` é release pública normal futura de perfis de apresentação e clareza pública. Ela não altera runtime operacional, policy, rotas, execução, facts ou schema do `decision_record`.
 
 Ele não abre domínio novo, não cria framework de CI e não substitui leitura do código. Ele existe para separar claramente:
 
@@ -124,7 +124,7 @@ Nunca devem subir por gate automático sozinho:
 - mudanças em handoff interativo, prompts, senha, `toolbox`, `distrobox`, `rpm-ostree` ou AUR;
 - qualquer alteração cuja honestidade só apareça no terminal real.
 
-## Leitura correta da v1.4.0
+## Leitura correta da v1.5.0
 
 - `tests/release_gate_canonic_line.sh` continua sendo a régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` continua como gate histórico;
@@ -137,11 +137,13 @@ Nunca devem subir por gate automático sozinho:
 - a `v1.2.0` adicionou orientação determinística antes do executor, sem abrir domínio operacional novo;
 - a `v1.3.0` adiciona clarificação controlada de fonte/superfície antes do executor, sem `source_discovery`, escolha automática, fallback ou backend;
 - a `v1.4.0` adiciona orientação de remote Flatpak explícito e bloqueia melhor remote, remote-add e busca em todos os remotes antes do executor.
+- a `v1.5.0` adiciona perfis internos de apresentação e clareza pública sem mudar facts, policy, route, execution ou `aurora.decision_record.v1`.
 
-## Checklist curta da v1.4.0
+## Checklist curta da v1.5.0
 
 Para este corte, a revisão curta precisa confirmar:
 
+- perfis de apresentação mudam apenas renderização pública e não contaminam `aurora dev`;
 - `aurora explicar fontes`, `aurora explicar superfícies`, `aurora onde instalar firefox?` e bloqueios como `aurora instalar firefox onde for melhor` retornam sem execução;
 - `aurora explicar remote flatpak`, `aurora como instalar firefox no flatpak flathub?` e bloqueios como `aurora qual melhor remote flatpak para firefox?` retornam sem execução;
 - `aurora versão`, `auro versão`, tópicos de orientação e perguntas fechadas retornam exit 0 sem execução;

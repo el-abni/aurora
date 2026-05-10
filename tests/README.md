@@ -15,9 +15,9 @@ Ela não existe para:
 - justificar abertura de feature nova;
 - substituir leitura humana quando a fronteira ainda é conceitual.
 
-## Três camadas da v1.4.1 local
+## Três camadas da v1.5.0
 
-A `v1.4.1` é um marco local corretivo de workflow. Ela preserva as três camadas da `v1.4.0` e não muda runtime:
+A `v1.5.0` é uma release pública normal futura de perfis de apresentação e clareza pública. Ela preserva as três camadas da `v1.4.0` e não muda runtime:
 
 - teste automático para regressão executável;
 - revisão manual para diffs, docs, help, versão e coerência pública;
@@ -59,6 +59,7 @@ Esse gate é a régua corrente da linha porque protege:
 - a orientação determinística da `v1.2.0` sem execução acidental;
 - a clarificação controlada de fonte/superfície da `v1.3.0` sem `source_discovery`, escolha automática ou execução acidental;
 - a orientação de remote Flatpak explícito da `v1.4.0` sem remote-add, busca em todos os remotes, melhor remote ou fallback.
+- a renderização perfilada da `v1.5.0` sem alterar facts, policy, rota, execução ou `decision_record`.
 
 ## Gates operacionais por etapa
 
@@ -155,7 +156,7 @@ Leitura correta:
 - `audit_local_model_eval_baseline.py` congela um corpus curto para comparar `model_off` e `model_on` sem deixar o modelo tocar policy, route, execution ou verdade operacional;
 - `audit_workflow_release.py` protege o workflow disciplinado da `v1.4.0`;
 - `test_conversation_mediation.py` protege tópicos e perguntas fechadas da `v1.2.0`;
-- `test_source_clarification.py` protege clarificação controlada, remote Flatpak explícito, bloqueios pré-executor e preservação de comandos operacionais existentes da `v1.4.0`;
+- `test_source_clarification.py` protege clarificação controlada, remote Flatpak explícito, bloqueios pré-executor, perfis de apresentação e preservação de comandos operacionais existentes da `v1.5.0`;
 - esta base protege auditabilidade e estabilidade de linha, não expansão de produto.
 
 ## Limites deliberados

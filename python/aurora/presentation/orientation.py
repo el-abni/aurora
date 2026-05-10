@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from aurora.presentation.profile import ProfileInput, render_profiled_response
 from aurora.presentation.text_polish import apply_speech_indicator
 from aurora.semantics.orientation import (
     QUESTION_INSTALL,
@@ -112,47 +113,71 @@ def _topic_usage() -> str:
     )
 
 
-def _question_install(target: str) -> str:
+def _question_install(target: str, *, profile: ProfileInput = None) -> str:
     return _info(
-        f"Para instalar '{target}', primeiro inspecione com:\n"
-        f"- aurora dev \"instalar {target}\"\n"
-        "Se a rota e a policy fizerem sentido, o comando operacional é:\n"
-        f"- aurora instalar {target}\n"
-        "Esta resposta é apenas orientação: não executei backend, não escolhi fonte e não alterei o sistema."
+        render_profiled_response(
+            f"Para instalar '{target}', primeiro inspecione a decisão.",
+            steps=(
+                f"aurora dev \"instalar {target}\"",
+                f"aurora instalar {target}",
+            ),
+            limits=("não executei backend", "não escolhi fonte", "não alterei o sistema"),
+            profile=profile,
+        )
     )
 
 
-def _question_search(target: str) -> str:
+def _question_search(target: str, *, profile: ProfileInput = None) -> str:
     return _info(
-        f"Para procurar '{target}', use:\n"
-        f"- aurora procurar {target}\n"
-        f"Para ler a decisão antes, use:\n"
-        f"- aurora dev \"procurar {target}\"\n"
-        "Esta resposta não fez busca real nem escolheu fonte. Marque a fonte explicitamente se quiser AUR, COPR, PPA, Flatpak, toolbox, distrobox ou rpm-ostree."
+        render_profiled_response(
+            f"Para procurar '{target}', use o comando operacional explícito.",
+            steps=(
+                f"aurora procurar {target}",
+                f"aurora dev \"procurar {target}\"",
+            ),
+            limits=(
+                "não fiz busca real nesta resposta",
+                "não escolhi fonte",
+                "marque AUR, COPR, PPA, Flatpak, toolbox, distrobox ou rpm-ostree explicitamente",
+            ),
+            profile=profile,
+        )
     )
 
 
-def _question_remove(target: str) -> str:
+def _question_remove(target: str, *, profile: ProfileInput = None) -> str:
     return _info(
-        f"Para remover '{target}', primeiro inspecione com:\n"
-        f"- aurora dev \"remover {target}\"\n"
-        "Se a rota e a policy fizerem sentido, a mutação real exige confirmação explícita:\n"
-        f"- aurora remover {target} --confirm\n"
-        "Esta resposta é apenas orientação: não removi nada e não executei backend."
+        render_profiled_response(
+            f"Para remover '{target}', primeiro inspecione a decisão.",
+            steps=(
+                f"aurora dev \"remover {target}\"",
+                f"aurora remover {target} --confirm",
+            ),
+            limits=("não removi nada", "não executei backend", "mutação real exige confirmação explícita"),
+            profile=profile,
+        )
     )
 
 
-def _question_update_system() -> str:
+def _question_update_system(*, profile: ProfileInput = None) -> str:
     return _info(
-        "Para atualizar o sistema no recorte atual, primeiro inspecione com:\n"
-        "- aurora dev \"atualizar sistema\"\n"
-        "A rota real aberta continua estreita e exige confirmação explícita:\n"
-        "- aurora atualizar sistema --confirm\n"
-        "Ela só é suportada no host Arch mutável com pacman observado e backend sudo + pacman. Esta resposta não atualizou o sistema."
+        render_profiled_response(
+            "Para atualizar o sistema no recorte atual, primeiro inspecione a decisão.",
+            steps=(
+                "aurora dev \"atualizar sistema\"",
+                "aurora atualizar sistema --confirm",
+            ),
+            limits=(
+                "não atualizei o sistema",
+                "rota real exige confirmação explícita",
+                "suporte aberto só no host Arch mutável com pacman observado e backend sudo + pacman",
+            ),
+            profile=profile,
+        )
     )
 
 
-def render_orientation(request: OrientationRequest) -> str:
+def render_orientation(request: OrientationRequest, *, profile: ProfileInput = None) -> str:
     renderers = {
         TOPIC_EXAMPLES: _topic_examples,
         TOPIC_LIMITS: _topic_limits,
@@ -162,12 +187,13 @@ def render_orientation(request: OrientationRequest) -> str:
         TOPIC_DECISION_RECORD: _topic_decision_record,
         TOPIC_PRODUCT: _topic_product,
         TOPIC_USAGE: _topic_usage,
-        QUESTION_UPDATE_SYSTEM: _question_update_system,
     }
     if request.topic == QUESTION_INSTALL:
-        return _question_install(request.target)
+        return _question_install(request.target, profile=profile)
     if request.topic == QUESTION_SEARCH:
-        return _question_search(request.target)
+        return _question_search(request.target, profile=profile)
     if request.topic == QUESTION_REMOVE:
-        return _question_remove(request.target)
+        return _question_remove(request.target, profile=profile)
+    if request.topic == QUESTION_UPDATE_SYSTEM:
+        return _question_update_system(profile=profile)
     return renderers[request.topic]()
