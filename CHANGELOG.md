@@ -29,7 +29,7 @@ Perfis de apresentação e clareza pública. Esta é a próxima release pública
 - `source_discovery`, fallback automático, melhor fonte, melhor remote, busca transversal e busca em todos os remotes;
 - `flatpak remote-add`, add automático de remote e administração ampla de remotes Flatpak;
 - sem flag pública nova para seleção de perfil;
-- `local_index/open_target`, desktop/KDE adapter, mídia, LinuxToys, Personas, agentes no runtime, novo schema de `decision_record` e qualquer mudança na Aury;
+- `local_index/open_target`, novo schema de `decision_record` e qualquer mudança na Aury;
 - autoridade operacional nova para `local_model`.
 
 ## 🌌 Aurora v1.4.1
