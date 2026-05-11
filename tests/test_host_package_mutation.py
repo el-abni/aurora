@@ -86,7 +86,10 @@ class HostPackageMutationTests(unittest.TestCase):
                 repo_packages=("obs-studio|OBS Studio",),
                 installed_packages=("obs-studio",),
             )
-            exit_code, record, message = perform_execution(plan_text("remover obs studio", environ=env), environ=env)
+            exit_code, record, message = perform_execution(
+                plan_text("remover obs studio", environ=env, confirmed=True),
+                environ=env,
+            )
             payload = decision_record_to_dict(record)
             self.assertEqual(exit_code, 0)
             self.assertEqual(payload["target_resolution"]["status"], "resolved")
@@ -174,7 +177,7 @@ class HostPackageMutationTests(unittest.TestCase):
                         repo_packages=("firefox",),
                         installed_packages=("firefox",),
                     )
-                    proc = run_module("remover", "firefox", env=env)
+                    proc = run_module("remover", "firefox", "--confirm", env=env)
                     self.assertEqual(proc.returncode, 0)
                     self.assertIn("foi removido", proc.stdout)
                     self.assertNotIn("firefox", state_file.read_text(encoding="utf-8"))
@@ -195,7 +198,53 @@ class HostPackageMutationTests(unittest.TestCase):
             self.assertIn("já está instalado", proc.stdout)
             self.assertEqual(state_file.read_text(encoding="utf-8").strip(), "firefox")
 
-    def test_remove_noop_when_package_is_absent(self) -> None:
+    def test_regular_host_remove_requires_confirmation_and_respects_confirm_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("firefox",),
+                installed_packages=("firefox",),
+            )
+            blocked_payload = decision_record_to_dict(plan_text("remover firefox", environ=env))
+            self.assertEqual(blocked_payload["outcome"], "blocked")
+            self.assertEqual(blocked_payload["policy"]["policy_outcome"], "require_confirmation")
+            self.assertTrue(blocked_payload["policy"]["requires_confirmation"])
+            self.assertFalse(blocked_payload["policy"]["confirmation_supplied"])
+            self.assertEqual(blocked_payload["execution_route"]["route_id"], "host_package.remover")
+            self.assertEqual(
+                blocked_payload["execution_route"]["command"],
+                ["sudo", "pacman", "-Rns", "--", "firefox"],
+            )
+
+            blocked_dev = run_module("dev", "remover firefox", env=env)
+            self.assertEqual(blocked_dev.returncode, 0)
+            self.assertIn("policy_outcome:          require_confirmation", blocked_dev.stdout)
+            self.assertIn("requires_confirmation:   true", blocked_dev.stdout)
+            self.assertIn("confirmation_supplied:   false", blocked_dev.stdout)
+            self.assertIn("firefox", state_file.read_text(encoding="utf-8"))
+
+            confirmed_payload = decision_record_to_dict(plan_text("remover firefox --confirm", environ=env))
+            self.assertEqual(confirmed_payload["outcome"], "planned")
+            self.assertEqual(confirmed_payload["policy"]["policy_outcome"], "allow")
+            self.assertTrue(confirmed_payload["policy"]["requires_confirmation"])
+            self.assertTrue(confirmed_payload["policy"]["confirmation_supplied"])
+
+            confirmed_dev = run_module("dev", "remover firefox --confirm", env=env)
+            self.assertEqual(confirmed_dev.returncode, 0)
+            self.assertIn("policy_outcome:          allow", confirmed_dev.stdout)
+            self.assertIn("requires_confirmation:   true", confirmed_dev.stdout)
+            self.assertIn("confirmation_supplied:   true", confirmed_dev.stdout)
+
+            confirmed = run_module("remover", "firefox", "--confirm", env=env)
+            self.assertEqual(confirmed.returncode, 0)
+            self.assertIn("foi removido", confirmed.stdout)
+            self.assertNotIn("firefox", state_file.read_text(encoding="utf-8"))
+
+    def test_absent_host_remove_stays_safe_until_confirmed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             env, state_file = setup_host_package_testbed(
@@ -206,9 +255,34 @@ class HostPackageMutationTests(unittest.TestCase):
                 repo_packages=("firefox",),
             )
             proc = run_module("remover", "firefox", env=env)
-            self.assertEqual(proc.returncode, 0)
-            self.assertIn("já não está instalado", proc.stdout)
+            self.assertEqual(proc.returncode, 1)
+            self.assertIn("exige confirmação explícita", proc.stdout)
             self.assertEqual(state_file.read_text(encoding="utf-8"), "")
+
+            confirmed = run_module("remover", "firefox", "--confirm", env=env)
+            self.assertEqual(confirmed.returncode, 0)
+            self.assertIn("já não está instalado", confirmed.stdout)
+            self.assertEqual(state_file.read_text(encoding="utf-8"), "")
+
+    def test_host_package_install_and_search_policy_stay_unchanged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=("firefox",),
+            )
+            install_payload = decision_record_to_dict(plan_text("instalar firefox", environ=env))
+            self.assertEqual(install_payload["policy"]["policy_outcome"], "allow")
+            self.assertFalse(install_payload["policy"]["requires_confirmation"])
+            self.assertEqual(install_payload["execution_route"]["route_id"], "host_package.instalar")
+
+            search_payload = decision_record_to_dict(plan_text("procurar firefox", environ=env))
+            self.assertEqual(search_payload["policy"]["policy_outcome"], "allow")
+            self.assertFalse(search_payload["policy"]["requires_confirmation"])
+            self.assertEqual(search_payload["execution_route"]["route_id"], "host_package.procurar")
 
     def test_atomic_host_blocks_mutation_by_policy(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -277,7 +351,7 @@ class HostPackageMutationTests(unittest.TestCase):
             self.assertIn("foi removido", confirmed.stdout)
             self.assertNotIn("sudo", state_file.read_text(encoding="utf-8"))
 
-    def test_sensitive_remove_noops_when_package_is_already_absent(self) -> None:
+    def test_sensitive_remove_noops_when_package_is_already_absent_after_confirmation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             env, state_file = setup_host_package_testbed(
@@ -288,6 +362,11 @@ class HostPackageMutationTests(unittest.TestCase):
                 repo_packages=("sudo",),
             )
             proc = run_module("remover", "sudo", env=env)
+            self.assertEqual(proc.returncode, 1)
+            self.assertIn("exige confirmação explícita", proc.stdout)
+            self.assertEqual(state_file.read_text(encoding="utf-8"), "")
+
+            proc = run_module("remover", "sudo", "--confirm", env=env)
             self.assertEqual(proc.returncode, 0)
             self.assertIn("já não está instalado", proc.stdout)
             self.assertEqual(state_file.read_text(encoding="utf-8"), "")

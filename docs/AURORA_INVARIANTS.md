@@ -1,4 +1,4 @@
-# Aurora Invariants - v1.5.0
+# Aurora Invariants - v1.5.1
 
 ## Papel
 
@@ -20,9 +20,13 @@ A Aurora só promove frente quando existe contrato explícito, policy, execuçã
 
 `host_maintenance.atualizar` abre apenas `atualizar sistema` no host Arch mutável com `pacman` observado. `sudo + pacman` é o backend do recorte; helpers AUR, otimização e bundles de manutenção continuam fora.
 
+### Remoção direta do host exige confirmação explícita
+
+`host_package.remover` é mutação do host. Sem `--confirm`, a policy precisa ficar em `require_confirmation`; com `--confirm`, a rota existente pode ser planejada sem mudar schema, backend ou fonte.
+
 ### Conversação e clarificação não viram autoridade operacional
 
-Na `v1.5.0`, tópicos, perguntas fechadas, clarificação controlada de fonte/superfície, orientação de remote Flatpak e perfis internos de apresentação orientam o uso, mas não executam backend, não buscam em tudo, não escolhem fonte ou remote, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
+Na `v1.5.1`, tópicos, perguntas fechadas, clarificação controlada de fonte/superfície, orientação de remote Flatpak e perfis internos de apresentação orientam o uso, mas não executam backend, não buscam em tudo, não escolhem fonte ou remote, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
 
 ### Clarificação controlada não é descoberta de fonte
 

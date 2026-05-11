@@ -1,4 +1,4 @@
-# Review Checklist - Aurora v1.5.0
+# Review Checklist - Aurora v1.5.1
 
 Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplica, a dispensa precisa ser consciente.
 
@@ -12,6 +12,7 @@ Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplic
 - [ ] `aurora explicar fontes`, `aurora explicar superfícies`, `aurora onde instalar firefox?` e bloqueios como `aurora instalar firefox onde for melhor` foram testados sem execução.
 - [ ] `aurora explicar remote flatpak`, `aurora como instalar firefox no flatpak flathub?`, `aurora como procurar firefox no flatpak flathub?` e bloqueios como `aurora qual melhor remote flatpak para firefox?`, `aurora adicionar remote flatpak flathub` e `aurora procurar firefox em todos os remotes flatpak` foram testados sem execução.
 - [ ] Perfis de apresentação foram revisados como renderização pública, sem nova flag pública, sem mudar parser, policy, route, execution, facts ou `decision_record`.
+- [ ] `aurora dev "remover firefox"` e `aurora dev "remover firefox --confirm"` foram lidos para confirmar policy de remoção do host sem executar remoção real.
 - [ ] Se contrato, payload ou renderização mudaram, `aurora dev "<caso feliz>"` e `aurora dev "<caso ruim>"` foram lidos.
 
 ## Seam `local_model` herdada da v1.0.0

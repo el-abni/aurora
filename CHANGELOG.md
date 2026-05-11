@@ -1,5 +1,20 @@
 # Changelog
 
+## 🌌 Aurora v1.5.1
+
+Correção pequena de policy/contrato: `host_package.remover` exige confirmação explícita para remoção de pacote do host.
+
+### Corrigido
+
+- `host_package.remover` sem `--confirm` agora bloqueia em `policy_outcome: require_confirmation`, com `requires_confirmation: true` e `confirmation_supplied: false`;
+- `host_package.remover` com `--confirm` preserva a rota existente e permite o plano com `policy_outcome: allow`, mantendo o comando `sudo pacman -Rns -- <pacote>` no Arch mutável suportado.
+
+### Preservado
+
+- sem mudanças de schema, route, execution backend, Flatpak, `local_model` ou presentation profiles;
+- sem mudanças em instalar/procurar, `host_maintenance`, AUR/COPR/PPA, toolbox, distrobox ou rpm-ostree;
+- a disciplina de workflow segue pelos gates `tests/release_gate_canonic_line.sh`, `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh`, `tests/release_gate_pre_release.sh`, `tests/audit_workflow_release.py`, `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` e `tests/REVIEW_CHECKLIST.md`, preservando `stable_ids` e `presentation`.
+
 ## 🌌 Aurora v1.5.0
 
 Perfis de apresentação e clareza pública. Esta é a próxima release pública normal futura da linha: melhora a voz pública e a leitura de bloqueios sem adicionar capacidade operacional nova.

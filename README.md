@@ -1,13 +1,13 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v1.5.0-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v1.5.1-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com contrato pequeno, política explícita, execução real e observabilidade própria.
 
-A release pública atual é a `v1.5.0`. Ela melhora perfis internos de apresentação, clareza pública e leitura de bloqueios sem mudar o runtime operacional. O recorte `Remote Flatpak explícito` da `v1.4.0` continua preservado: a Aurora explica remote default observado vs remote explícito, orienta `no flatpak flathub` e bloqueia pedidos de melhor remote, `remote-add` e busca em todos os remotes. A clarificação controlada de fonte/superfície da `v1.3.0`, a conversação/mediação da `v1.2.0` e a absorção `host_maintenance.atualizar` da `v1.1.0` continuam preservadas.
+A release pública atual é a `v1.5.1`. Ela corrige a policy de confirmação de `host_package.remover`: remoção direta de pacote do host exige `--confirm`. A `v1.5.0` continua preservada como corte de perfis internos de apresentação, clareza pública e leitura de bloqueios. O recorte `Remote Flatpak explícito` da `v1.4.0` continua preservado: a Aurora explica remote default observado vs remote explícito, orienta `no flatpak flathub` e bloqueia pedidos de melhor remote, `remote-add` e busca em todos os remotes. A clarificação controlada de fonte/superfície da `v1.3.0`, a conversação/mediação da `v1.2.0` e a absorção `host_maintenance.atualizar` da `v1.1.0` continuam preservadas.
 
 ## O que é
 
@@ -63,6 +63,8 @@ aurora dev "atualizar sistema"
 ```
 
 Sem `--confirm`, `atualizar sistema` deve bloquear e pedir confirmação. Com `--confirm`, a rota real suportada hoje é `host_maintenance.atualizar` no Arch mutável observado, usando `sudo + pacman`.
+
+Remoção direta de pacote do host também exige confirmação explícita: `aurora dev "remover firefox"` deve mostrar `policy_outcome: require_confirmation`; `aurora dev "remover firefox --confirm"` deve mostrar `policy_outcome: allow`.
 
 Fontes explícitas:
 
@@ -120,9 +122,10 @@ Texto de ajuda, polimento e renderização não viram contrato. Quando um consum
 
 ## Recorte atual
 
-Na `v1.5.0`, a superfície pública continua pequena:
+Na `v1.5.1`, a superfície pública continua pequena:
 
 - `host_package` para pacotes do host;
+- `host_package.remover` exige `--confirm` para remoção direta de pacote do host;
 - `host_maintenance.atualizar` para `atualizar sistema` no Arch mutável com `pacman`;
 - orientação determinística de ajuda antes do executor, sem novo domínio operacional;
 - clarificação controlada de fonte/superfície antes do executor, sem `source_discovery`;

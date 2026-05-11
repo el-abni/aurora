@@ -10,9 +10,19 @@ ROOT = Path(__file__).resolve().parents[1]
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 LOCAL_CORRECTIVE_VERSION = "v1.4.1"
 PRESENTATION_RELEASE_VERSION = "v1.5.0"
+HOST_REMOVE_CONFIRMATION_VERSION = "v1.5.1"
 PUBLIC_RELEASE_VERSION = "v1.4.0" if VERSION == LOCAL_CORRECTIVE_VERSION else VERSION
-OPERATIONAL_BASE_VERSION = "v1.4.0" if VERSION == PRESENTATION_RELEASE_VERSION else PUBLIC_RELEASE_VERSION
-SUPPORTED_CURRENT_VERSIONS = {"v1.4.0", LOCAL_CORRECTIVE_VERSION, PRESENTATION_RELEASE_VERSION}
+OPERATIONAL_BASE_VERSION = (
+    "v1.4.0"
+    if VERSION in {PRESENTATION_RELEASE_VERSION, HOST_REMOVE_CONFIRMATION_VERSION}
+    else PUBLIC_RELEASE_VERSION
+)
+SUPPORTED_CURRENT_VERSIONS = {
+    "v1.4.0",
+    LOCAL_CORRECTIVE_VERSION,
+    PRESENTATION_RELEASE_VERSION,
+    HOST_REMOVE_CONFIRMATION_VERSION,
+}
 PUBLIC_FILES = (
     "README.md",
     "CHANGELOG.md",
@@ -94,7 +104,7 @@ def public_surface_sensitive_markers() -> tuple[str, ...]:
 def main() -> int:
     ensure(
         VERSION in SUPPORTED_CURRENT_VERSIONS,
-        "VERSION precisa estar em v1.4.0 publico, v1.4.1 local corretivo ou v1.5.0 presentation nesta linha",
+        "VERSION precisa estar em v1.4.0 publico, v1.4.1 local corretivo, v1.5.0 presentation ou v1.5.1 corretivo nesta linha",
     )
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
     ok(f"VERSION alinhado para {VERSION}")
@@ -133,6 +143,23 @@ def main() -> int:
                 term in changelog or normalize(term) in changelog_normalized,
                 f"CHANGELOG.md precisa registrar {term} na v1.5.0",
             )
+    if VERSION == HOST_REMOVE_CONFIRMATION_VERSION:
+        for term in (
+            "host_package.remover",
+            "policy_outcome: require_confirmation",
+            "requires_confirmation: true",
+            "confirmation_supplied: false",
+            "policy_outcome: allow",
+            "sudo pacman -Rns -- <pacote>",
+            "sem mudanças de schema",
+            "Flatpak",
+            "local_model",
+            "presentation profiles",
+        ):
+            ensure(
+                term in changelog or normalize(term) in changelog_normalized,
+                f"CHANGELOG.md precisa registrar {term} na v1.5.1",
+            )
     if VERSION == LOCAL_CORRECTIVE_VERSION:
         preserved_versions = (
             PUBLIC_RELEASE_VERSION,
@@ -152,6 +179,7 @@ def main() -> int:
         )
     else:
         preserved_versions = (
+            "v1.5.0",
             "v1.4.1",
             "v1.4.0",
             "v1.3.0",

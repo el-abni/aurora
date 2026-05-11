@@ -42,7 +42,7 @@ Os campos ativos desta release são:
 - `trust_level=distribution_managed`;
 - mutação do host em perfil Atomic/imutável continua bloqueada quando a frase não escolhe uma superfície;
 - em host imutável, a política expõe `immutable_observed_surfaces` e `immutable_selected_surface=block` quando a inferência seria frouxa demais;
-- mutações sensíveis pedem confirmação explícita.
+- remoção direta de pacote do host e mutações sensíveis pedem confirmação explícita.
 
 ### `host_maintenance`
 
@@ -171,7 +171,7 @@ Pode resultar, no mínimo, em:
 
 ### `requires_confirmation`
 
-Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de mutações sensíveis.
+Quando verdadeiro, a Aurora pede confirmação explícita com `--confirm` antes de remoção direta de pacote do host e antes de mutações sensíveis.
 
 Na `v1.4.0`, `--confirm` e `--yes` são aceitos como marcadores equivalentes de confirmação explícita, inclusive quando entram inline na frase inspecionada.
 
@@ -206,6 +206,8 @@ Registra o peso de reversão esperado da mutação, por exemplo:
 
 - `aurora instalar firefox`
   resultado típico: `allow`
+- `aurora remover firefox`
+  resultado típico: `require_confirmation`
 - `aurora remover sudo`
   resultado típico: `require_confirmation`
 - `aurora instalar firefox` em host Atomic/imutável

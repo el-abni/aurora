@@ -230,8 +230,8 @@ def _assess_host_package_policy(
 ) -> PolicyAssessment | None:
     software_criticality = _host_package_software_criticality(request)
     reversal_level = _host_package_reversal_level(request.intent, software_criticality)
-    requires_confirmation = (
-        request.intent in {"instalar", "remover"} and software_criticality in {"high", "sensitive"}
+    requires_confirmation = request.intent == "remover" or (
+        request.intent == "instalar" and software_criticality in {"high", "sensitive"}
     )
     immutable_host_facts = _immutable_host_facts(profile, selected_surface="block")
 
@@ -308,10 +308,14 @@ def _assess_host_package_policy(
 
     if outcome == "allow" and requires_confirmation and not confirmation_supplied:
         outcome = "require_confirmation"
-        trust_gaps.append("confirmation_missing_for_sensitive_mutation")
-        reason = (
-            "esta mutacao toca um pacote de criticidade elevada e exige confirmacao explicita nesta rodada."
-        )
+        if request.intent == "remover":
+            trust_gaps.append("confirmation_missing_for_host_package_remove")
+            reason = "remocao de pacote do host exige confirmacao explicita nesta rodada."
+        else:
+            trust_gaps.append("confirmation_missing_for_sensitive_mutation")
+            reason = (
+                "esta mutacao toca um pacote de criticidade elevada e exige confirmacao explicita nesta rodada."
+            )
 
     return PolicyAssessment(
         domain_kind="host_package",

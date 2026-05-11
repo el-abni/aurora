@@ -299,6 +299,15 @@ def _requires_state_confirmation(record: DecisionRecord) -> bool:
     return route.action_name in {"instalar", "remover"}
 
 
+def _is_direct_host_package_remove(record: DecisionRecord) -> bool:
+    return (
+        record.request.domain_kind == "host_package"
+        and record.request.intent == "remover"
+        and record.request.execution_surface == "host"
+        and not record.request.requested_source
+    )
+
+
 def _confirmation_message(record: DecisionRecord) -> str:
     if _is_host_maintenance(record):
         return host_maintenance_confirmation_required_message()
@@ -504,6 +513,27 @@ def _execute_mutation(
 ) -> tuple[int, DecisionRecord, str]:
     route = record.execution_route
     assert route is not None
+
+    if (
+        _is_direct_host_package_remove(record)
+        and record.policy is not None
+        and record.policy.policy_outcome == "require_confirmation"
+    ):
+        message = _confirmation_message(record)
+        return _result(
+            record,
+            exit_code=1,
+            outcome="blocked",
+            message=message,
+            execution=ExecutionResult(
+                status="confirmation_required",
+                attempted=False,
+                confirmation_supplied=record.policy.confirmation_supplied,
+                command=route.command,
+                interactive_passthrough=route.interactive_passthrough,
+                summary=message,
+            ),
+        )
 
     pre_probe = _probe_state(record, run=run, environ=environ)
     if pre_probe.status == "probe_missing":

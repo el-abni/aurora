@@ -15,9 +15,9 @@ Ela não existe para:
 - justificar abertura de feature nova;
 - substituir leitura humana quando a fronteira ainda é conceitual.
 
-## Três camadas da v1.5.0
+## Três camadas da v1.5.1
 
-A `v1.5.0` é uma release pública normal futura de perfis de apresentação e clareza pública. Ela preserva as três camadas da `v1.4.0` e não muda runtime:
+A `v1.5.1` é uma release corretiva pequena de policy para confirmação de `host_package.remover`. Ela preserva as três camadas da `v1.4.0` e os perfis de apresentação da `v1.5.0`:
 
 - teste automático para regressão executável;
 - revisão manual para diffs, docs, help, versão e coerência pública;
@@ -60,6 +60,7 @@ Esse gate é a régua corrente da linha porque protege:
 - a clarificação controlada de fonte/superfície da `v1.3.0` sem `source_discovery`, escolha automática ou execução acidental;
 - a orientação de remote Flatpak explícito da `v1.4.0` sem remote-add, busca em todos os remotes, melhor remote ou fallback.
 - a renderização perfilada da `v1.5.0` sem alterar facts, policy, rota, execução ou `decision_record`.
+- a confirmação obrigatória de `host_package.remover` na `v1.5.1` sem mudar schema, backend, Flatpak, `local_model` ou perfis de apresentação.
 
 ## Gates operacionais por etapa
 
