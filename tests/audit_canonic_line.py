@@ -8,7 +8,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 LOCAL_CORRECTIVE_VERSION = "v1.4.1"
-PUBLIC_RELEASE_VERSION = "v1.4.0" if VERSION == LOCAL_CORRECTIVE_VERSION else VERSION
+WIDE_SEARCH_BLOCK_VERSION = "v1.5.2"
+PUBLIC_RELEASE_VERSION = (
+    "v1.4.0"
+    if VERSION == LOCAL_CORRECTIVE_VERSION
+    else "v1.5.1"
+    if VERSION == WIDE_SEARCH_BLOCK_VERSION
+    else VERSION
+)
 
 
 def fail(message: str) -> None:

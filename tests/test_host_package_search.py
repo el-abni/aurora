@@ -9,6 +9,9 @@ from support import run_module, setup_host_package_testbed, write_os_release, wr
 
 
 class HostPackageSearchTests(unittest.TestCase):
+    def _many_git_packages(self) -> tuple[str, ...]:
+        return tuple(f"git-tool-{index:02d}|Git package {index:02d}" for index in range(1, 15))
+
     def test_arch_search_executes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -23,6 +26,48 @@ class HostPackageSearchTests(unittest.TestCase):
             self.assertEqual(proc.returncode, 0)
             self.assertIn("Encontrei resultados", proc.stdout)
             self.assertIn("extra/firefox 1.0", proc.stdout)
+
+    def test_long_arch_search_public_output_is_summarized(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=self._many_git_packages(),
+            )
+            proc = run_module("procurar", "git", env=env)
+
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("Encontrei muitos resultados para 'git' no backend 'pacman'", proc.stdout)
+            self.assertIn("Mostrando os primeiros 10", proc.stdout)
+            self.assertIn("1. git-tool-01", proc.stdout)
+            self.assertIn("10. git-tool-10", proc.stdout)
+            self.assertIn("Há mais resultados", proc.stdout)
+            self.assertIn("Refine o alvo", proc.stdout)
+            self.assertNotIn("git-tool-11", proc.stdout)
+            self.assertNotIn("melhor", proc.stdout.lower())
+            self.assertNotIn("recomendado", proc.stdout.lower())
+
+    def test_dev_search_report_stays_technical_when_public_search_would_be_long(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _state_file = setup_host_package_testbed(
+                root,
+                family="arch",
+                distro_id="cachyos",
+                distro_like="arch",
+                repo_packages=self._many_git_packages(),
+            )
+            dev = run_module("dev", "procurar git", env=env)
+
+            self.assertEqual(dev.returncode, 0)
+            self.assertIn("Aurora decision record", dev.stdout)
+            self.assertIn("route_id:                host_package.procurar", dev.stdout)
+            self.assertIn("command:                 pacman -Ss -- git", dev.stdout)
+            self.assertNotIn("Mostrando os primeiros", dev.stdout)
+            self.assertNotIn("Há mais resultados", dev.stdout)
 
     def test_arch_search_stays_anchored_in_pacman_when_paru_is_present(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -41,6 +86,11 @@ class HostPackageSearchTests(unittest.TestCase):
             self.assertIsNotNone(record.execution_route)
             self.assertEqual(record.execution_route.backend_name, "pacman")
             self.assertEqual(record.execution_route.command, ("pacman", "-Ss", "--", "firefox"))
+
+            dev = run_module("dev", "procurar firefox", env=env)
+            self.assertEqual(dev.returncode, 0)
+            self.assertIn("route_id:                host_package.procurar", dev.stdout)
+            self.assertIn("command:                 pacman -Ss -- firefox", dev.stdout)
 
             proc = run_module("procurar", "firefox", env=env)
             self.assertEqual(proc.returncode, 0)

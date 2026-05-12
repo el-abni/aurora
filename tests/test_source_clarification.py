@@ -131,6 +131,41 @@ class SourceClarificationTests(unittest.TestCase):
                 self.assertIn("no flatpak", rendered)
                 self.assertIn("não executou backend", rendered)
 
+    def test_ambiguous_wide_search_blocks_before_executor(self) -> None:
+        cases = (
+            ["procurar", "firefox", "em", "tudo"],
+            ["buscar", "firefox", "em", "tudo"],
+            ["procurar", "firefox", "em", "todas", "as", "fontes"],
+            ["procurar", "firefox", "em", "todos", "os", "lugares"],
+            ["procurar", "firefox", "em", "todas", "as", "superfícies"],
+            ["procurar", "firefox", "em", "qualquer", "fonte"],
+            ["procurar", "firefox", "onde", "tiver"],
+        )
+        for args in cases:
+            with self.subTest(args=args):
+                stdout = io.StringIO()
+                with mock.patch("aurora.cli.execute_text") as execute_text:
+                    with redirect_stdout(stdout):
+                        exit_code = cli.main(args)
+                rendered = stdout.getvalue()
+                self.assertEqual(exit_code, 1)
+                execute_text.assert_not_called()
+                self.assertIn("Não faço busca ampla ambígua para 'firefox'", rendered)
+                self.assertIn("pedido amplo não vira alvo literal de host_package.procurar", rendered)
+                self.assertIn("não executou backend", rendered)
+
+        payload = decision_record_to_dict(plan_text("procurar firefox em tudo"))
+        self.assertEqual(payload["stable_ids"]["event_id"], "decision.blocked")
+        self.assertIsNone(payload["stable_ids"]["route_id"])
+        self.assertEqual(payload["request"]["target"], "firefox")
+        self.assertNotIn("execution_route", payload)
+
+        dev = run_module("dev", "procurar firefox em tudo")
+        self.assertEqual(dev.returncode, 0)
+        self.assertIn("event_id:                decision.blocked", dev.stdout)
+        self.assertIn("route_id:                -", dev.stdout)
+        self.assertNotIn("Execution route", dev.stdout)
+
     def test_existing_sources_topic_is_preserved(self) -> None:
         proc = run_module("fontes")
         self.assertEqual(proc.returncode, 0)
@@ -179,20 +214,29 @@ class SourceClarificationTests(unittest.TestCase):
                 repo_apps=("org.mozilla.firefox|Firefox|flathub",),
             )
             flatpak_payload = decision_record_to_dict(plan_text("instalar firefox no flatpak", environ=env))
+            flatpak_search_payload = decision_record_to_dict(
+                plan_text("procurar firefox no flatpak flathub", environ=env)
+            )
 
         self.assertEqual(flatpak_payload["request"]["domain_kind"], "user_software")
         self.assertEqual(flatpak_payload["request"]["requested_source"], "flatpak")
         self.assertEqual(flatpak_payload["policy"]["source_type"], "flatpak_remote")
+        self.assertEqual(flatpak_search_payload["execution_route"]["route_id"], "flatpak.procurar")
+        self.assertEqual(flatpak_search_payload["policy"]["policy_outcome"], "allow")
+        self.assertEqual(flatpak_search_payload["policy"]["flatpak_effective_remote"], "flathub")
 
         with tempfile.TemporaryDirectory() as tmp:
             env, _aur_state, _native_state = setup_aur_testbed(
                 Path(tmp),
-                repo_packages=("google-chrome|Google Chrome",),
+                repo_packages=("firefox|Firefox", "google-chrome|Google Chrome"),
             )
             aur_payload = decision_record_to_dict(plan_text("instalar google chrome no aur", environ=env))
+            aur_search_payload = decision_record_to_dict(plan_text("procurar firefox no aur", environ=env))
 
         self.assertEqual(aur_payload["request"]["requested_source"], "aur")
         self.assertEqual(aur_payload["policy"]["source_type"], "aur_repository")
+        self.assertEqual(aur_search_payload["execution_route"]["route_id"], "aur.procurar")
+        self.assertEqual(aur_search_payload["policy"]["policy_outcome"], "allow")
 
     def test_explicit_toolbox_and_distrobox_stay_in_kernel_classification(self) -> None:
         toolbox = classify_text("instalar firefox na toolbox devbox")

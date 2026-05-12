@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from aurora.semantics.intent import canonicalize_intent
 from aurora.semantics.normalize import normalize_token, preprocess_text
 
 
@@ -26,6 +27,7 @@ class SourceClarificationKind(Enum):
     BLOCK_FLATPAK_REMOTE_CHOICE = "block_flatpak_remote_choice"
     BLOCK_FLATPAK_REMOTE_ADD = "block_flatpak_remote_add"
     BLOCK_FLATPAK_REMOTE_ALL = "block_flatpak_remote_all"
+    BLOCK_WIDE_SEARCH = "block_wide_search"
 
 
 @dataclass(frozen=True)
@@ -136,6 +138,42 @@ def _target_before_token(parts: list[tuple[str, str]], token: str, *, start: int
     return _target_text(parts[start:])
 
 
+_WIDE_SEARCH_SUFFIXES = (
+    ("em", "tudo"),
+    ("em", "todas", "as", "fontes"),
+    ("em", "todos", "os", "lugares"),
+    ("em", "todas", "as", "superficies"),
+    ("em", "qualquer", "fonte"),
+    ("onde", "tiver"),
+)
+
+
+def ambiguous_wide_search_target(parts: list[tuple[str, str]]) -> str:
+    normalized = [normalized for _original, normalized in parts]
+    if len(normalized) < 3 or canonicalize_intent(normalized[0]) != "procurar":
+        return ""
+
+    for suffix in _WIDE_SEARCH_SUFFIXES:
+        suffix_length = len(suffix)
+        if tuple(normalized[-suffix_length:]) == suffix:
+            return _target_text(parts[1:-suffix_length])
+
+    return ""
+
+
+def _match_wide_search_block(
+    parts: list[tuple[str, str]],
+) -> SourceClarificationRequest | None:
+    target = ambiguous_wide_search_target(parts)
+    if not target:
+        return None
+    return SourceClarificationRequest(
+        kind=SourceClarificationKind.BLOCK_WIDE_SEARCH,
+        target=target,
+        blocking=True,
+    )
+
+
 def _match_flatpak_remote_guidance(
     parts: list[tuple[str, str]],
 ) -> SourceClarificationRequest | None:
@@ -232,6 +270,10 @@ def parse_source_clarification(text: str) -> SourceClarificationRequest | None:
     exact = exact_matches.get(normalized)
     if exact is not None:
         return SourceClarificationRequest(kind=exact)
+
+    wide_search_block = _match_wide_search_block(parts)
+    if wide_search_block is not None:
+        return wide_search_block
 
     flatpak_remote_guidance = _match_flatpak_remote_guidance(parts)
     if flatpak_remote_guidance is not None:

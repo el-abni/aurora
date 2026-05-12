@@ -1,8 +1,10 @@
-# Aurora Invariants - v1.5.1
+# Aurora Invariants - v1.5.2 local
 
 ## Papel
 
 Este documento registra apenas invariantes já provadas pelo repositório da Aurora.
+
+Última release pública publicada: `v1.5.1`. Marco local corretivo atual: `v1.5.2`.
 
 Ele não abre roadmap, não descreve desejo futuro e não substitui leitura do código, dos testes e das docs públicas. Ele existe para conter regressão conceitual.
 
@@ -24,9 +26,13 @@ A Aurora só promove frente quando existe contrato explícito, policy, execuçã
 
 `host_package.remover` é mutação do host. Sem `--confirm`, a policy precisa ficar em `require_confirmation`; com `--confirm`, a rota existente pode ser planejada sem mudar schema, backend ou fonte.
 
+### Busca ampla ambígua não vira alvo literal
+
+Pedidos como `procurar firefox em tudo`, `buscar firefox em tudo` e `procurar firefox em todas as fontes` bloqueiam antes da rota operacional. A Aurora não transforma esse texto em alvo de `host_package.procurar`, não abre `source_discovery`, não ranqueia fonte e não faz fallback.
+
 ### Conversação e clarificação não viram autoridade operacional
 
-Na `v1.5.1`, tópicos, perguntas fechadas, clarificação controlada de fonte/superfície, orientação de remote Flatpak e perfis internos de apresentação orientam o uso, mas não executam backend, não buscam em tudo, não escolhem fonte ou remote, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
+No marco local `v1.5.2`, tópicos, perguntas fechadas, clarificação controlada de fonte/superfície, orientação de remote Flatpak e perfis internos de apresentação orientam o uso, mas não executam backend, não buscam em tudo, não escolhem fonte ou remote, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
 
 ### Clarificação controlada não é descoberta de fonte
 

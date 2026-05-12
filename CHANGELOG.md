@@ -1,5 +1,20 @@
 # Changelog
 
+## 🌌 Aurora v1.5.2 (marco local corretivo)
+
+Marco local corretivo, não publicado como release pública normal. A última release pública publicada continua sendo a `v1.5.1`; este marco local bloqueia pedidos de busca ampla ambígua para impedir que `em tudo` ou `todas as fontes` sejam tratados como alvo literal de `host_package.procurar`.
+
+### Corrigido
+
+- frases como `procurar firefox em tudo`, `buscar firefox em tudo`, `procurar firefox em todas as fontes`, `procurar firefox em todos os lugares` e `procurar firefox em todas as superfícies` bloqueiam antes da rota operacional;
+- `aurora dev` registra `decision.blocked` sem `execution_route` para esses pedidos, preservando `stable_ids` e `presentation` sem gerar comando backend.
+
+### Preservado
+
+- sem `source_discovery`, busca transversal, ranking de fonte, fallback ou escolha automática;
+- sem mudanças em `host_package.remover`, `host_maintenance`, Remote Flatpak, AUR/COPR/PPA, toolbox, distrobox, rpm-ostree, `local_model`, schema ou Aury;
+- a disciplina de workflow segue pelos gates `tests/release_gate_canonic_line.sh`, `tests/release_gate_iteracao.sh`, `tests/release_gate_pre_push.sh`, `tests/release_gate_pre_release.sh`, `tests/audit_workflow_release.py`, `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` e `tests/REVIEW_CHECKLIST.md`.
+
 ## 🌌 Aurora v1.5.1
 
 Correção pequena de policy/contrato: `host_package.remover` exige confirmação explícita para remoção de pacote do host.

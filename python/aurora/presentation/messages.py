@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from aurora.presentation.text_polish import apply_speech_indicator, polish_public_text
 
+_SEARCH_RESULT_DISPLAY_LIMIT = 10
+
 
 def _voice(text: str) -> str:
     return apply_speech_indicator(text)
@@ -123,9 +125,128 @@ def no_results_message(target: str, backend_name: str) -> str:
     return _info(f"Não encontrei resultados para '{target}' no backend '{backend_name}'.")
 
 
+def _compact_search_text(text: str, *, limit: int = 160) -> str:
+    compacted = " ".join(text.split())
+    if len(compacted) <= limit:
+        return compacted
+    return compacted[: limit - 3].rstrip() + "..."
+
+
+def _package_name_from_result_header(header: str) -> str:
+    first_field = header.split()[0] if header.split() else header
+    if "/" in first_field:
+        first_field = first_field.rsplit("/", 1)[1]
+    return first_field.strip()
+
+
+def _split_inline_search_result(line: str) -> tuple[str, str] | None:
+    for separator in ("\t", " : ", " - "):
+        if separator in line:
+            name, description = line.split(separator, 1)
+            name = _package_name_from_result_header(name.strip())
+            description = description.strip()
+            if name:
+                return name, description
+    return None
+
+
+def _split_indented_search_result(line: str) -> tuple[str, str] | None:
+    for separator in ("\t", " : "):
+        if separator in line:
+            name, description = line.split(separator, 1)
+            name = _package_name_from_result_header(name.strip())
+            description = description.strip()
+            if name:
+                return name, description
+    return None
+
+
+def _is_search_metadata_line(line: str) -> bool:
+    normalized = line.casefold()
+    if set(normalized) <= {"-", "=", "_"}:
+        return True
+    return normalized.startswith(
+        (
+            "matched fields:",
+            "campos correspondentes:",
+            "last metadata expiration check:",
+            "name ",
+            "summary ",
+        )
+    )
+
+
+def _search_result_items(details: str) -> list[tuple[str, str]]:
+    items: list[list[str]] = []
+    current: list[str] | None = None
+
+    for raw_line in details.splitlines():
+        stripped = raw_line.strip()
+        if not stripped:
+            continue
+        if _is_search_metadata_line(stripped):
+            continue
+
+        inline = _split_inline_search_result(stripped)
+        if raw_line[0].isspace():
+            indented_result = _split_indented_search_result(stripped)
+            if indented_result is not None:
+                current = [
+                    _compact_search_text(indented_result[0]),
+                    _compact_search_text(indented_result[1]),
+                ]
+                items.append(current)
+                continue
+            description = stripped
+            if current is not None and description:
+                current[1] = _compact_search_text(
+                    f"{current[1]} {description}" if current[1] else description
+                )
+            continue
+
+        if inline is not None:
+            current = [_compact_search_text(inline[0]), _compact_search_text(inline[1])]
+        else:
+            current = [_compact_search_text(_package_name_from_result_header(stripped)), ""]
+        if current[0]:
+            items.append(current)
+
+    return [(name, description) for name, description in items]
+
+
+def _render_search_result_item(index: int, name: str, description: str) -> str:
+    if description:
+        return f"{index}. {name} — {description}"
+    return f"{index}. {name}"
+
+
+def _summarized_search_results(target: str, backend_name: str, details: str) -> str | None:
+    items = _search_result_items(details)
+    if len(items) <= _SEARCH_RESULT_DISPLAY_LIMIT:
+        return None
+
+    rendered_items = [
+        _render_search_result_item(index, name, description)
+        for index, (name, description) in enumerate(
+            items[:_SEARCH_RESULT_DISPLAY_LIMIT],
+            start=1,
+        )
+    ]
+    rendered = "\n".join(rendered_items)
+    return (
+        f"Encontrei muitos resultados para '{target}' no backend '{backend_name}'.\n"
+        f"Mostrando os primeiros {_SEARCH_RESULT_DISPLAY_LIMIT}.\n\n"
+        f"{rendered}\n\n"
+        "Há mais resultados. Refine o alvo para reduzir ruído."
+    )
+
+
 def search_results_message(target: str, backend_name: str, details: str) -> str:
     if not details.strip():
         return _success(f"Encontrei resultados para '{target}' no backend '{backend_name}'.")
+    summarized = _summarized_search_results(target, backend_name, details)
+    if summarized is not None:
+        return _success(summarized)
     return _success(f"Encontrei resultados para '{target}' no backend '{backend_name}':\n{details.rstrip()}")
 
 

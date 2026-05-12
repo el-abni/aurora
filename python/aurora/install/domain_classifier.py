@@ -12,6 +12,7 @@ from aurora.linux.toolbox import toolbox_name_is_explicit
 from aurora.semantics.entities import extract_package_target, extract_target_token_pairs
 from aurora.semantics.intent import canonicalize_intent
 from aurora.semantics.pipeline import prepare_text
+from aurora.semantics.source_clarification import ambiguous_wide_search_target
 
 _FLATPAK_HINT_TOKENS = {"flatpak", "flathub"}
 _TOOLBOX_HINT_TOKENS = {"toolbox"}
@@ -528,6 +529,27 @@ def classify_text(text: str) -> SemanticRequest:
         )
 
     if intent in {"procurar", "instalar", "remover"}:
+        wide_search_target = ambiguous_wide_search_target(
+            list(zip(action.original_tokens, action.normalized_tokens))
+        )
+        if intent == "procurar" and wide_search_target:
+            return SemanticRequest(
+                original_text=action.original_action,
+                normalized_text=action.normalized_action,
+                intent="procurar",
+                domain_kind="unknown",
+                target=wide_search_target,
+                status="BLOCKED",
+                reason=(
+                    "pedido de busca ampla ambigua bloqueado: a Aurora nao busca em tudo, "
+                    "nao escolhe fonte automaticamente e nao faz fallback entre superficies."
+                ),
+                observations=(
+                    "source_clarification:block_wide_search",
+                    "source_discovery:not_open",
+                ),
+            )
+
         execution_surface = "host"
         requested_source = ""
         source_coordinate = ""

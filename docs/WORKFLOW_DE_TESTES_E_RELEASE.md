@@ -1,10 +1,10 @@
-# Workflow de Testes e Release - Aurora v1.5.1
+# Workflow de Testes e Release - Aurora v1.5.2 local
 
 ## Papel
 
-Este documento formaliza a disciplina operacional preservada pela `v1.5.1`.
+Este documento formaliza a disciplina operacional preservada pelo marco local `v1.5.2`.
 
-A `v1.5.1` é release corretiva pequena para confirmação de `host_package.remover`. Ela não altera schema, backend, Flatpak, `local_model` ou perfis de apresentação.
+A `v1.5.2` é marco local corretivo para bloqueio de busca ampla ambígua. A última release pública publicada continua sendo a `v1.5.1`; este marco local não altera schema, backend, Flatpak, `local_model` ou perfis de apresentação.
 
 Ele não abre domínio novo, não cria framework de CI e não substitui leitura do código. Ele existe para separar claramente:
 
@@ -124,7 +124,7 @@ Nunca devem subir por gate automático sozinho:
 - mudanças em handoff interativo, prompts, senha, `toolbox`, `distrobox`, `rpm-ostree` ou AUR;
 - qualquer alteração cuja honestidade só apareça no terminal real.
 
-## Leitura correta da v1.5.1
+## Leitura correta da v1.5.2
 
 - `tests/release_gate_canonic_line.sh` continua sendo a régua corrente da linha;
 - `tests/release_gate_v0_6_2.sh` continua como gate histórico;
@@ -139,14 +139,16 @@ Nunca devem subir por gate automático sozinho:
 - a `v1.4.0` adiciona orientação de remote Flatpak explícito e bloqueia melhor remote, remote-add e busca em todos os remotes antes do executor.
 - a `v1.5.0` adiciona perfis internos de apresentação e clareza pública sem mudar facts, policy, route, execution ou `aurora.decision_record.v1`.
 - a `v1.5.1` corrige `host_package.remover` para exigir confirmação explícita sem mudar schema, backend, Flatpak, `local_model` ou perfis de apresentação.
+- a `v1.5.2` bloqueia busca ampla ambígua antes de `host_package.procurar`, sem `source_discovery`, ranking, fallback ou busca transversal.
 
-## Checklist curta da v1.5.1
+## Checklist curta da v1.5.2
 
 Para este corte, a revisão curta precisa confirmar:
 
 - perfis de apresentação mudam apenas renderização pública e não contaminam `aurora dev`;
 - `aurora explicar fontes`, `aurora explicar superfícies`, `aurora onde instalar firefox?` e bloqueios como `aurora instalar firefox onde for melhor` retornam sem execução;
 - `aurora explicar remote flatpak`, `aurora como instalar firefox no flatpak flathub?` e bloqueios como `aurora qual melhor remote flatpak para firefox?` retornam sem execução;
+- `aurora dev "procurar firefox em tudo"` bloqueia sem `execution_route`, e `aurora procurar firefox` segue usando `host_package.procurar`;
 - `aurora dev "remover firefox"` bloqueia por confirmação, e `aurora dev "remover firefox --confirm"` permite apenas o plano;
 - `aurora versão`, `auro versão`, tópicos de orientação e perguntas fechadas retornam exit 0 sem execução;
 - `model_off` continua íntegro por default em `aurora dev`;

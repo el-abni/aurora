@@ -1,13 +1,13 @@
 # 🌌 Aurora
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-v1.5.1-0f766e)
+![versão](https://img.shields.io/badge/vers%C3%A3o-v1.5.2-0f766e)
 ![linguagem](https://img.shields.io/badge/linguagem-Python-3776AB)
 ![plataforma](https://img.shields.io/badge/plataforma-Linux-orange)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com contrato pequeno, política explícita, execução real e observabilidade própria.
 
-A release pública atual é a `v1.5.1`. Ela corrige a policy de confirmação de `host_package.remover`: remoção direta de pacote do host exige `--confirm`. A `v1.5.0` continua preservada como corte de perfis internos de apresentação, clareza pública e leitura de bloqueios. O recorte `Remote Flatpak explícito` da `v1.4.0` continua preservado: a Aurora explica remote default observado vs remote explícito, orienta `no flatpak flathub` e bloqueia pedidos de melhor remote, `remote-add` e busca em todos os remotes. A clarificação controlada de fonte/superfície da `v1.3.0`, a conversação/mediação da `v1.2.0` e a absorção `host_maintenance.atualizar` da `v1.1.0` continuam preservadas.
+A release pública atual é a `v1.5.1`. O checkout local pode estar em `v1.5.2` como marco local corretivo: ele corrige o bloqueio de busca ampla ambígua para que pedidos como `procurar firefox em tudo` ou `procurar firefox em todas as fontes` não virem alvo literal de `host_package.procurar`. A `v1.5.1` continua preservada como correção pública de confirmação para `host_package.remover`, e a `v1.5.0` continua preservada como corte de perfis internos de apresentação, clareza pública e leitura de bloqueios. O recorte `Remote Flatpak explícito` da `v1.4.0` segue com remote default observado vs remote explícito, sem `remote-add`, melhor remote ou todos os remotes. A clarificação controlada da `v1.3.0`, a conversação/mediação da `v1.2.0` e a absorção `host_maintenance.atualizar` da `v1.1.0` continuam preservadas.
 
 ## O que é
 
@@ -41,6 +41,8 @@ A `v1.5.0` aceita tópicos fechados como `aurora exemplos`, `aurora limites`, `a
 Perguntas fechadas como `aurora como instalar firefox?`, `aurora como procurar firefox?`, `aurora como remover firefox?` e `aurora como atualizar sistema?` retornam orientação e exit 0. Elas não executam backend, não escolhem fonte, não fazem busca real, não pedem confirmação e não alteram o sistema.
 
 Perguntas de fonte/superfície como `aurora como escolher fonte para firefox?`, `aurora qual fonte usar para firefox?`, `aurora onde instalar firefox?`, `aurora como instalar firefox no flatpak?` e `aurora como instalar firefox no aur?` ensinam a escrever a frase marcada. Pedidos como `aurora instalar firefox onde for melhor` bloqueiam antes do executor: a Aurora não escolhe a melhor fonte e o pedido nu continua em `host_package`.
+
+Pedidos de busca ampla como `aurora procurar firefox em tudo`, `aurora buscar firefox em tudo` e `aurora procurar firefox em todas as fontes` bloqueiam antes do executor. Eles não abrem `source_discovery`, busca transversal, ranking de fonte ou fallback.
 
 Perguntas de remote Flatpak como `aurora como escolher remote flatpak?`, `aurora como instalar firefox no flatpak flathub?` e `aurora como procurar firefox no flatpak flathub?` ensinam a escrever o remote explicitamente. Pedidos como `aurora qual melhor remote flatpak para firefox?`, `aurora adicionar remote flatpak flathub` e `aurora procurar firefox em todos os remotes flatpak` bloqueiam antes do executor.
 
@@ -122,10 +124,11 @@ Texto de ajuda, polimento e renderização não viram contrato. Quando um consum
 
 ## Recorte atual
 
-Na `v1.5.1`, a superfície pública continua pequena:
+No marco local `v1.5.2`, a superfície pública continua pequena:
 
 - `host_package` para pacotes do host;
 - `host_package.remover` exige `--confirm` para remoção direta de pacote do host;
+- pedidos de busca ampla ambígua bloqueiam antes de virar alvo literal de `host_package.procurar`;
 - `host_maintenance.atualizar` para `atualizar sistema` no Arch mutável com `pacman`;
 - orientação determinística de ajuda antes do executor, sem novo domínio operacional;
 - clarificação controlada de fonte/superfície antes do executor, sem `source_discovery`;

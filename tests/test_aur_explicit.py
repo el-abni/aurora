@@ -51,6 +51,28 @@ class AurExplicitTests(unittest.TestCase):
                     self.assertIn(f"backend '{helper_name}'", proc.stdout)
                     self.assertIn("google-chrome", proc.stdout)
 
+    def test_long_aur_search_public_output_is_summarized_without_selection(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env, _aur_state, _native_state = setup_aur_testbed(
+                root,
+                repo_packages=tuple(
+                    f"firefox-variant-{index:02d}|Firefox variant {index:02d}"
+                    for index in range(1, 15)
+                ),
+            )
+            proc = run_module("procurar", "firefox", "no", "aur", env=env)
+
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("Encontrei muitos resultados para 'firefox' no backend 'paru'", proc.stdout)
+            self.assertIn("Mostrando os primeiros 10", proc.stdout)
+            self.assertIn("1. firefox-variant-01", proc.stdout)
+            self.assertIn("10. firefox-variant-10", proc.stdout)
+            self.assertIn("Há mais resultados", proc.stdout)
+            self.assertNotIn("firefox-variant-11", proc.stdout)
+            self.assertNotIn("melhor", proc.stdout.lower())
+            self.assertNotIn("recomendado", proc.stdout.lower())
+
     def test_aur_search_refines_spaced_target_to_package_like_query(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

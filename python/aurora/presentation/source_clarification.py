@@ -258,6 +258,22 @@ def _block_flatpak_remote_all(target: str, *, profile: ProfileInput = None) -> s
     )
 
 
+def _block_wide_search(target: str, *, profile: ProfileInput = None) -> str:
+    subject = f" para '{target}'" if target else ""
+    return _failure(
+        render_profiled_response(
+            f"Não faço busca ampla ambígua{subject}.",
+            steps=(
+                "refaça com uma superfície ou fonte explícita, por exemplo 'procurar firefox', 'procurar firefox no flatpak flathub' ou 'procurar firefox no aur'",
+                "pedido nu continua no pacote do host; pedido amplo não vira alvo literal de host_package.procurar",
+            ),
+            limits=_SOURCE_LIMITS,
+            note=_NO_DECISION_RECORD_NOTE,
+            profile=profile,
+        )
+    )
+
+
 def render_source_clarification(
     request: SourceClarificationRequest,
     *,
@@ -301,4 +317,6 @@ def render_source_clarification(
         return _block_flatpak_remote_add(request.remote, profile=profile)
     if request.kind == SourceClarificationKind.BLOCK_FLATPAK_REMOTE_ALL:
         return _block_flatpak_remote_all(request.target, profile=profile)
+    if request.kind == SourceClarificationKind.BLOCK_WIDE_SEARCH:
+        return _block_wide_search(request.target, profile=profile)
     raise ValueError(f"Unsupported source clarification kind: {request.kind.value}")

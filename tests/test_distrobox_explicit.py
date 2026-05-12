@@ -19,6 +19,7 @@ class DistroboxExplicitTests(unittest.TestCase):
         *,
         include_sudo: bool = True,
         installed: tuple[str, ...] = (),
+        repo_packages: tuple[str, ...] = ("ripgrep|ripgrep", "obs-studio|OBS Studio"),
     ) -> tuple[dict[str, str], dict[str, Path]]:
         return setup_distrobox_testbed(
             root,
@@ -31,7 +32,7 @@ class DistroboxExplicitTests(unittest.TestCase):
                     "distro_id": "fedora",
                     "distro_like": "fedora",
                     "display_name": "Fedora Distrobox",
-                    "repo_packages": ("ripgrep|ripgrep", "obs-studio|OBS Studio"),
+                    "repo_packages": repo_packages,
                     "installed_packages": installed,
                     "include_sudo": include_sudo,
                 },
@@ -84,6 +85,27 @@ class DistroboxExplicitTests(unittest.TestCase):
             self.assertEqual(proc.returncode, 0)
             self.assertIn("backend 'distrobox + dnf'", proc.stdout)
             self.assertIn("ripgrep.x86_64", proc.stdout)
+
+    def test_long_distrobox_search_public_output_is_summarized(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            env, _state_files = self._single_distrobox_env(
+                Path(tmp),
+                repo_packages=tuple(
+                    f"git-addon-{index:02d}|Git addon {index:02d}"
+                    for index in range(1, 15)
+                ),
+            )
+            proc = run_module("procurar", "git", "na", "distrobox", "devbox", env=env)
+
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("Encontrei muitos resultados para 'git' no backend 'distrobox + dnf'", proc.stdout)
+            self.assertIn("Mostrando os primeiros 10", proc.stdout)
+            self.assertIn("1. git-addon-01.x86_64", proc.stdout)
+            self.assertIn("10. git-addon-10.x86_64", proc.stdout)
+            self.assertIn("Há mais resultados", proc.stdout)
+            self.assertNotIn("git-addon-11", proc.stdout)
+            self.assertNotIn("melhor", proc.stdout.lower())
+            self.assertNotIn("recomendado", proc.stdout.lower())
 
     def test_distrobox_install_executes_with_state_probe_inside_environment(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

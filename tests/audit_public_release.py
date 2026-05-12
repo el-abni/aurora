@@ -11,10 +11,22 @@ VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 LOCAL_CORRECTIVE_VERSION = "v1.4.1"
 PRESENTATION_RELEASE_VERSION = "v1.5.0"
 HOST_REMOVE_CONFIRMATION_VERSION = "v1.5.1"
-PUBLIC_RELEASE_VERSION = "v1.4.0" if VERSION == LOCAL_CORRECTIVE_VERSION else VERSION
+WIDE_SEARCH_BLOCK_VERSION = "v1.5.2"
+PUBLIC_RELEASE_VERSION = (
+    "v1.4.0"
+    if VERSION == LOCAL_CORRECTIVE_VERSION
+    else HOST_REMOVE_CONFIRMATION_VERSION
+    if VERSION == WIDE_SEARCH_BLOCK_VERSION
+    else VERSION
+)
 OPERATIONAL_BASE_VERSION = (
     "v1.4.0"
-    if VERSION in {PRESENTATION_RELEASE_VERSION, HOST_REMOVE_CONFIRMATION_VERSION}
+    if VERSION
+    in {
+        PRESENTATION_RELEASE_VERSION,
+        HOST_REMOVE_CONFIRMATION_VERSION,
+        WIDE_SEARCH_BLOCK_VERSION,
+    }
     else PUBLIC_RELEASE_VERSION
 )
 SUPPORTED_CURRENT_VERSIONS = {
@@ -22,6 +34,7 @@ SUPPORTED_CURRENT_VERSIONS = {
     LOCAL_CORRECTIVE_VERSION,
     PRESENTATION_RELEASE_VERSION,
     HOST_REMOVE_CONFIRMATION_VERSION,
+    WIDE_SEARCH_BLOCK_VERSION,
 }
 PUBLIC_FILES = (
     "README.md",
@@ -104,7 +117,7 @@ def public_surface_sensitive_markers() -> tuple[str, ...]:
 def main() -> int:
     ensure(
         VERSION in SUPPORTED_CURRENT_VERSIONS,
-        "VERSION precisa estar em v1.4.0 publico, v1.4.1 local corretivo, v1.5.0 presentation ou v1.5.1 corretivo nesta linha",
+        "VERSION precisa estar em v1.4.0 publico, v1.4.1 local corretivo, v1.5.0 presentation, v1.5.1 corretivo ou v1.5.2 corretivo nesta linha",
     )
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
     ok(f"VERSION alinhado para {VERSION}")
@@ -160,6 +173,29 @@ def main() -> int:
                 term in changelog or normalize(term) in changelog_normalized,
                 f"CHANGELOG.md precisa registrar {term} na v1.5.1",
             )
+    if VERSION == WIDE_SEARCH_BLOCK_VERSION:
+        for term in (
+            "marco local corretivo",
+            "não publicado como release pública normal",
+            "última release pública publicada continua sendo a `v1.5.1`",
+            "busca ampla ambígua",
+            "em tudo",
+            "todas as fontes",
+            "host_package.procurar",
+            "decision.blocked",
+            "sem `execution_route`",
+            "source_discovery",
+            "busca transversal",
+            "ranking de fonte",
+            "fallback",
+            "Remote Flatpak",
+            "host_package.remover",
+            "local_model",
+        ):
+            ensure(
+                term in changelog or normalize(term) in changelog_normalized,
+                f"CHANGELOG.md precisa registrar {term} na v1.5.2",
+            )
     if VERSION == LOCAL_CORRECTIVE_VERSION:
         preserved_versions = (
             PUBLIC_RELEASE_VERSION,
@@ -179,6 +215,7 @@ def main() -> int:
         )
     else:
         preserved_versions = (
+            "v1.5.1",
             "v1.5.0",
             "v1.4.1",
             "v1.4.0",
@@ -260,6 +297,17 @@ def main() -> int:
     readme = read("README.md")
     readme_normalized = normalize(readme)
     ensure(PUBLIC_RELEASE_VERSION in readme, "README.md precisa citar a release publica atual")
+    if VERSION == WIDE_SEARCH_BLOCK_VERSION:
+        ensure(
+            "a release publica atual e a `v1.5.2`" not in readme_normalized,
+            "README.md não pode declarar v1.5.2 como release publica atual",
+        )
+        for term in (
+            "A release pública atual é a `v1.5.1`",
+            "marco local corretivo",
+            "checkout local",
+        ):
+            ensure(term in readme or normalize(term) in readme_normalized, f"README.md precisa registrar {term}")
     for term in (
         "100% python",
         "Linux",
