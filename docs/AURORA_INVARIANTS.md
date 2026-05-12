@@ -1,10 +1,10 @@
-# Aurora Invariants - v1.5.2 local
+# Aurora Invariants - v1.5.2
 
 ## Papel
 
 Este documento registra apenas invariantes já provadas pelo repositório da Aurora.
 
-Última release pública publicada: `v1.5.1`. Marco local corretivo atual: `v1.5.2`.
+Release pública atual: `v1.5.2`. Release pública anterior: `v1.5.1`.
 
 Ele não abre roadmap, não descreve desejo futuro e não substitui leitura do código, dos testes e das docs públicas. Ele existe para conter regressão conceitual.
 
@@ -32,7 +32,7 @@ Pedidos como `procurar firefox em tudo`, `buscar firefox em tudo` e `procurar fi
 
 ### Conversação e clarificação não viram autoridade operacional
 
-No marco local `v1.5.2`, tópicos, perguntas fechadas, clarificação controlada de fonte/superfície, orientação de remote Flatpak e perfis internos de apresentação orientam o uso, mas não executam backend, não buscam em tudo, não escolhem fonte ou remote, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
+Na `v1.5.2`, tópicos, perguntas fechadas, clarificação controlada de fonte/superfície, orientação de remote Flatpak e perfis internos de apresentação orientam o uso, mas não executam backend, não buscam em tudo, não escolhem fonte ou remote, não pedem confirmação, não criam novo domínio e não alteram `aurora.decision_record.v1`.
 
 ### Clarificação controlada não é descoberta de fonte
 

@@ -15,8 +15,6 @@ WIDE_SEARCH_BLOCK_VERSION = "v1.5.2"
 PUBLIC_RELEASE_VERSION = (
     "v1.4.0"
     if VERSION == LOCAL_CORRECTIVE_VERSION
-    else HOST_REMOVE_CONFIRMATION_VERSION
-    if VERSION == WIDE_SEARCH_BLOCK_VERSION
     else VERSION
 )
 OPERATIONAL_BASE_VERSION = (
@@ -117,7 +115,7 @@ def public_surface_sensitive_markers() -> tuple[str, ...]:
 def main() -> int:
     ensure(
         VERSION in SUPPORTED_CURRENT_VERSIONS,
-        "VERSION precisa estar em v1.4.0 publico, v1.4.1 local corretivo, v1.5.0 presentation, v1.5.1 corretivo ou v1.5.2 corretivo nesta linha",
+        "VERSION precisa estar em v1.4.0 publico, v1.4.1 local corretivo, v1.5.0 presentation, v1.5.1 corretivo ou v1.5.2 publico nesta linha",
     )
     ensure(re.fullmatch(r"v\d+\.\d+\.\d+", VERSION) is not None, "VERSION precisa estar em formato de release")
     ok(f"VERSION alinhado para {VERSION}")
@@ -175,9 +173,8 @@ def main() -> int:
             )
     if VERSION == WIDE_SEARCH_BLOCK_VERSION:
         for term in (
-            "marco local corretivo",
-            "não publicado como release pública normal",
-            "última release pública publicada continua sendo a `v1.5.1`",
+            "Release pública corretiva",
+            "release pública anterior é a `v1.5.1`",
             "busca ampla ambígua",
             "em tudo",
             "todas as fontes",
@@ -298,14 +295,10 @@ def main() -> int:
     readme_normalized = normalize(readme)
     ensure(PUBLIC_RELEASE_VERSION in readme, "README.md precisa citar a release publica atual")
     if VERSION == WIDE_SEARCH_BLOCK_VERSION:
-        ensure(
-            "a release publica atual e a `v1.5.2`" not in readme_normalized,
-            "README.md não pode declarar v1.5.2 como release publica atual",
-        )
         for term in (
-            "A release pública atual é a `v1.5.1`",
-            "marco local corretivo",
-            "checkout local",
+            "A release pública atual é a `v1.5.2`",
+            "A release pública anterior é a `v1.5.1`",
+            "bloqueio de busca ampla ambígua",
         ):
             ensure(term in readme or normalize(term) in readme_normalized, f"README.md precisa registrar {term}")
     for term in (

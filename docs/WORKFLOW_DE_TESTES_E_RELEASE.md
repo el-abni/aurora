@@ -1,10 +1,10 @@
-# Workflow de Testes e Release - Aurora v1.5.2 local
+# Workflow de Testes e Release - Aurora v1.5.2
 
 ## Papel
 
-Este documento formaliza a disciplina operacional preservada pelo marco local `v1.5.2`.
+Este documento formaliza a disciplina operacional preservada pela release pública `v1.5.2`.
 
-A `v1.5.2` é marco local corretivo para bloqueio de busca ampla ambígua. A última release pública publicada continua sendo a `v1.5.1`; este marco local não altera schema, backend, Flatpak, `local_model` ou perfis de apresentação.
+A `v1.5.2` é a release pública atual. A release pública anterior é a `v1.5.1`; este corte não altera schema, backend, Flatpak, `local_model` ou perfis de apresentação.
 
 Ele não abre domínio novo, não cria framework de CI e não substitui leitura do código. Ele existe para separar claramente:
 

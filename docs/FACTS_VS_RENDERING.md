@@ -1,10 +1,10 @@
-# Facts vs Rendering - Aurora v1.5.2 local
+# Facts vs Rendering - Aurora v1.5.2
 
 ## Papel
 
 Este documento fixa a fronteira entre fato operacional e renderização pública.
 
-A última release pública publicada continua sendo a `v1.5.1`; a `v1.5.2` é marco local corretivo para bloqueio de busca ampla ambígua.
+A release pública atual é a `v1.5.2`; a release pública anterior é a `v1.5.1`. A `v1.5.2` corrige o bloqueio de busca ampla ambígua.
 
 Ele reaproveita uma lição já visível no repositório: `messages.py` e `text_polish.py` são boa camada de voz, mas voz não pode virar fonte de verdade operacional.
 
@@ -54,7 +54,7 @@ Sem essa fronteira, o `decision_record` voltaria a misturar contrato com voz e r
 
 ## Recorte desta linha
 
-No marco local `v1.5.2`, o corte continua propositalmente pequeno:
+Na `v1.5.2`, o corte continua propositalmente pequeno:
 
 - `facts` concentra o estado operacional;
 - `presentation` concentra a voz;

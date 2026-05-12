@@ -1,8 +1,8 @@
 # Changelog
 
-## 🌌 Aurora v1.5.2 (marco local corretivo)
+## 🌌 Aurora v1.5.2
 
-Marco local corretivo, não publicado como release pública normal. A última release pública publicada continua sendo a `v1.5.1`; este marco local bloqueia pedidos de busca ampla ambígua para impedir que `em tudo` ou `todas as fontes` sejam tratados como alvo literal de `host_package.procurar`.
+Release pública corretiva. A release pública anterior é a `v1.5.1`; a `v1.5.2` bloqueia pedidos de busca ampla ambígua para impedir que `em tudo` ou `todas as fontes` sejam tratados como alvo literal de `host_package.procurar`.
 
 ### Corrigido
 

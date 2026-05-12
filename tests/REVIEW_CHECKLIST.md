@@ -1,12 +1,12 @@
-# Review Checklist - Aurora v1.5.2 local
+# Review Checklist - Aurora v1.5.2
 
 Use este checklist antes de `push`, `tag` ou `release`. Se um item não se aplica, a dispensa precisa ser consciente.
 
 ## Superfície pública
 
 - [ ] `VERSION`, `README.md`, `CHANGELOG.md` e `resources/help.txt` estão coerentes entre si.
-- [ ] `docs/ARCHITECTURE.md`, `docs/DECISION_RECORD_SCHEMA.md`, `docs/FACTS_VS_RENDERING.md`, `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` e `tests/README.md` batem com a release pública atual ou com o marco local declarado.
-- [ ] `aurora --version` mostra a versão local certa; a última release pública publicada continua registrada como `v1.5.1` quando aplicável.
+- [ ] `docs/ARCHITECTURE.md`, `docs/DECISION_RECORD_SCHEMA.md`, `docs/FACTS_VS_RENDERING.md`, `docs/WORKFLOW_DE_TESTES_E_RELEASE.md` e `tests/README.md` batem com a release pública atual.
+- [ ] `aurora --version` mostra a release pública atual `v1.5.2` e a linha preserva `v1.5.1` como release pública anterior.
 - [ ] `aurora --help` reflete a superfície pública real.
 - [ ] `aurora versão`, `auro versão`, tópicos de orientação e perguntas fechadas foram testados sem execução.
 - [ ] `aurora explicar fontes`, `aurora explicar superfícies`, `aurora onde instalar firefox?` e bloqueios como `aurora instalar firefox onde for melhor` foram testados sem execução.

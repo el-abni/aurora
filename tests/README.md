@@ -15,9 +15,9 @@ Ela não existe para:
 - justificar abertura de feature nova;
 - substituir leitura humana quando a fronteira ainda é conceitual.
 
-## Três camadas da v1.5.2 local
+## Três camadas da v1.5.2
 
-A `v1.5.2` é um marco local corretivo para bloquear busca ampla ambígua antes da rota operacional. A última release pública publicada continua sendo a `v1.5.1`. Este marco local preserva as três camadas da `v1.4.0`, os perfis de apresentação da `v1.5.0` e a confirmação de `host_package.remover` da `v1.5.1`:
+A `v1.5.2` é a release pública atual e bloqueia busca ampla ambígua antes da rota operacional. A release pública anterior é a `v1.5.1`. Este corte preserva as três camadas da `v1.4.0`, os perfis de apresentação da `v1.5.0` e a confirmação de `host_package.remover` da `v1.5.1`:
 
 - teste automático para regressão executável;
 - revisão manual para diffs, docs, help, versão e coerência pública;

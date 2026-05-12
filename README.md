@@ -7,7 +7,7 @@
 
 **Aurora** é uma assistente de terminal para **Linux**, escrita em **100% Python**, com contrato pequeno, política explícita, execução real e observabilidade própria.
 
-A release pública atual é a `v1.5.1`. O checkout local pode estar em `v1.5.2` como marco local corretivo: ele corrige o bloqueio de busca ampla ambígua para que pedidos como `procurar firefox em tudo` ou `procurar firefox em todas as fontes` não virem alvo literal de `host_package.procurar`. A `v1.5.1` continua preservada como correção pública de confirmação para `host_package.remover`, e a `v1.5.0` continua preservada como corte de perfis internos de apresentação, clareza pública e leitura de bloqueios. O recorte `Remote Flatpak explícito` da `v1.4.0` segue com remote default observado vs remote explícito, sem `remote-add`, melhor remote ou todos os remotes. A clarificação controlada da `v1.3.0`, a conversação/mediação da `v1.2.0` e a absorção `host_maintenance.atualizar` da `v1.1.0` continuam preservadas.
+A release pública atual é a `v1.5.2`. A release pública anterior é a `v1.5.1`. A `v1.5.2` corrige o bloqueio de busca ampla ambígua para que pedidos como `procurar firefox em tudo` ou `procurar firefox em todas as fontes` não virem alvo literal de `host_package.procurar`. A `v1.5.1` continua preservada como correção pública de confirmação para `host_package.remover`, e a `v1.5.0` continua preservada como corte de perfis internos de apresentação, clareza pública e leitura de bloqueios. O recorte `Remote Flatpak explícito` da `v1.4.0` segue com remote default observado vs remote explícito, sem `remote-add`, melhor remote ou todos os remotes. A clarificação controlada da `v1.3.0`, a conversação/mediação da `v1.2.0` e a absorção `host_maintenance.atualizar` da `v1.1.0` continuam preservadas.
 
 ## O que é
 
@@ -124,7 +124,7 @@ Texto de ajuda, polimento e renderização não viram contrato. Quando um consum
 
 ## Recorte atual
 
-No marco local `v1.5.2`, a superfície pública continua pequena:
+Na `v1.5.2`, a superfície pública continua pequena:
 
 - `host_package` para pacotes do host;
 - `host_package.remover` exige `--confirm` para remoção direta de pacote do host;
